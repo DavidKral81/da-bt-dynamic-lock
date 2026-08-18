@@ -36,7 +36,7 @@ import android.os.Looper;
  */
 public class AdvertiserService extends Service {
 
-    private static final String CHANNEL = "vysilani";
+    private static final String CHANNEL = "broadcasting";
     private static final int NOTIFICATION_ID = 1;
 
     public static volatile boolean running = false;

@@ -142,8 +142,9 @@ py tests\preview.py           renders the window to PNG so the look can be check
 ## Known limitations
 
 - **Locking only.** Unlocking is not possible for third-party software.
-- **No distance setting.** See the measurements above — it is not a shortcoming
-  of the implementation but of what Bluetooth signal strength can tell you.
+- **No distance in metres.** You can require a minimum signal strength, but
+  not "lock at three metres" — signal strength cannot be turned into a
+  trustworthy distance. That is a limit of the radio, not of this program.
 - **The Windows binary is unsigned.** SmartScreen will warn on first run; a
   code-signing certificate costs more per year than this project is worth.
 - **The phone app must keep running.** Aggressive battery optimisation
