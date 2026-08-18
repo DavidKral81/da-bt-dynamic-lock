@@ -44,6 +44,7 @@ import pystray
 import marks
 import texts
 from texts import t as tx
+from version import VERSION
 
 APP_NAME = "Da BT Dynamic Lock"
 PROJECT_URL = "https://github.com/DavidKral81/da-bt-dynamic-lock"
@@ -1071,6 +1072,14 @@ class Chart:
                  font=("Segoe UI", 10)).pack(side="left")
         self._link(row, tx("link_project"),
                    self._open_project).pack(side="left")
+        tk.Label(row, text="   ·   ", bg="#1b1f26", fg="#8b95a3",
+                 font=("Segoe UI", 10)).pack(side="left")
+        # The version belongs somewhere a user can find it when reporting a
+        # problem. Same constant the installer and the file properties use,
+        # so the three can never disagree. No translation key needed - "v1.0"
+        # reads the same in both languages.
+        tk.Label(row, text=f"v{VERSION}", bg="#1b1f26", fg="#a9b4c2",
+                 font=("Segoe UI", 10)).pack(side="left")
         self._button(links, f"  {tx('btn_quit')}  ",
                      self._quit).pack(anchor="w")
 

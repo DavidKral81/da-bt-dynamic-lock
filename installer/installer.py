@@ -43,11 +43,11 @@ if not getattr(sys, "frozen", False):
 import marks
 import texts
 from texts import t as tx
+from version import VERSION
 
 APP_NAME = "Da BT Dynamic Lock"
 REG_KEY = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\DaBTDynamicLock"
 TASK_NAME = APP_NAME
-VERSION = "1.0"
 
 # The mutex name the application holds. It MUST match the one in
 # windows/dyn_lock.py - when the two drift apart, the installer stops

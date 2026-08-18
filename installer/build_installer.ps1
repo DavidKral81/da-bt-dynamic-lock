@@ -20,13 +20,58 @@ $build   = "$here\_build"
 
 if (-not (Test-Path $python)) { throw "No .venv - run the app from source first" }
 
+# --- version ----------------------------------------------------------
+# VERSION is read out of windows\version.py, the same constant the app and
+# the installer import. Generating the resource from it means the file
+# properties cannot disagree with what the program reports about itself.
+$versionPy = Get-Content "$project\windows\version.py" -Raw
+if ($versionPy -notmatch '(?m)^VERSION\s*=\s*"([^"]+)"') {
+    throw "Could not read VERSION out of windows\version.py"
+}
+$version = $Matches[1]
+$parts  = @($version -split '\.') + @('0', '0', '0', '0')
+$vtuple = "$($parts[0]), $($parts[1]), $($parts[2]), $($parts[3])"
+Write-Host "version $version  -> $vtuple"
+
+function New-VersionFile($path, $description, $internal, $original) {
+    $text = @"
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=($vtuple), prodvers=($vtuple),
+    mask=0x3f, flags=0x0, OS=0x40004, fileType=0x1, subtype=0x0, date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo([StringTable('040904B0', [
+      StringStruct('CompanyName', 'David Kral'),
+      StringStruct('FileDescription', '$description'),
+      StringStruct('FileVersion', '$version'),
+      StringStruct('InternalName', '$internal'),
+      StringStruct('LegalCopyright', 'Apache License 2.0'),
+      StringStruct('OriginalFilename', '$original'),
+      StringStruct('ProductName', 'Da BT Dynamic Lock'),
+      StringStruct('ProductVersion', '$version')])]),
+    VarFileInfo([VarStruct('Translation', [1033, 1200])])
+  ]
+)
+"@
+    [System.IO.File]::WriteAllText(
+        $path, $text, (New-Object System.Text.UTF8Encoding($false)))
+}
+
 # --- 1) the program ---------------------------------------------------
 Write-Host "1/2  packing the program"
 if (Test-Path $build) { Remove-Item $build -Recurse -Force }
+New-Item -ItemType Directory -Path $build -Force | Out-Null
+New-VersionFile "$build\version-app.txt" `
+    "Da BT Dynamic Lock" "DaBTDynamicLock" "DaBTDynamicLock.exe"
+New-VersionFile "$build\version-setup.txt" `
+    "Da BT Dynamic Lock installer" "DaBTDynamicLock-setup" `
+    "DaBTDynamicLock-setup.exe"
 
 & $python -m PyInstaller `
     --noconfirm --clean --windowed `
     --name "DaBTDynamicLock" --icon $icon `
+    --version-file "$build\version-app.txt" `
     --add-data "$icon;." `
     --distpath "$build\dist" --workpath "$build\work" --specpath "$build" `
     "$project\windows\dyn_lock.py"
@@ -53,6 +98,7 @@ Write-Host "2/2  packing the installer"
 & $python -m PyInstaller `
     --noconfirm --clean --onefile --windowed --uac-admin `
     --name "DaBTDynamicLock-setup" --icon $icon `
+    --version-file "$build\version-setup.txt" `
     --paths "$project\windows" `
     --add-data "$icon;." `
     --add-data "$build\dist\DaBTDynamicLock;program" `
@@ -62,7 +108,7 @@ if ($LASTEXITCODE -ne 0) { throw "PyInstaller (installer) failed" }
 
 # Verify the shared modules really got packed - a missing one would only show
 # up when a user runs the installer, and only as a crash.
-foreach ($shared in @("texts", "marks")) {
+foreach ($shared in @("texts", "marks", "version")) {
     if (-not (Select-String -Path "$build\work2\DaBTDynamicLock-setup\Analysis-00.toc" `
                             -Pattern "windows..$shared.py" -Quiet)) {
         throw "$shared.py did NOT get packed - the installer would crash on startup"
@@ -70,6 +116,16 @@ foreach ($shared in @("texts", "marks")) {
 }
 
 Remove-Item "$here\DaBTDynamicLock-setup.exe.manifest" -ErrorAction SilentlyContinue
+
+# Check the version resource landed. PyInstaller does not fail when a
+# --version-file is malformed, it just leaves the properties empty - which is
+# exactly how the first release nearly went out.
+$info = (Get-Item "$here\DaBTDynamicLock-setup.exe").VersionInfo
+if ($info.FileVersion -notlike "$version*") {
+    throw "The installer carries no version resource - expected $version, got '$($info.FileVersion)'"
+}
+Write-Host "version resource OK: $($info.ProductName) $($info.FileVersion)"
+
 $mb = [math]::Round((Get-Item "$here\DaBTDynamicLock-setup.exe").Length / 1MB, 1)
 Write-Host ""
 Write-Host "DONE: installer\DaBTDynamicLock-setup.exe  ($mb MB)"
