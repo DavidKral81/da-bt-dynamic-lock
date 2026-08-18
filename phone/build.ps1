@@ -57,6 +57,17 @@ $signer   = "$bt\apksigner.bat"
 if (Test-Path $out) { Remove-Item $out -Recurse -Force }
 New-Item -ItemType Directory -Path "$out\res","$out\gen","$out\classes" -Force | Out-Null
 
+# The version comes from windows\version.py, the same constant the Windows
+# app and its installer use. Written out a second time here it would sooner
+# or later disagree with them.
+$versionFile = Join-Path (Split-Path $base -Parent) "windows\version.py"
+$versionPy = Get-Content $versionFile -Raw
+if ($versionPy -notmatch '(?m)^VERSION\s*=\s*"([^"]+)"') {
+    throw "Could not read VERSION out of windows\version.py"
+}
+$version = $Matches[1]
+Write-Host "version $version"
+
 Write-Host "1/6  compiling resources (aapt2 compile)"
 & $aapt2 compile --dir "$app\res" -o "$out\res.zip"
 if ($LASTEXITCODE -ne 0) { throw "aapt2 compile failed" }
@@ -67,7 +78,7 @@ Write-Host "2/6  linking the package + generating R.java (aapt2 link)"
     -I $plat `
     --java "$out\gen" `
     --min-sdk-version 26 --target-sdk-version 34 `
-    --version-code 1 --version-name "1.0" `
+    --version-code 1 --version-name "$version" `
     "$out\res.zip"
 if ($LASTEXITCODE -ne 0) { throw "aapt2 link failed" }
 
