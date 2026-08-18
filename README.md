@@ -34,28 +34,26 @@ fingerprint as usual.
 
 ## How the decision is made
 
-Distance **cannot** be measured over Bluetooth. Measured at a desk: phone on
-the desk −73 dBm, phone in a pocket −81 dBm, phone three metres away
-−83 dBm — the difference between "here" and "across the room" is smaller than
-the natural fluctuation of the signal.
+**Signal strength does not tell you distance.** We measured it across a room,
+and the difference between sitting at the desk and standing several metres
+away was smaller than the signal's own fluctuation — and it shifts again with
+a different phone, a pocket, a body in the way. Anything built on estimating
+distance is guessing dressed up as a number.
 
-What does work is that a phone in a pocket is weak enough that **a wall cuts
-it off completely**. The edge of the room becomes the edge of the signal, so
-the app locks when the phone stops being heard at all — not when it estimates
-some distance.
+What is dependable is **silence**. A phone in a pocket is weak enough that a
+wall cuts it off completely, so the edge of the room becomes the edge of the
+signal. The app locks when it stops hearing your phone at all.
 
-The default of 45 seconds is derived from measurements, not guessed:
+That leaves one real question: how long to wait before calling it silence.
+Interference decides that, not distance — a single Bluetooth radio serves your
+mouse, your keyboard and this app at once, and an active mouse alone swallows
+a large share of the packets. So the delay is **adjustable rather than fixed**,
+and the 45-second default is chosen to survive a noisy setup. On a quiet one
+you can safely go lower.
 
-| Situation | Signals per minute | Longest gap |
-|---|---|---|
-| Phone on the desk, Bluetooth mouse on | 177 | 3 s |
-| Phone in a pocket, mouse off | 84 | 9 s |
-| Phone in a pocket, mouse on | 20 | **20 s** |
-
-One Bluetooth radio serves the mouse, the keyboard and this app at the same
-time; a mouse alone eats roughly three quarters of the packets that get
-through. Locking after 20 seconds would produce false locks while you sit
-still — hence 45.
+The live chart tells the two cases apart: a curve that sits low means a weak
+signal, while a curve that is high but full of gaps means interference.
+Measured figures behind the defaults are in [`docs/DESIGN.md`](docs/DESIGN.md).
 
 ---
 

@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  DDL Vysilac - vysila BLE inzerat, aby notebook poznal, ze jsi u stolu.
+  DDL Broadcaster - sends a BLE advertisement so the computer can tell you
+  are at your desk.
 
-  ZAMERNE TU NENI opravneni INTERNET. Aplikace se proto nemuze pripojit
-  nikam na sit - ani kdyby chtela. Overit si to muzes v Nastaveni telefonu
-  u opravneni aplikace.
+  THE INTERNET PERMISSION IS DELIBERATELY ABSENT. The app therefore cannot
+  reach the network at all - not even if it wanted to. You can verify this
+  yourself in the phone's Settings, under the app's permissions.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="cz.david.dabtdynamiclock">
 
-    <!-- starsi Android (do 11) -->
+    <!-- older Android (up to 11) -->
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
-    <!-- Android 12 a novejsi -->
+    <!-- Android 12 and newer -->
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -41,7 +42,7 @@
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
 
-        <!-- nastartuje vysilani po zapnuti telefonu -->
+        <!-- starts broadcasting after the phone boots -->
         <receiver
             android:name=".BootReceiver"
             android:exported="true"

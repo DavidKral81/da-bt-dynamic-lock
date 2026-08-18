@@ -1,49 +1,49 @@
-# Vyvojarske poznamky - zustavaji jen lokalne.
-# Jsou v nich interni veci (rozdelana prace, poznamky z konverzaci), ktere
-# na verejny GitHub nepatri. Co z nich ma verejnou hodnotu - mereni,
-# technicka rozhodnuti a jejich duvody - patri do README.md.
+# Developer notes - these stay local.
+# They hold internal material (work in progress, notes from conversations)
+# that does not belong on a public GitHub. Whatever has public value -
+# measurements, technical decisions and their reasons - goes into README.md.
 CLAUDE.md
 
-# Podpisovy klic k aplikaci pro Android - NIKDY do repozitare.
-# Kdo ho ma, muze vydat "aktualizaci" tve aplikace.
+# Android signing key - NEVER commit.
+# Whoever holds it can publish an "update" to your app.
 phone/*.jks
 
-# Sestavene vystupy - patri do Releases, ne do historie zdrojaku
+# Build artifacts - these belong in Releases, not in the source history
 phone/*.apk
 installer/*.exe
-# vystupy sestaveni - nikdy do repozitare (drive tu byla jen stara cesta
-# instalace/_build/, takze po prejmenovani slozky se 1001 souboru
-# PyInstalleru dostalo do commitu)
+# build output - never commit (this used to name only the old path
+# instalace/_build/, so once the folder was renamed, 1001 PyInstaller files
+# made it into a commit)
 _build/
 installer/_build/
 
-# Prenosne nastroje (~1 GB) a prostredi
+# Portable toolchain (~1 GB) and virtual environment
 _android-build/
 .venv/
 
-# Data za behu. Vzory jsou vazane na NAZEV, ne na cestu - po presunu nebo
-# prejmenovani slozky by cestovy vzor prestal platit potichu.
-# Pozor: "config.json" netrefi "config.default.json" (jiny nazev), takze
-# sablona s vychozim nastavenim se verzuje dal.
+# Runtime data. These patterns match by NAME, not by path - a path-based
+# pattern would silently stop matching after a move or a rename.
+# Note: "config.json" does not match "config.default.json" (different name),
+# so the template holding the default settings stays versioned.
 dyn_lock.log
 dyn_lock.log.1
 history.json
 config.json
 
-# Vystupy mereni a diagnostiky zadny vlastni vzor nepotrebuji - vsechny tri
-# nastroje pisou do _output/, ktere je vyloucene cele (viz nize).
-# POZOR na holy vzor "track_log.csv": vylucoval i tests/track_log.csv, coz je
-# REFERENCNI nahravka, kterou prehrava test_logic.py. Na klonu pak test tise
-# napsal SKIPPED misto aby bezel.
+# Measurement and diagnostic output needs no pattern of its own - all three
+# tools write into _output/, which is excluded as a whole (see below).
+# BEWARE of a bare "track_log.csv" pattern: it also excluded
+# tests/track_log.csv, the REFERENCE recording that test_logic.py replays.
+# On a fresh clone the test then quietly printed SKIPPED instead of running.
 
 __pycache__/
 *.pyc
 
-# vsechny generovane vystupy (nahledy, reporty, mereni) - jedna slozka,
-# at se nehromadi v korenu projektu
+# all generated output (previews, reports, measurements) - one folder,
+# so it does not pile up in the project root
 _output/
 
 
-# heslo k podpisovemu klici - NIKDY do repozitare
+# signing key password - NEVER commit
 phone/signing-key-password.txt
 phone/*backup*.jks

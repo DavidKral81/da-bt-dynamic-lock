@@ -93,9 +93,11 @@ try:
     check("default settings shipped", True,
           (I.TARGET_DIR / "config.default.json").exists())
     # the APK is deliberately NOT shipped - it is downloaded from the GitHub
-    # release through the link in the app
+    # release through the link in the app. Look for any .apk anywhere under
+    # the target: checking one fixed folder name would keep passing even if
+    # the installer started shipping the APK somewhere else.
     check("phone app NOT shipped with the installer", False,
-          (I.TARGET_DIR / "telefon").exists())
+          any(I.TARGET_DIR.rglob("*.apk")))
     check("shortcut in the Start menu", True, I.STARTMENU.exists())
     check("shortcut on the desktop", True, I.DESKTOP.exists())
     try:

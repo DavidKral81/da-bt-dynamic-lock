@@ -1,53 +1,55 @@
-PODPISOVÝ KLÍČ K APLIKACI PRO ANDROID — NEMAZAT
-================================================
+ANDROID SIGNING KEY - DO NOT DELETE
+===================================
 
-Soubor:  signing-key-DO-NOT-DELETE.jks
+File:  signing-key-DO-NOT-DELETE.jks
 
-K čemu je
----------
-Každá aplikace pro Android musí být podepsaná. Android pak dovolí
-aktualizaci jen tehdy, když je nová verze podepsaná TÍMŽ klíčem.
+What it is for
+--------------
+Every Android app must be signed. Android then accepts an update only if
+the new version is signed with the SAME key.
 
-Když se tenhle soubor ztratí
-----------------------------
-Aplikaci v telefonu už nepůjde aktualizovat. Bude se muset nejdřív
-odinstalovat a nainstalovat znovu — tím se ztratí i její nastavení
-a udělená oprávnění. Nic vážnějšího se nestane, ale je to otrava.
+If this file is lost
+--------------------
+The app on the phone can no longer be updated. It has to be uninstalled and
+installed again, which also loses its settings and granted permissions.
+Nothing worse happens, but it is a nuisance.
 
-Proč leží tady, a ne u nástrojů
--------------------------------
-Sestavovací nástroje jsou ve složce `_android-build` (~2,5 GB) a ta je
-určená k smazání, až nebude potřeba. Klíč tam proto nepatří — patří
-k projektu.
+Why it lives here and not with the toolchain
+--------------------------------------------
+The build tools sit in `_android-build` (~2.5 GB), a folder meant to be
+deleted once it is no longer needed. The key does not belong there - it
+belongs to the project.
 
-Heslo
------
-Heslo NENÍ v tomto souboru ani v sestavovacím skriptu —
-leží vedle klíče v  signing-key-password.txt , který je v .gitignore
-a nikdy se nedostane do repozitáře. Sestavovací skript si ho odtud
-přečte sám; místo souboru lze použít i proměnnou prostředí
-DDL_KEYSTORE_PASSWORD.
+Password
+--------
+The password is NOT in this file, nor in the build script. It sits next to
+the key in  signing-key-password.txt , which is listed in .gitignore and
+never reaches the repository. The build script reads it from there; instead
+of the file you can also set the DDL_KEYSTORE_PASSWORD environment
+variable.
 
-Bez toho souboru NELZE aplikaci v telefonu aktualizovat — zálohuj
-ho spolu s klíčem.
+Without that file the app on the phone CANNOT be updated - back it up
+together with the key.
 
-Výměna klíče 18.08.2026
------------------------
-Klíč byl vyměněn za nový, protože ten původní nesl staré jméno
-`CN=Da Dynamic Lock` (z doby před přejmenováním projektu).
+Key replaced on 18 August 2026
+------------------------------
+The key was replaced because the original one carried the old name
+`CN=Da Dynamic Lock`, from before the project was renamed.
 
-  nový   CN=Da BT Dynamic Lock, O=David, C=CZ
-         otisk SHA-256  6618ce94260f1b3a0944d4d59f594ae27729bbf00256edcddb5c3ad36bb1c7ae
-  starý  CN=Da Dynamic Lock  — zachovaný v
-         signing-key-OLD-CN-Da-Dynamic-Lock.jks
+  new  CN=Da BT Dynamic Lock, O=David, C=CZ
+       SHA-256 fingerprint
+       6618ce94260f1b3a0944d4d59f594ae27729bbf00256edcddb5c3ad36bb1c7ae
+  old  CN=Da Dynamic Lock  - kept in
+       signing-key-OLD-CN-Da-Dynamic-Lock.jks
 
-DŮSLEDEK: aplikaci podepsanou novým klíčem NELZE nainstalovat přes
-starou. V telefonu se musí ta stará nejdřív odinstalovat.
+CONSEQUENCE: an app signed with the new key CANNOT be installed over the old
+one. The old app has to be uninstalled from the phone first.
 
-Starý klíč se nemaže: kdyby se někdy ukázalo, že je potřeba vydat
-aktualizaci pro telefon, kde ještě běží stará verze, jde s ním podepsat.
+The old key is not deleted: should an update ever be needed for a phone that
+still runs the old version, it can be signed with it.
 
-Zálohování
-----------
-Klíč patří do zálohy spolu se souborem s heslem. Když se projekt stěhuje,
-musí jít oba soubory s ním — v repozitáři nejsou.
+Backups
+-------
+The key belongs in your backup together with the password file. If the
+project moves, both files must move with it - they are not in the
+repository.
