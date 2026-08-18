@@ -34,26 +34,39 @@ fingerprint as usual.
 
 ## How the decision is made
 
-**Signal strength does not tell you distance.** We measured it across a room,
-and the difference between sitting at the desk and standing several metres
-away was smaller than the signal's own fluctuation — and it shifts again with
-a different phone, a pocket, a body in the way. Anything built on estimating
-distance is guessing dressed up as a number.
+The real advantage here is that **the app shows you the signal instead of
+hiding it, and then lets you set the rules**. The window carries a live chart
+of the strength your own phone and your own room actually produce, and every
+threshold below is something you set against what you can see there. Nobody
+else decides for you what "away" means.
 
-What is dependable is **silence**. A phone in a pocket is weak enough that a
-wall cuts it off completely, so the edge of the room becomes the edge of the
-signal. The app locks when it stops hearing your phone at all.
+**You choose which event locks the screen:**
 
-That leaves one real question: how long to wait before calling it silence.
-Interference decides that, not distance — a single Bluetooth radio serves your
-mouse, your keyboard and this app at once, and an active mouse alone swallows
-a large share of the packets. So the delay is **adjustable rather than fixed**,
-and the 45-second default is chosen to survive a noisy setup. On a quiet one
-you can safely go lower.
+- **Signal disappears** (the default). A phone in a pocket is weak enough that
+  a wall cuts it off completely, so the edge of the room becomes the edge of
+  the signal. Robust, and it needs no tuning.
+- **Signal drops below a strength you pick** (−100 to −60 dBm). The phone
+  counts as "at the desk" only while it stays above that level — this is how
+  you draw the boundary tighter than a wall, for an open-plan room or a desk
+  near a doorway.
 
-The live chart tells the two cases apart: a curve that sits low means a weak
-signal, while a curve that is high but full of gaps means interference.
-Measured figures behind the defaults are in [`docs/DESIGN.md`](docs/DESIGN.md).
+Either way the lock happens only after a delay you choose (12–120 seconds of
+not counting), so a brief dropout never locks your screen.
+
+**Why the app smooths the signal.** A single reading jumps by roughly 8 dB
+with the phone lying perfectly still, and the absolute values shift with the
+phone, the pocket, a body in the way, and whatever else shares the Bluetooth
+radio — an active mouse alone swallows a large share of the packets. So the
+threshold is compared against the **median of a short window**, not the last
+reading. For the same reason the app never converts dBm into metres: the
+difference between "at the desk" and "across the room" is smaller than the
+signal's own fluctuation, so any distance in metres would be a guess dressed
+up as a number.
+
+The chart also tells the two failure modes apart: a curve that sits low means
+a weak signal, one that is high but full of gaps means interference. Our own
+measurements behind the defaults are in [`docs/DESIGN.md`](docs/DESIGN.md) —
+yours will differ, which is exactly why the settings exist.
 
 ---
 

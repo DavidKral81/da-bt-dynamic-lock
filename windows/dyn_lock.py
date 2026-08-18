@@ -2,10 +2,16 @@
 Da BT Dynamic Lock - locks the laptop when the phone walks away.
 
 How it works (derived from the measurements in CLAUDE.md):
-  The phone broadcasts a BLE advertisement every 100 ms. As long as we hear
-  it, you are at the desk. In a pocket the signal is so weak that a wall cuts
-  it off completely - the room boundary doubles as the signal boundary. Once
-  nothing arrives for 'silence_s' seconds, we lock.
+  The phone broadcasts a BLE advertisement every 100 ms. An advertisement
+  counts as "at the desk" while it keeps arriving and - if the user set a
+  'rssi_threshold' - while the SMOOTHED strength stays above it (median of
+  'threshold_window_s', because a raw reading jumps 8 dB even when the phone
+  lies still). Once nothing has counted for 'silence_s' seconds, we lock.
+
+  With no threshold set (the default) only disappearance locks the screen:
+  in a pocket the signal is weak enough that a wall cuts it off completely,
+  so the room boundary doubles as the signal boundary. A threshold draws the
+  boundary tighter than a wall, which is what an open-plan room needs.
 
 It never locks:
   - until the phone has been seen at least ONCE since the app started
