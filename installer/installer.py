@@ -17,9 +17,15 @@ uninstall nor a reinstall loses them.
 A hand-written installer instead of a ready-made tool (Inno Setup) because
 nothing has to be installed to build it and we keep full control over what
 gets written into the system.
+
+Both languages come from windows/texts.py - the SAME dictionary the app uses,
+not a copy of it. Two dictionaries would drift apart, and one shared
+`missing()` test then covers the installer too. PyInstaller finds the module
+through --paths in build_installer.ps1.
 """
 
 import ctypes
+import json
 import os
 import shutil
 import subprocess
@@ -29,6 +35,14 @@ import time
 import tkinter as tk
 import winreg
 from pathlib import Path
+
+# Running from source the module sits in a sibling folder; inside the packaged
+# .exe PyInstaller has already put it next to this one.
+if not getattr(sys, "frozen", False):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "windows"))
+import marks
+import texts
+from texts import t as tx
 
 APP_NAME = "Da BT Dynamic Lock"
 REG_KEY = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\DaBTDynamicLock"
@@ -60,6 +74,62 @@ DATA = Path(os.environ.get("APPDATA", "")) / APP_NAME
 STARTUP = (Path(os.environ.get("APPDATA", ""))
            / r"Microsoft\Windows\Start Menu\Programs\Startup"
            / f"{APP_NAME}.lnk")
+
+
+# ---------------------------------------------------------------- language
+
+def system_language():
+    """"cs" when Windows itself runs in Czech, otherwise English.
+
+    Only the primary language matters (0x05 = Czech), so cs-CZ and any other
+    Czech variant both count.
+    """
+    try:
+        langid = ctypes.windll.kernel32.GetUserDefaultUILanguage()
+        return "cs" if (langid & 0x3FF) == 0x05 else "en"
+    except OSError:
+        # A missing UI language must not stop an installation - English is
+        # the safer guess for a machine that cannot answer.
+        return "en"
+
+
+def stored_language():
+    """The language picked during installation, or None.
+
+    Kept in the registry rather than in the user's config.json: the
+    uninstaller runs elevated, so %APPDATA% points at the ADMINISTRATOR's
+    profile, not at the profile of whoever uses the app. The registry key is
+    the same one the uninstall entry lives in, so it disappears with it.
+    """
+    try:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, REG_KEY) as key:
+            value, _ = winreg.QueryValueEx(key, "InstallerLanguage")
+            return value if value in dict(texts.LANGUAGES) else None
+    except OSError:
+        return None
+
+
+def ship_language(code):
+    """Hand the chosen language over to the application itself.
+
+    The app builds its config.json out of config.default.json on first run
+    (see load_cfg in dyn_lock.py), so writing it there is what makes the app
+    come up in the language picked here - no second mechanism needed.
+
+    Returns False when it did not work, so the caller can report it instead
+    of pretending everything went fine.
+    """
+    template = TARGET_DIR / "config.default.json"
+    if not template.exists():
+        return False
+    try:
+        settings = json.loads(template.read_text(encoding="utf-8"))
+        settings["language"] = code
+        template.write_text(json.dumps(settings, indent=2, ensure_ascii=False),
+                            encoding="utf-8")
+        return True
+    except (OSError, ValueError):
+        return False
 
 
 def icon_source():
@@ -221,10 +291,10 @@ def relaunch_from_temp():
 # ---------------------------------------------------------------- install
 
 def install(task, start_menu, desktop, report):
-    report("Ukončuji běžící aplikaci…")
+    report(tx("ins_stopping"))
     stop_running_app()
 
-    report("Kopíruji program…")
+    report(tx("ins_copying"))
     if TARGET_DIR.exists():
         try:
             delete_folder(TARGET_DIR)
@@ -242,11 +312,16 @@ def install(task, start_menu, desktop, report):
     exe = TARGET_DIR / "DaBTDynamicLock.exe"
     problems = []
     if not exe.exists():
-        raise RuntimeError("kopírování programu selhalo")
+        raise RuntimeError(tx("ins_err_copy"))
+
+    # The app should come up in the language picked here, not in the one the
+    # template happens to carry.
+    ship_language(texts.language())
+
     if start_menu:
-        report("Vytvářím zástupce v nabídce Start…")
+        report(tx("ins_startmenu"))
         if not create_shortcut(STARTMENU, exe, exe):
-            problems.append("zástupce do nabídky Start")
+            problems.append(tx("ins_prob_startmenu"))
     else:
         try:
             STARTMENU.unlink(missing_ok=True)
@@ -254,16 +329,16 @@ def install(task, start_menu, desktop, report):
             pass
 
     if desktop:
-        report("Vytvářím zástupce na ploše…")
+        report(tx("ins_desktop"))
         if not create_shortcut(DESKTOP, exe, exe):
-            problems.append("zástupce na plochu")
+            problems.append(tx("ins_prob_desktop"))
     else:
         try:
             DESKTOP.unlink(missing_ok=True)
         except OSError:
             pass
 
-    report("Zapisuji do seznamu aplikací…")
+    report(tx("ins_registry"))
     size = sum(f.stat().st_size for f in TARGET_DIR.rglob("*") if f.is_file())
     with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, REG_KEY) as k:
         for name, value in [
@@ -274,7 +349,10 @@ def install(task, start_menu, desktop, report):
                 ("InstallLocation", str(TARGET_DIR)),
                 ("UninstallString",
                  f'"{TARGET_DIR / "odinstalovat.exe"}" --uninstall'),
-                ("URLInfoAbout", "")]:
+                ("URLInfoAbout", ""),
+                # not a Windows value - it is how the uninstaller knows which
+                # language to speak when it runs a year from now
+                ("InstallerLanguage", texts.language())]:
             winreg.SetValueEx(k, name, 0, winreg.REG_SZ, value)
         winreg.SetValueEx(k, "EstimatedSize", 0, winreg.REG_DWORD, size // 1024)
         winreg.SetValueEx(k, "NoModify", 0, winreg.REG_DWORD, 1)
@@ -284,36 +362,35 @@ def install(task, start_menu, desktop, report):
     # switch). Why: its tray menu can do the same, and if these were two
     # pieces of code they would drift apart sooner or later - one would set
     # up the restart after a crash and the other would not.
-    report("Nastavuji spouštění při přihlášení…"
-           if task else "Ruším spouštění při přihlášení…")
+    report(tx("ins_task_on") if task else tx("ins_task_off"))
     ok, output = quiet(f'"{exe}" '
                        + ("--autostart-on" if task else "--autostart-off"))
     if not ok and task:
-        report("Spouštění při přihlášení se nepodařilo nastavit.")
+        report(tx("ins_task_failed"))
 
     # The final check - the REAL result is verified, not that the commands
     # finished. The installer must not report success when something is
     # missing.
-    report("Kontroluji výsledek…")
+    report(tx("ins_checking"))
     if not exe.exists():
-        problems.append("program se nezkopíroval")
+        problems.append(tx("ins_prob_program"))
     if not (TARGET_DIR / "odinstalovat.exe").exists() \
             and getattr(sys, "frozen", False):
-        problems.append("odinstalátor")
+        problems.append(tx("ins_prob_uninstaller"))
     try:
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, REG_KEY) as k:
             winreg.QueryValueEx(k, "DisplayName")
     except OSError:
-        problems.append("záznam v Nastavení → Aplikace")
+        problems.append(tx("ins_prob_registry"))
     if task:
         task_exists, _ = quiet(f'schtasks /Query /TN "{TASK_NAME}"')
         if not task_exists:
-            problems.append("spouštění při přihlášení")
+            problems.append(tx("ins_prob_task"))
 
     if problems:
-        report("Nepodařilo se: " + ", ".join(problems))
+        report(tx("ins_failed", what=", ".join(problems)))
         return False
-    report("Hotovo.")
+    report(tx("ins_done"))
     return True
 
 
@@ -356,10 +433,10 @@ def uninstall(delete_data, report, wait_for_pid=None):
     # has "restart on failure" set, so if the app were killed first, the
     # scheduler would start it again a minute later - and it would recreate
     # the data folder we are deleting right now.
-    report("Ruším spouštění při přihlášení…")
+    report(tx("ins_task_off"))
     quiet(f'schtasks /Delete /F /TN "{TASK_NAME}"')
 
-    report("Ukončuji aplikaci…")
+    report(tx("ins_stopping"))
     stop_running_app()
     # Instead of the task the app may have a shortcut in the Startup folder
     # (it uses that when the user has no rights for the scheduler) - that has
@@ -369,14 +446,14 @@ def uninstall(delete_data, report, wait_for_pid=None):
     except OSError:
         pass
 
-    report("Odstraňuji zástupce…")
+    report(tx("uni_shortcuts"))
     for lnk in (STARTMENU, DESKTOP):
         try:
             lnk.unlink(missing_ok=True)
         except OSError:
             pass
 
-    report("Mažu záznam ze seznamu aplikací…")
+    report(tx("uni_registry"))
     try:
         winreg.DeleteKey(winreg.HKEY_LOCAL_MACHINE, REG_KEY)
     except FileNotFoundError:
@@ -384,7 +461,7 @@ def uninstall(delete_data, report, wait_for_pid=None):
 
     left = []
     if delete_data:
-        report("Mažu nastavení a historii…")
+        report(tx("uni_data"))
         for attempt in range(3):
             try:
                 delete_folder(DATA)
@@ -397,7 +474,7 @@ def uninstall(delete_data, report, wait_for_pid=None):
             # must not fail silently - show what stayed and why
             left = [f.name for f in DATA.iterdir()]
 
-    report("Odstraňuji soubory programu…")
+    report(tx("uni_files"))
     for attempt in range(6):
         try:
             delete_folder(TARGET_DIR)
@@ -407,15 +484,59 @@ def uninstall(delete_data, report, wait_for_pid=None):
             break
         time.sleep(1)
     if TARGET_DIR.exists():
-        left.append("soubory programu")
+        left.append(tx("uni_prob_files"))
     if left:
-        report("Hotovo, ale nešlo smazat: " + ", ".join(left[:4]))
+        report(tx("uni_partial", what=", ".join(left[:4])))
         return False
-    report("Hotovo.")
+    report(tx("ins_done"))
     return True
 
 
 # ---------------------------------------------------------------- window
+
+def switch_row(parent, text, variable):
+    """A checkbox row - the mark is DRAWN, not left to Tk.
+
+    Tk's own checkbox is a few pixels of white and looks sloppy next to the
+    app, which draws its marks by hand. Both now use the same drawing
+    (marks.py), so the installer and the app cannot end up looking different.
+
+    Used by BOTH windows - fixing the mark in one and leaving the other with
+    Tk's default is exactly the mistake this replaces.
+
+    The whole row is clickable, not just the little square.
+    """
+    row = tk.Frame(parent, bg=BACKGROUND, cursor="hand2")
+    row.pack(anchor="w", pady=2, fill="x")
+    canvas = tk.Canvas(row, width=marks.SIZE, height=marks.SIZE,
+                       bg=BACKGROUND, highlightthickness=0, cursor="hand2")
+    canvas.pack(side="left", padx=(0, 9))
+    label = tk.Label(row, text=text, bg=BACKGROUND, fg=TEXT,
+                     font=("Segoe UI", 10), cursor="hand2", justify="left")
+    label.pack(side="left")
+
+    # kept on the row, so it dies with the row - a language switch throws
+    # these widgets away and rebuilds them
+    row.hovered = False
+
+    def redraw():
+        marks.draw(canvas, variable.get(), False, row.hovered)
+
+    def toggle(_=None):
+        variable.set(not variable.get())
+        redraw()
+
+    def hover(state):
+        row.hovered = state
+        redraw()
+
+    for widget in (row, canvas, label):
+        widget.bind("<Button-1>", toggle)
+        widget.bind("<Enter>", lambda e=None: hover(True))
+        widget.bind("<Leave>", lambda e=None: hover(False))
+    redraw()
+    return row
+
 
 class Window:
     def __init__(self, uninstalling):
@@ -423,46 +544,50 @@ class Window:
         self.result = None        # None = the user closed it without acting
         self.clean = True
         self.r = tk.Tk()
-        self.r.title(("Odinstalace " if uninstalling else "Instalace ")
-                     + APP_NAME)
         self.r.configure(bg=BACKGROUND)
         self.r.resizable(False, False)
-
-        frame = tk.Frame(self.r, bg=BACKGROUND, padx=26, pady=22)
-        frame.pack()
         set_icon(self.r)
 
-        self._text(frame, APP_NAME, 17, TEXT, True)
-        self._text(frame,
-                   "Zamkne notebook, když se od něj vzdálíš s telefonem.",
-                   10, GREY, pady=(2, 14))
-
-        card = tk.Frame(frame, bg=CARD, padx=16, pady=14)
-        card.pack(fill="x")
-        if uninstalling:
-            self._text(card, f"Program {APP_NAME} se odinstaluje ze složky:",
-                       10, TEXT)
-        else:
-            self._text(card, f"Program {APP_NAME} se nainstaluje do složky:",
-                       10, TEXT)
-        self._text(card, f"   {TARGET_DIR}", 10, GREEN_LIGHT, pady=(2, 0))
-
-        # options
+        # These live on the window, NOT inside _build: the contents are
+        # thrown away on a language switch, and a choice made before it must
+        # not be thrown away with them.
         self.start_menu = tk.BooleanVar(value=True)
         self.desktop = tk.BooleanVar(value=True)
         self.option = tk.BooleanVar(value=not uninstalling)
 
+        self._build()
+
+    def _build(self):
+        """Build the contents - and build them AGAIN after a language switch.
+
+        Rebuilding beats relabelling for the same reason the app does it
+        (dyn_lock.py): relabelling means keeping a reference to every widget,
+        and sooner or later one is forgotten and stays in the old language.
+        """
+        for child in self.r.winfo_children():
+            child.destroy()
+        self.r.title(tx("ins_title_uninstall" if self.uninstalling
+                        else "ins_title_install", app=APP_NAME))
+
+        frame = tk.Frame(self.r, bg=BACKGROUND, padx=26, pady=22)
+        frame.pack()
+
+        header = tk.Frame(frame, bg=BACKGROUND)
+        header.pack(fill="x")
+        tk.Label(header, text=APP_NAME, bg=BACKGROUND, fg=TEXT,
+                 font=("Segoe UI", 17, "bold")).pack(side="left")
+        self._language_picker(header)
+
+        self._text(frame, tx("ins_subtitle"), 10, GREY, pady=(2, 14))
+
+        card = tk.Frame(frame, bg=CARD, padx=16, pady=14)
+        card.pack(fill="x")
+        self._text(card, tx("ins_from_folder" if self.uninstalling
+                            else "ins_to_folder", app=APP_NAME), 10, TEXT)
+        self._text(card, f"   {TARGET_DIR}", 10, GREEN_LIGHT, pady=(2, 0))
+
         self.options_frame = tk.Frame(frame, bg=BACKGROUND)
         self.options_frame.pack(fill="x")
-
-        def switch(text, variable, parent=None):
-            tk.Checkbutton(
-                parent or self.options_frame, text=text, variable=variable,
-                bg=BACKGROUND, fg=TEXT,
-                selectcolor=CARD, activebackground=BACKGROUND,
-                activeforeground=TEXT, font=("Segoe UI", 10),
-                borderwidth=0, highlightthickness=0, anchor="w"
-            ).pack(anchor="w", pady=(0, 2))
 
         # Note: a "pin to the taskbar" option is deliberately missing.
         # Windows 11 (build 26200) does not offer that verb at all - verified
@@ -470,12 +595,12 @@ class Window:
         # Start" is there. Microsoft blocked it so that installers cannot help
         # themselves to the taskbar.
         tk.Frame(self.options_frame, bg=BACKGROUND, height=4).pack()
-        if uninstalling:
-            switch("Smazat i nastavení a historii", self.option)
+        if self.uninstalling:
+            self._switch(tx("uni_opt_data"), self.option)
         else:
-            switch("Přidat zástupce do nabídky Start", self.start_menu)
-            switch("Přidat zástupce na plochu", self.desktop)
-            switch("Spouštět automaticky při přihlášení", self.option)
+            self._switch(tx("ins_opt_startmenu"), self.start_menu)
+            self._switch(tx("ins_opt_desktop"), self.desktop)
+            self._switch(tx("ins_opt_autostart"), self.option)
 
         # wraplength: a long error message wraps instead of being cut off by
         # the window (WinError messages tend to be long)
@@ -487,15 +612,51 @@ class Window:
         row = tk.Frame(frame, bg=BACKGROUND)
         row.pack(fill="x")
         self.button = tk.Button(
-            row, text="Odinstalovat" if uninstalling else "Instalovat",
-            command=self.run, bg=RED if uninstalling else GREEN,
+            row, text=tx("ins_btn_uninstall") if self.uninstalling
+            else tx("ins_btn_install"),
+            command=self.run, bg=RED if self.uninstalling else GREEN,
             fg="white", font=("Segoe UI", 11), relief="flat",
             padx=22, pady=8, cursor="hand2")
         self.button.pack(side="left")
-        centre(self.r)
-        tk.Button(row, text="Zavřít", command=self.r.destroy, bg=CARD,
-                  fg=TEXT, font=("Segoe UI", 11), relief="flat",
+        tk.Button(row, text=tx("ins_btn_close"), command=self.r.destroy,
+                  bg=CARD, fg=TEXT, font=("Segoe UI", 11), relief="flat",
                   padx=18, pady=8, cursor="hand2").pack(side="right")
+        centre(self.r)
+
+    def _switch(self, text, variable):
+        return switch_row(self.options_frame, text, variable)
+
+    def _language_picker(self, parent):
+        """The Czech/English chooser.
+
+        It is in BOTH roles on purpose: someone who installed the app in a
+        language they cannot read has to be able to switch before uninstalling
+        it too.
+
+        A Menubutton rather than an OptionMenu so the arrow can be a readable
+        character instead of the default few-pixel one, and so the choice
+        arrives as a language CODE - the displayed name is never a data value.
+        """
+        current = dict(texts.LANGUAGES)[texts.language()]
+        button = tk.Menubutton(parent, text=f"{current}  ▾", bg=CARD, fg=TEXT,
+                               activebackground=CARD, activeforeground=TEXT,
+                               font=("Segoe UI", 10), relief="flat",
+                               borderwidth=0, highlightthickness=0,
+                               padx=12, pady=5, cursor="hand2")
+        menu = tk.Menu(button, tearoff=0, bg=CARD, fg=TEXT,
+                       activebackground=GREEN, activeforeground="white",
+                       font=("Segoe UI", 10), borderwidth=0)
+        for code, name in texts.LANGUAGES:
+            menu.add_command(label=name,
+                             command=lambda c=code: self._change_language(c))
+        button.config(menu=menu)
+        button.pack(side="right")
+
+    def _change_language(self, code):
+        if code == texts.language():
+            return
+        texts.set_language(code)
+        self._build()
 
     def _text(self, parent, s, size, color, bold=False, pady=(0, 0),
               anchor="w"):
@@ -526,7 +687,7 @@ class Window:
             self.result = True
             self.r.destroy()
         except Exception as e:
-            self.status.config(text="Chyba: " + str(e), fg="#f87171")
+            self.status.config(text=tx("ins_error", error=e), fg="#f87171")
             self.button.config(state="normal")
 
 
@@ -559,28 +720,27 @@ class ResultWindow:
     def __init__(self, uninstalling, all_ok):
         self.uninstalling = uninstalling
         self.r = tk.Tk()
-        self.r.title(("Odinstalace " if uninstalling else "Instalace ")
-                     + APP_NAME)
+        self.r.title(tx("ins_title_uninstall" if uninstalling
+                        else "ins_title_install", app=APP_NAME))
         self.r.configure(bg=BACKGROUND)
         self.r.resizable(False, False)
 
         frame = tk.Frame(self.r, bg=BACKGROUND, padx=26, pady=22)
         frame.pack()
 
-        heading = "Odinstalováno" if uninstalling else "Nainstalováno"
+        # No language chooser here on purpose - by this point the work is
+        # done and the language was settled in the first window.
+        heading = tx("ins_head_uninstalled" if uninstalling
+                     else "ins_head_installed")
         tk.Label(frame, text=heading, bg=BACKGROUND,
                  fg=GREEN_LIGHT if all_ok else "#fbbf24",
                  font=("Segoe UI", 17, "bold")).pack(anchor="w")
 
         if uninstalling:
-            description = (f"{APP_NAME} byl odstraněn z počítače."
-                           if all_ok else
-                           f"{APP_NAME} byl odstraněn, ale některé soubory se "
-                           f"nepodařilo smazat. Zkus to po restartu počítače.")
+            description = tx("uni_ok_desc" if all_ok else "uni_partial_desc",
+                             app=APP_NAME)
         else:
-            description = ("Aby hlídání fungovalo, musí vysílat i telefon — "
-                           "nainstaluj do něj přiloženou aplikaci. Postup "
-                           "najdeš v návodu.")
+            description = tx("ins_ok_desc")
         tk.Label(frame, text=description, bg=BACKGROUND, fg=GREY,
                  justify="left", wraplength=430,
                  font=("Segoe UI", 10)).pack(anchor="w", pady=(6, 14))
@@ -591,17 +751,13 @@ class ResultWindow:
             # No "open the phone app folder" option: the APK is not shipped
             # with the installer any more, it is downloaded from the GitHub
             # release through the link in the app.
-            for text, variable in [("Spustit " + APP_NAME, self.launch),
-                                   ("Otevřít návod", self.manual)]:
-                tk.Checkbutton(frame, text=text, variable=variable,
-                               bg=BACKGROUND, fg=TEXT, selectcolor=CARD,
-                               anchor="w", activebackground=BACKGROUND,
-                               activeforeground=TEXT, font=("Segoe UI", 10),
-                               borderwidth=0,
-                               highlightthickness=0).pack(anchor="w",
-                                                          pady=(0, 2))
+            for text, variable in [(tx("ins_opt_launch", app=APP_NAME),
+                                    self.launch),
+                                   (tx("ins_opt_manual"), self.manual)]:
+                switch_row(frame, text, variable)
 
-        tk.Button(frame, text="Dokončit", command=self.finish, bg=GREEN,
+        tk.Button(frame, text=tx("ins_btn_finish"), command=self.finish,
+                  bg=GREEN,
                   fg="white", font=("Segoe UI", 11), relief="flat",
                   padx=22, pady=8, cursor="hand2").pack(anchor="e",
                                                         pady=(16, 0))
@@ -624,15 +780,20 @@ class ResultWindow:
     def finish(self):
         if not self.uninstalling:
             if self.manual.get():
-                manual = next(TARGET_DIR.glob("*INFO*.txt"), None)
+                # Both manuals are shipped, so the language decides which one
+                # opens - the SAME patterns _open_manual uses in dyn_lock.py.
+                # A bare *INFO*.txt would be a coin toss between the two.
+                patterns = (["*INFO-READ*.txt", "*INFO*.txt"]
+                            if texts.language() == "en"
+                            else ["*INFO-CTI*.txt", "*INFO*.txt"])
+                manual = next((m for p in patterns
+                               for m in TARGET_DIR.glob(p)), None)
                 if manual:
                     os.startfile(manual)
             if self.launch.get():
                 if other_instance_running():
                     ctypes.windll.user32.MessageBoxW(
-                        0, "Aplikace se nespustila, protože už běží jiná "
-                           "kopie.\n\nUkonči ji (ikona v liště → Konec) "
-                           "a spusť tuto.", APP_NAME, 0x40)
+                        0, tx("ins_msg_running"), APP_NAME, 0x40)
                 else:
                     subprocess.Popen([str(TARGET_DIR / "DaBTDynamicLock.exe")])
         self.r.destroy()
@@ -640,11 +801,15 @@ class ResultWindow:
 
 def main():
     uninstalling = is_uninstall(sys.argv, sys.executable)
+
+    # What language to open in: the one chosen when installing (the
+    # uninstaller runs long after and nobody picks it again), otherwise the
+    # language of Windows itself. Either way the chooser in the window wins.
+    texts.set_language(stored_language() or system_language())
+
     if not is_admin():
         ctypes.windll.user32.MessageBoxW(
-            0, "Spusť tento program jako správce.\n\n"
-               "Zápis do složky Program Files to vyžaduje.",
-            APP_NAME, 0x10)
+            0, tx("ins_msg_admin"), APP_NAME, 0x10)
         return 1
     if uninstalling and relaunch_from_temp():
         return 0            # the copy in the temp folder took over

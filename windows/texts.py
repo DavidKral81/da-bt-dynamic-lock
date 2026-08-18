@@ -166,6 +166,77 @@ CS = {
     "msg_already_running": "Da BT Dynamic Lock už běží.\n\nNajdeš ho jako ikonu "
                "v oznamovací oblasti vpravo dole u hodin (případně pod "
                "šipkou skrytých ikon).",
+
+    # --- installer and uninstaller (installer/installer.py) -------------
+    # One program serves both roles, so ins_* is shared and uni_* is only
+    # for what the uninstaller says on its own.
+    "ins_title_install": "Instalace {app}",
+    "ins_title_uninstall": "Odinstalace {app}",
+    "ins_subtitle": "Zamkne notebook, když se od něj vzdálíš s telefonem.",
+    "ins_lbl_language": "Jazyk / Language",
+    "ins_to_folder": "Program {app} se nainstaluje do složky:",
+    "ins_from_folder": "Program {app} se odinstaluje ze složky:",
+
+    # options
+    "ins_opt_startmenu": "Přidat zástupce do nabídky Start",
+    "ins_opt_desktop": "Přidat zástupce na plochu",
+    "ins_opt_autostart": "Spouštět automaticky při přihlášení",
+    "uni_opt_data": "Smazat i nastavení a historii",
+
+    # buttons
+    "ins_btn_install": "Instalovat",
+    "ins_btn_uninstall": "Odinstalovat",
+    "ins_btn_close": "Zavřít",
+    "ins_btn_finish": "Dokončit",
+
+    # progress
+    "ins_stopping": "Ukončuji běžící aplikaci…",
+    "ins_copying": "Kopíruji program…",
+    "ins_startmenu": "Vytvářím zástupce v nabídce Start…",
+    "ins_desktop": "Vytvářím zástupce na ploše…",
+    "ins_registry": "Zapisuji do seznamu aplikací…",
+    "ins_task_on": "Nastavuji spouštění při přihlášení…",
+    "ins_task_off": "Ruším spouštění při přihlášení…",
+    "ins_task_failed": "Spouštění při přihlášení se nepodařilo nastavit.",
+    "ins_checking": "Kontroluji výsledek…",
+    "ins_done": "Hotovo.",
+    "uni_shortcuts": "Odstraňuji zástupce…",
+    "uni_registry": "Mažu záznam ze seznamu aplikací…",
+    "uni_data": "Mažu nastavení a historii…",
+    "uni_files": "Odstraňuji soubory programu…",
+
+    # what did not work - the installer never reports success while
+    # something is missing
+    "ins_failed": "Nepodařilo se: {what}",
+    "uni_partial": "Hotovo, ale nešlo smazat: {what}",
+    "ins_error": "Chyba: {error}",
+    "ins_err_copy": "kopírování programu selhalo",
+    "ins_prob_startmenu": "zástupce do nabídky Start",
+    "ins_prob_desktop": "zástupce na plochu",
+    "ins_prob_program": "program se nezkopíroval",
+    "ins_prob_uninstaller": "odinstalátor",
+    "ins_prob_registry": "záznam v Nastavení → Aplikace",
+    "ins_prob_task": "spouštění při přihlášení",
+    "uni_prob_files": "soubory programu",
+
+    # result window
+    "ins_head_installed": "Nainstalováno",
+    "ins_head_uninstalled": "Odinstalováno",
+    "ins_ok_desc": "Aby hlídání fungovalo, musí vysílat i telefon — "
+                   "nainstaluj do něj přiloženou aplikaci. Postup najdeš "
+                   "v návodu.",
+    "uni_ok_desc": "{app} byl odstraněn z počítače.",
+    "uni_partial_desc": "{app} byl odstraněn, ale některé soubory se "
+                        "nepodařilo smazat. Zkus to po restartu počítače.",
+    "ins_opt_launch": "Spustit {app}",
+    "ins_opt_manual": "Otevřít návod",
+
+    # message boxes
+    "ins_msg_admin": "Spusť tento program jako správce.\n\n"
+                     "Zápis do složky Program Files to vyžaduje.",
+    "ins_msg_running": "Aplikace se nespustila, protože už běží jiná "
+                       "kopie.\n\nUkonči ji (ikona v liště → Konec) "
+                       "a spusť tuto.",
 }
 
 EN = {
@@ -294,6 +365,78 @@ EN = {
     "msg_already_running": "Da BT Dynamic Lock is already running.\n\nLook for its "
                "icon in the notification area next to the clock (it may "
                "be hidden under the arrow).",
+
+    # --- installer and uninstaller (installer/installer.py) -------------
+    # One program serves both roles, so ins_* is shared and uni_* is only
+    # for what the uninstaller says on its own.
+    "ins_title_install": "{app} setup",
+    "ins_title_uninstall": "Uninstall {app}",
+    "ins_subtitle": "Locks the laptop when you walk away with your phone.",
+    "ins_lbl_language": "Jazyk / Language",
+    "ins_to_folder": "{app} will be installed into:",
+    "ins_from_folder": "{app} will be removed from:",
+
+    # options
+    "ins_opt_startmenu": "Add a shortcut to the Start menu",
+    "ins_opt_desktop": "Add a shortcut to the desktop",
+    "ins_opt_autostart": "Start automatically on sign-in",
+    "uni_opt_data": "Delete the settings and history as well",
+
+    # buttons
+    "ins_btn_install": "Install",
+    "ins_btn_uninstall": "Uninstall",
+    "ins_btn_close": "Close",
+    "ins_btn_finish": "Finish",
+
+    # progress
+    "ins_stopping": "Stopping the running app…",
+    "ins_copying": "Copying the program…",
+    "ins_startmenu": "Creating the Start menu shortcut…",
+    "ins_desktop": "Creating the desktop shortcut…",
+    "ins_registry": "Registering in the list of apps…",
+    "ins_task_on": "Setting up the start on sign-in…",
+    "ins_task_off": "Removing the start on sign-in…",
+    "ins_task_failed": "The start on sign-in could not be set up.",
+    "ins_checking": "Checking the result…",
+    "ins_done": "Done.",
+    "uni_shortcuts": "Removing the shortcuts…",
+    "uni_registry": "Removing the entry from the list of apps…",
+    "uni_data": "Deleting the settings and history…",
+    "uni_files": "Removing the program files…",
+
+    # what did not work - the installer never reports success while
+    # something is missing
+    "ins_failed": "Could not do: {what}",
+    "uni_partial": "Done, but these could not be deleted: {what}",
+    "ins_error": "Error: {error}",
+    "ins_err_copy": "copying the program failed",
+    "ins_prob_startmenu": "the Start menu shortcut",
+    "ins_prob_desktop": "the desktop shortcut",
+    "ins_prob_program": "the program did not get copied",
+    "ins_prob_uninstaller": "the uninstaller",
+    "ins_prob_registry": "the entry in Settings → Apps",
+    "ins_prob_task": "the start on sign-in",
+    "uni_prob_files": "the program files",
+
+    # result window
+    "ins_head_installed": "Installed",
+    "ins_head_uninstalled": "Uninstalled",
+    "ins_ok_desc": "For the watching to work, the phone has to broadcast "
+                   "too — install the companion app on it. The manual "
+                   "explains how.",
+    "uni_ok_desc": "{app} has been removed from the computer.",
+    "uni_partial_desc": "{app} has been removed, but some files could not "
+                        "be deleted. Try again after restarting the "
+                        "computer.",
+    "ins_opt_launch": "Run {app}",
+    "ins_opt_manual": "Open the manual",
+
+    # message boxes
+    "ins_msg_admin": "Run this program as an administrator.\n\n"
+                     "Writing into Program Files requires it.",
+    "ins_msg_running": "The app did not start because another copy is "
+                       "already running.\n\nQuit it (tray icon → Quit) "
+                       "and start this one.",
 }
 
 

@@ -46,15 +46,28 @@ Write-Host ("  manuals: " + $manuals.Count)
 # date instead of two, and the installer stays smaller.
 
 # --- 2) the installer -------------------------------------------------
+# --paths: the installer speaks both languages out of windows\texts.py - the
+# SAME dictionary the app uses, not a copy. Without this PyInstaller does not
+# find the module and the built .exe dies on startup with ImportError.
 Write-Host "2/2  packing the installer"
 & $python -m PyInstaller `
     --noconfirm --clean --onefile --windowed --uac-admin `
     --name "DaBTDynamicLock-setup" --icon $icon `
+    --paths "$project\windows" `
     --add-data "$icon;." `
     --add-data "$build\dist\DaBTDynamicLock;program" `
     --distpath "$here" --workpath "$build\work2" --specpath "$build" `
     "$here\installer.py"
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller (installer) failed" }
+
+# Verify the shared modules really got packed - a missing one would only show
+# up when a user runs the installer, and only as a crash.
+foreach ($shared in @("texts", "marks")) {
+    if (-not (Select-String -Path "$build\work2\DaBTDynamicLock-setup\Analysis-00.toc" `
+                            -Pattern "windows..$shared.py" -Quiet)) {
+        throw "$shared.py did NOT get packed - the installer would crash on startup"
+    }
+}
 
 Remove-Item "$here\DaBTDynamicLock-setup.exe.manifest" -ErrorAction SilentlyContinue
 $mb = [math]::Round((Get-Item "$here\DaBTDynamicLock-setup.exe").Length / 1MB, 1)

@@ -35,6 +35,7 @@ from bleak import BleakScanner
 from PIL import Image, ImageDraw
 import pystray
 
+import marks
 import texts
 from texts import t as tx
 
@@ -1165,9 +1166,10 @@ class Chart:
         t.bind("<Button-1>", lambda e=None: action())
         return t
 
-    # size of the control marks - Tk draws them tiny by default (a few
-    # pixels), which looks sloppy; hence they are drawn by hand at this size
-    MARK_SIZE = 19
+    # The drawing lives in marks.py because the INSTALLER draws the same
+    # marks - one place to change, so the two cannot end up looking
+    # different.
+    MARK_SIZE = marks.SIZE
 
     def _mark(self, parent, round_mark=False):
         """A square (checkbox) or a circle (radio) - drawn by hand."""
@@ -1175,24 +1177,7 @@ class Chart:
                          bg=parent["bg"], highlightthickness=0, cursor="hand2")
 
     def _draw_mark(self, c, on, round_mark=False, hovered=False):
-        c.delete("all")
-        z = self.MARK_SIZE
-        outline = "#8fa0b5" if hovered else "#6b7684"
-        if on:
-            outline = "#7cc0ff" if hovered else "#4a9eff"
-        fill = "#2563eb" if on else "#1b2029"
-        if round_mark:
-            c.create_oval(2, 2, z - 3, z - 3, outline=outline, width=2,
-                          fill=fill)
-            if on:
-                c.create_oval(6, 6, z - 7, z - 7, outline="", fill="#ffffff")
-        else:
-            c.create_rectangle(2, 2, z - 3, z - 3, outline=outline, width=2,
-                               fill=fill)
-            if on:       # tick
-                c.create_line(5, z // 2, z // 2 - 1, z - 7, z - 6, 5,
-                              fill="#ffffff", width=2, capstyle="round",
-                              joinstyle="round")
+        marks.draw(c, on, round_mark, hovered)
 
     def _option(self, parent, text, on, action, round_mark=False,
                 color="#d7dde5"):

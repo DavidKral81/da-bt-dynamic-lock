@@ -13,6 +13,9 @@ Usage:
     py tests/preview.py 900          # narrow window - checks the
                                      # single-column layout
     py tests/preview.py 1400 en      # the English version
+    py tests/preview.py installer    # the installer and uninstaller windows,
+                                     # both languages - they are the FIRST
+                                     # thing a user ever sees
 """
 import ctypes
 import pathlib
@@ -97,8 +100,33 @@ def _capture(window, path):
 OUTPUT = pathlib.Path(__file__).resolve().parent.parent / "_output"
 
 
+def preview_installer():
+    """Shoot all four installer windows: both roles times both languages.
+
+    The installer is the first thing anyone sees of this project, so it gets
+    looked at the same way the app does. Windows are built one at a time and
+    destroyed - two live tk.Tk instances in one process fight over the event
+    loop.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "installer"))
+    import installer
+
+    for language in ("cs", "en"):
+        for uninstalling, role in ((False, "install"), (True, "uninstall")):
+            installer.texts.set_language(language)
+            window = installer.Window(uninstalling)
+            window.r.update()
+            time.sleep(0.4)
+            name = f"preview-{role}-{language}.png"
+            print(f"{name}: {_capture(window.r, OUTPUT / name)}")
+            window.r.destroy()
+
+
 def main():
     OUTPUT.mkdir(exist_ok=True)
+    if len(sys.argv) > 1 and sys.argv[1] == "installer":
+        preview_installer()
+        return
     width = int(sys.argv[1]) if len(sys.argv) > 1 else 1400
     if len(sys.argv) > 2:                    # second parameter = language
         D.texts.set_language(sys.argv[2])
