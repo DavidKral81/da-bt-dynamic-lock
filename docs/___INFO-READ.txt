@@ -337,7 +337,7 @@ AFTER INSTALLATION
 
   C:\Program Files\Da BT Dynamic Lock
       DaBTDynamicLock.exe  the application
-      odinstalovat.exe     the uninstaller
+      uninstall.exe        the uninstaller
       config.default.json  default settings for new users
       ___INFO-READ.txt     this manual
       ___INFO-ČTI.txt      the manual in Czech
@@ -352,6 +352,9 @@ IN THE PROJECT FOLDER (source code)
 
   windows\dyn_lock.py      the application
   windows\texts.py         all texts in Czech and English
+                           (the installer uses them too)
+  windows\marks.py         drawing of the checkboxes and radio marks
+                           (shared by the app and the installer)
   windows\icons\           application icons
   tests\test_logic.py      decision tests - run after any change
   tests\test_window.py     window tests (device list, scrolling,

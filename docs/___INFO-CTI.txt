@@ -320,7 +320,7 @@ PO INSTALACI
 
   C:\Program Files\Da BT Dynamic Lock
       DaBTDynamicLock.exe  aplikace
-      odinstalovat.exe     odinstalátor
+      uninstall.exe        odinstalátor
       config.default.json  výchozí nastavení pro nové uživatele
       ___INFO-ČTI.txt      tento návod
       ___INFO-READ.txt     návod v angličtině
@@ -335,6 +335,9 @@ VE SLOŽCE PROJEKTU (zdrojový kód)
 
   windows\dyn_lock.py      aplikace
   windows\texts.py         všechny texty česky i anglicky
+                           (používá je i instalátor)
+  windows\marks.py         kresba zaškrtávátek a přepínačů
+                           (sdílí ji aplikace i instalátor)
   windows\icons\           ikony aplikace
   tests\test_logic.py      testy rozhodování - spustit po úpravě
   tests\test_window.py     testy okna (seznam zařízení, posouvání,

@@ -9,6 +9,7 @@ entry, the final check and the cleanup during uninstallation.
 Run:  py tests/test_installer.py
 """
 
+import json
 import os
 import tempfile
 import shutil
@@ -188,18 +189,59 @@ try:
           I.is_uninstall([], r"C:\x\DaBTDynamicLock-setup.exe"))
     check("setup.exe with an argument = uninstall", True,
           I.is_uninstall(["--uninstall"], r"C:\x\DaBTDynamicLock-setup.exe"))
-    check("odinstalovat.exe double-clicked = uninstall", True,
+    check("uninstall.exe double-clicked = uninstall", True,
+          I.is_uninstall([],
+                         r"C:\Program Files\Da BT Dynamic Lock\uninstall.exe"))
+    check("uninstall.exe from Settings = uninstall", True,
+          I.is_uninstall(["--uninstall"],
+                         r"C:\Program Files\Da BT Dynamic Lock\uninstall.exe"))
+    # An installation made by an earlier build has the Czech name on disk and
+    # the Czech switch in the registry. Both have to keep working, otherwise
+    # such an installation could no longer be removed.
+    check("the old odinstalovat.exe still works", True,
           I.is_uninstall([],
                          r"C:\Program Files\Da BT Dynamic Lock\odinstalovat.exe"))
-    check("odinstalovat.exe from Settings = uninstall", True,
-          I.is_uninstall(["--uninstall"],
-                         r"C:\Program Files\Da BT Dynamic Lock\odinstalovat.exe"))
-    # an installation made by an older build has the Czech switch stored in
-    # the registry - it has to keep working
     check("the old --odinstalovat switch still works", True,
           I.is_uninstall(["--odinstalovat"], r"C:\x\DaBTDynamicLock-setup.exe"))
 
-    print("\n8) UNINSTALL (deleting the settings)")
+    print("\n8) LANGUAGE")
+    # The installer is bilingual; without these checks nothing would notice a
+    # broken translation or a language that fails to reach the app.
+    I.texts.set_language("en")
+    I.install(task=False, start_menu=False, desktop=False, report=report)
+    check("the language is stored for the uninstaller", "en",
+          I.stored_language())
+    shipped = json.loads(
+        (I.TARGET_DIR / "config.default.json").read_text(encoding="utf-8"))
+    check("the app inherits the chosen language", "en", shipped.get("language"))
+    check("progress is reported in English", "Done.", I.tx("ins_done"))
+    I.texts.set_language("cs")
+    check("and in Czech after switching back", "Hotovo.", I.tx("ins_done"))
+
+    print("\n9) THE UNINSTALLER FILE")
+    # install() only copies itself as the uninstaller when frozen, so this
+    # branch never runs from source - a wrong file name would stay invisible
+    # until a real installation. Pretending to be frozen forces it.
+    fake_exe = TEMP_DIR / "DaBTDynamicLock-setup.exe"
+    fake_exe.write_bytes(b"stand-in for the packaged installer")
+    real_source, real_executable = I.program_source(), sys.executable
+    I.program_source = lambda: real_source     # _MEIPASS does not exist here
+    sys.frozen, sys.executable = True, str(fake_exe)
+    try:
+        I.install(task=False, start_menu=False, desktop=False, report=report)
+        check("the uninstaller is created under the English name", True,
+              (I.TARGET_DIR / "uninstall.exe").exists())
+        check("the old Czech name is not used any more", False,
+              (I.TARGET_DIR / "odinstalovat.exe").exists())
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, I.REG_KEY) as k:
+            uninstall_string = winreg.QueryValueEx(k, "UninstallString")[0]
+        check("UninstallString points at that file", True,
+              "uninstall.exe" in uninstall_string)
+    finally:
+        del sys.frozen
+        sys.executable = real_executable
+
+    print("\n10) UNINSTALL (deleting the settings)")
     I.install(task=False, start_menu=False, desktop=False, report=report)
     I.uninstall(delete_data=True, report=report)
     check("settings deleted", False, I.DATA.exists())

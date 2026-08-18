@@ -4,7 +4,7 @@ Installer and uninstaller for Da BT Dynamic Lock.
 One program for both roles:
   no arguments   -> install
   --uninstall    -> uninstall (during installation this copy is saved into
-                    the program folder as odinstalovat.exe)
+                    the program folder as uninstall.exe)
 
 What the installation does:
   1. copies the program into  C:\\Program Files\\Da BT Dynamic Lock
@@ -53,6 +53,11 @@ VERSION = "1.0"
 # windows/dyn_lock.py - when the two drift apart, the installer stops
 # noticing a running app and reinstalls over it.
 MUTEX_NAME = "DaBTDynamicLock_single_instance"
+
+# The uninstaller is a copy of this program left in the program folder. The
+# name is a constant because three places have to agree on it: what gets
+# copied, what UninstallString points at, and what is_uninstall recognises.
+UNINSTALLER_NAME = "uninstall.exe"
 
 BACKGROUND = "#151920"
 CARD = "#1c222c"
@@ -307,7 +312,7 @@ def install(task, start_menu, desktop, report):
 
     # the uninstaller = a copy of this program
     if getattr(sys, "frozen", False):
-        shutil.copy2(sys.executable, TARGET_DIR / "odinstalovat.exe")
+        shutil.copy2(sys.executable, TARGET_DIR / UNINSTALLER_NAME)
 
     exe = TARGET_DIR / "DaBTDynamicLock.exe"
     problems = []
@@ -348,7 +353,7 @@ def install(task, start_menu, desktop, report):
                 ("DisplayIcon", str(exe)),
                 ("InstallLocation", str(TARGET_DIR)),
                 ("UninstallString",
-                 f'"{TARGET_DIR / "odinstalovat.exe"}" --uninstall'),
+                 f'"{TARGET_DIR / UNINSTALLER_NAME}" --uninstall'),
                 ("URLInfoAbout", ""),
                 # not a Windows value - it is how the uninstaller knows which
                 # language to speak when it runs a year from now
@@ -374,7 +379,7 @@ def install(task, start_menu, desktop, report):
     report(tx("ins_checking"))
     if not exe.exists():
         problems.append(tx("ins_prob_program"))
-    if not (TARGET_DIR / "odinstalovat.exe").exists() \
+    if not (TARGET_DIR / UNINSTALLER_NAME).exists() \
             and getattr(sys, "frozen", False):
         problems.append(tx("ins_prob_uninstaller"))
     try:
@@ -400,7 +405,7 @@ def delete_after_exit(path, wait_for_pid):
     The uninstaller runs FROM that folder, so it cannot delete it itself.
     Originally it waited a fixed 3 seconds - but the window stays open until
     the user closes it, so the deletion ran while it was still going and the
-    folder, odinstalovat.exe included, stayed behind. Now it waits for the
+    folder, uninstall.exe included, stayed behind. Now it waits for the
     REAL end of the process and the deletion is retried.
     """
     if wait_for_pid is None:
@@ -696,15 +701,17 @@ def is_uninstall(argv, file_name):
 
     Either the argument OR the file name decides. The name is here because
     uninstalling from Windows Settings does pass the argument, but when the
-    user runs odinstalovat.exe by double-clicking it, no argument arrives -
-    and without this check the INSTALLATION would start (and fail, because it
-    runs from the very folder it would be overwriting).
+    user runs uninstall.exe by double-clicking it, no argument arrives - and
+    without this check the INSTALLATION would start (and fail, because it runs
+    from the very folder it would be overwriting).
 
-    Both switch spellings are accepted: an installation made by an older
-    build has the Czech one stored in the registry under UninstallString.
+    The old Czech name and switch are still recognised: an installation made
+    by an earlier build has "odinstalovat.exe" on disk and the Czech switch in
+    the registry, and it still has to be possible to uninstall it.
     """
+    name = Path(file_name).name.lower()
     return ("--uninstall" in argv or "--odinstalovat" in argv
-            or Path(file_name).name.lower().startswith("odinstal"))
+            or name.startswith("uninstall") or name.startswith("odinstal"))
 
 
 # ------------------------------------------------------- result window
