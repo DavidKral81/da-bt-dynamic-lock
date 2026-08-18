@@ -3,14 +3,22 @@
   Zamkne notebook, když se od něj vzdálíš s telefonem.
 ================================================================
 
-Náhrada za vestavěný "Dynamický zámek" ve Windows, který zamyká
-pozdě a nedá se nastavit.
+Náhrada za vestavěný "Dynamický zámek" ve Windows, který není
+spolehlivý a nenabízí žádné možnosti nastavení.
 
 Skládá se ze dvou částí:
   1. aplikace v notebooku  - poslouchá a zamyká
   2. aplikace v telefonu   - vysílá bluetooth signál
 
-Obě jsou potřeba. Bez vysílání z telefonu nemá notebook co poslouchat.
+U telefonu jsou potřeba obě. Telefon sám od sebe skoro nevysílá,
+takže by notebook neměl co poslouchat.
+
+Místo telefonu jde hlídat i jiné zařízení, a to bez instalace
+čehokoli - ale jen takové, které samo trvale vysílá přes
+Bluetooth LE (maják, fitness náramek, hodinky). Nic se nepáruje:
+notebook jen poslouchá, co je ve vzduchu. Klasická bluetooth
+příslušenství proto není slyšet vůbec a většina příslušenství
+ztichne, jakmile se k něčemu připojí.
 
 Aplikace umí jen ZAMKNOUT. Odemknout ne - Windows to programům
 třetích stran nedovolují. Po návratu se přihlásíš PINem nebo otiskem.
@@ -88,8 +96,8 @@ V NOTEBOOKU (Windows)
   4. Spusť Da BT Dynamic Lock. Aplikace nemá okno, běží jako zelená
      ikona vpravo dole u hodin.
   5. Klepni na ikonu. Otevře se okno aplikace → záložka "Nastavení"
-     → v sekci "Který telefon hlídat" vyber svůj telefon.
-     (Totéž jde i pravým klikem na ikonu → "Sledovaný telefon".)
+     → v sekci "Které zařízení hlídat" vyber svůj telefon.
+     (Totéž jde i pravým klikem na ikonu → "Sledované zařízení".)
 
   Hotovo. Odejdi s telefonem a notebook se do 45 sekund zamkne.
 
@@ -108,7 +116,7 @@ GRAF
 NASTAVENÍ
     Všechno, co jde nastavit, pohromadě:
 
-    Který telefon hlídat
+    Které zařízení hlídat
         Zařízení, která jsou právě slyšet, i se sílou signálu.
         Vybraný telefon je zeleně. Když je zrovna mimo dosah,
         zůstane v seznamu s poznámkou "není slyšet".
@@ -160,7 +168,7 @@ Nabídka umí totéž co okno - je to zkratka pro rychlou změnu bez
 otevírání okna. Položky se jmenují stejně jako v nastavení:
 
   Graf signálu
-  Sledovaný telefon …
+  Sledované zařízení …
   ---
   Automatické zamykání aktivní
   Nezamykat při aktivitě uživatele (myš, klávesnice)

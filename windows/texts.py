@@ -47,7 +47,7 @@ CS = {
     "tab_settings": "Nastavení",
 
     # --- settings: which phone ----------------------------------------
-    "card_phone": "Který telefon hlídat",
+    "card_phone": "Které zařízení hlídat",
     "card_phone_desc": "Vyber zařízení, podle kterého se pozná, že jsi "
                        "u počítače. Seznam se plní tím, co je právě slyšet.",
     "dev_none_heard": "(zatím nic není slyšet — chvíli to trvá)",
@@ -129,7 +129,7 @@ CS = {
 
     # --- notification area --------------------------------------------
     "tray_chart": "Graf signálu",
-    "tray_phone": "Sledovaný telefon …",
+    "tray_phone": "Sledované zařízení …",
     "tray_time": "Uzamknout po … bez signálu",
     "tray_countdown": "Odpočet se ukáže …",
     "tray_sensitivity": "Citlivost (dosah)",
@@ -248,7 +248,7 @@ EN = {
     "tab_settings": "Settings",
 
     # --- settings: phone ----------------------------------------------
-    "card_phone": "Which phone to watch",
+    "card_phone": "Which device to watch",
     "card_phone_desc": "Pick the device that tells the computer you are "
                        "nearby. The list fills up with whatever is heard.",
     "dev_none_heard": "(nothing heard yet — give it a moment)",
@@ -330,7 +330,7 @@ EN = {
 
     # --- notification area --------------------------------------------
     "tray_chart": "Signal chart",
-    "tray_phone": "Watched phone …",
+    "tray_phone": "Watched device …",
     "tray_time": "Lock after … without a signal",
     "tray_countdown": "Countdown shows …",
     "tray_sensitivity": "Sensitivity (range)",

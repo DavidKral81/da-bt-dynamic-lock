@@ -4,14 +4,22 @@
 ================================================================
 
 A replacement for the built-in "Dynamic Lock" in Windows, which
-locks late and cannot be configured.
+is unreliable and gives you nothing to set up.
 
 It comes in two parts:
   1. app on the computer  - listens and locks
   2. app on the phone     - broadcasts a bluetooth signal
 
-You need both. Without the phone broadcasting, the computer has
-nothing to listen to.
+For a phone you need both. A phone broadcasts almost nothing on
+its own, so the computer would have nothing to listen to.
+
+You can watch a different device instead, with nothing installed
+on it - but only one that keeps broadcasting on Bluetooth LE by
+itself, such as a beacon, a fitness band or a watch. Nothing is
+ever paired: the computer only listens to what is in the air.
+Classic bluetooth accessories are therefore never heard at all,
+and most accessories go quiet as soon as they connect to
+something.
 
 The app can only LOCK. It cannot unlock - Windows does not allow
 that to third-party programs. When you come back, sign in with
@@ -90,8 +98,8 @@ ON THE COMPUTER (Windows)
   4. Start Da BT Dynamic Lock. It has no window of its own; it
      runs as a green icon near the clock.
   5. Click the icon. The app window opens → the "Settings" tab →
-     pick your phone under "Which phone to watch".
-     (You can also right-click the icon → "Watched phone".)
+     pick your phone under "Which device to watch".
+     (You can also right-click the icon → "Watched device".)
 
   Done. Walk away with the phone and the computer locks within
   45 seconds.
@@ -111,7 +119,7 @@ CHART
 SETTINGS
     Everything you can change, in one place:
 
-    Which phone to watch
+    Which device to watch
         Devices that can be heard right now, with their signal
         strength. The selected phone is green. If it is out of
         range at the moment, it stays in the list marked
@@ -166,7 +174,7 @@ for a quick change without opening the window. The items are
 named exactly as in the settings:
 
   Signal chart
-  Watched phone …
+  Watched device …
   ---
   Automatic locking on
   Do not lock while the user is active (mouse, keyboard)

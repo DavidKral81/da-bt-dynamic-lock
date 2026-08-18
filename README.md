@@ -1,15 +1,32 @@
 # Da BT Dynamic Lock
 
-Locks your Windows computer when you walk away with your phone — reliably,
-and within seconds rather than minutes.
+A replacement for the **Dynamic Lock** feature built into Windows, which is
+unreliable and gives you nothing to set up.
 
-A replacement for the **Dynamic Lock** feature built into Windows, which locks
-late, cannot be tuned, and whose own report of whether it is working is not
-something you can rely on.
+Da BT Dynamic Lock locks your Windows computer when you walk away with your
+phone — or with another Bluetooth LE device you pick — reliably, and on
+conditions you choose yourself.
 
 ---
 
-## Why it needs a phone app
+## Which device it can watch
+
+Nothing is paired and nothing is connected: the computer only **listens for
+Bluetooth LE advertisements** in the air, and you pick one of the devices it
+can hear. That leaves two conditions for anything you might want to watch:
+
+- **It has to be Bluetooth LE.** Classic Bluetooth accessories never show up
+  in the list, no matter how they are paired with Windows.
+- **It has to keep broadcasting.** Most accessories go quiet the moment they
+  connect to something, and a phone on its own is nearly silent — see below.
+
+A beacon, a fitness band or a watch that advertises continuously works
+without anything installed. **A phone does not**, which is what the phone app
+is for.
+
+---
+
+## Why a phone needs the phone app
 
 Windows locks when it stops hearing your phone. The catch is that **Android
 barely broadcasts anything on its own** — measured on a stock phone lying
@@ -85,7 +102,7 @@ yours will differ, which is exactly why the settings exist.
 The app runs as an icon near the clock. Clicking it opens a window with a live
 signal chart and all the settings:
 
-- **which phone to watch** — picked from whatever is currently heard
+- **which device to watch** — picked from whatever is currently heard
 - **when to lock** — 12 to 120 seconds of silence
 - **range (sensitivity)** — optionally require a minimum signal strength
 - **countdown** before locking (information only, it cannot be cancelled)

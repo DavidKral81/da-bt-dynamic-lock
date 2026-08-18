@@ -1003,7 +1003,6 @@ class Chart:
 
         # --- 1. phone --------------------------------------------------
         card = self._card(column, tx("card_phone"), tx("card_phone_desc"))
-        self.target_var = tk.StringVar(value=CFG.get("target", ""))
         self.devices_frame = tk.Frame(card, bg="#151920")
         self.devices_frame.pack(fill="x", pady=(2, 0))
 
