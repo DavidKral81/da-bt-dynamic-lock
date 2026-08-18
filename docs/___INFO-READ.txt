@@ -1,0 +1,436 @@
+================================================================
+  DA BT DYNAMIC LOCK
+  Locks your computer when you walk away with your phone.
+================================================================
+
+A replacement for the built-in "Dynamic Lock" in Windows, which
+locks late and cannot be configured.
+
+It comes in two parts:
+  1. app on the computer  - listens and locks
+  2. app on the phone     - broadcasts a bluetooth signal
+
+You need both. Without the phone broadcasting, the computer has
+nothing to listen to.
+
+The app can only LOCK. It cannot unlock - Windows does not allow
+that to third-party programs. When you come back, sign in with
+your PIN or fingerprint.
+
+CONTENTS
+
+   1. INSTALLATION
+   2. QUICK START
+   3. THE APP WINDOW (CHART AND SETTINGS)
+   4. THE ICON IN THE NOTIFICATION AREA
+   5. SIGNAL CHART
+   6. SENSITIVITY (RANGE)
+   7. WARNING WHEN THE PHONE DISAPPEARS
+   8. STARTING AFTER SIGN-IN
+   9. WHEN SOMETHING DOES NOT WORK
+  10. SETTINGS IN THE FILE
+  11. FILES
+  12. THE PHONE APP
+  13. FOR DEVELOPERS
+
+
+
+----------------------------------------------------------------
+  1. INSTALLATION
+----------------------------------------------------------------
+
+Run  instalace\DaBTDynamicLock-setup.exe  (it asks for
+administrator rights).
+
+It offers three options:
+  - add a shortcut to the Start menu
+  - add a shortcut to the desktop
+  - start automatically after sign-in
+
+Where things are stored:
+
+  program                   C:\Program Files\Da BT Dynamic Lock
+  settings, log, history    %APPDATA%\Da BT Dynamic Lock
+
+The program is shared by everyone on the computer; the settings
+belong to each user separately. Automatic start applies only to
+the user who turned it on.
+
+UNINSTALLING
+
+Settings → Apps → Installed apps → Da BT Dynamic Lock.
+This removes the program, the shortcuts and the scheduled task.
+By default it does NOT delete your settings and history - there
+is a separate checkbox for that, so reinstalling keeps your data.
+
+
+
+----------------------------------------------------------------
+  2. QUICK START
+----------------------------------------------------------------
+
+ON THE PHONE (Android)
+
+  1. Copy  telefon\DaBTDynamicLock.apk  to the phone and open it.
+     Allow installation from this source.
+  2. Start the app and tap "Turn broadcasting on".
+     Allow the "Nearby devices" and "Notifications" permissions.
+  3. Settings → Apps → Da BT Dynamic Lock:
+       - battery: unrestricted
+       - autostart: on
+     (on Xiaomi phones autostart lives in the Security app)
+
+  You are done when the app shows a green "Broadcasting".
+
+ON THE COMPUTER (Windows)
+
+  4. Start Da BT Dynamic Lock. It has no window of its own; it
+     runs as a green icon near the clock.
+  5. Click the icon. The app window opens → the "Settings" tab →
+     pick your phone under "Which phone to watch".
+     (You can also right-click the icon → "Watched phone".)
+
+  Done. Walk away with the phone and the computer locks within
+  45 seconds.
+
+
+
+----------------------------------------------------------------
+  3. THE APP WINDOW (CHART AND SETTINGS)
+----------------------------------------------------------------
+
+Click the icon in the notification area. The window has two tabs.
+
+CHART
+    Signal strength over time, from 2 minutes up to 1 day. The
+    legend is right there in the window. See section 5.
+
+SETTINGS
+    Everything you can change, in one place:
+
+    Which phone to watch
+        Devices that can be heard right now, with their signal
+        strength. The selected phone is green. If it is out of
+        range at the moment, it stays in the list marked
+        "not heard".
+
+    When to lock
+        Automatic locking on           the main switch
+        Lock after                     12 s to 120 s (default 45 s)
+        Range (sensitivity)            see section 6
+        Show a countdown before locking
+                                       a small "Locking in X s"
+                                       window in the middle of the
+                                       screen; information only, it
+                                       cannot cancel the lock
+        Do not lock while the user is active (mouse, keyboard)
+                                       CAREFUL: anyone at the desk
+                                       can postpone locking this
+                                       way, so it is off by default
+
+    Application behaviour
+        Start after signing in to Windows   see section 8
+        Language                            Czech / English;
+                                            switches immediately,
+                                            including the icon menu
+
+    When the phone disappears   see section 7
+    Pause for a while           watching turns off for the chosen
+                                time and then turns itself back on
+
+    At the bottom there are links to the phone app and to this
+    manual, and a "Quit application" button.
+
+The window remembers its size. When it is wide, the settings
+split into two columns by themselves.
+
+
+
+----------------------------------------------------------------
+  4. THE ICON IN THE NOTIFICATION AREA
+----------------------------------------------------------------
+
+Icon colour:
+  green   the phone is heard, watching is active
+  orange  the countdown to locking is running
+  grey    off, paused, or already locked
+
+LEFT click   opens the app window
+RIGHT click  opens the menu
+
+The menu does the same things as the window - it is a shortcut
+for a quick change without opening the window. The items are
+named exactly as in the settings:
+
+  Signal chart
+  Watched phone …
+  ---
+  Automatic locking on
+  Do not lock while the user is active (mouse, keyboard)
+  Start after signing in to Windows
+  ---
+  Lock after … without a signal     12 s to 120 s (default 45 s)
+  Countdown shows …                 do not show, or 5 s to 30 s ahead
+  Sensitivity (range)               see section 6
+  Warn when the phone disappears …  see section 7
+  ---
+  Pause watching …                  5 minutes to 2 days
+  Cancel the pause                  (only while watching is paused)
+  Quit
+
+
+
+----------------------------------------------------------------
+  5. SIGNAL CHART
+----------------------------------------------------------------
+
+The "Chart" tab in the app window. Ranges from 2 minutes to
+1 day; the legend is in the window. The history survives both an
+app restart and a computer restart. Time when the app was not
+running is marked separately and does not count as a lost signal.
+
+What it is good for: it tells two different problems apart.
+
+  Curve low                 weak signal - distance, pocket, body
+  Curve high but full of    something else is interfering with
+  gaps                      reception - a bluetooth mouse,
+                            keyboard, Wi-Fi
+  Grey dots                 the signal did arrive, but it is below
+                            the sensitivity threshold, so it does
+                            not count
+
+
+
+----------------------------------------------------------------
+  6. SENSITIVITY (RANGE)
+----------------------------------------------------------------
+
+This decides how weak a signal still counts as "you are at the
+desk".
+
+  Off          locks only when the signal disappears (default)
+  -100 to -85  longer range, locks later
+  -80 to -60   shorter range, locks sooner
+
+Measured at a desk: phone in a pocket -81 to -83 dBm, phone on
+the desk -73 dBm. So -80 and above is stronger than a normal
+pocket signal and will start locking even while you sit still.
+
+Distance in metres CANNOT be set. The difference between "at the
+desk" and "three metres away" is 2 dB, which is less than the
+natural fluctuation of the signal. The whole thing works because
+a phone in a pocket has a signal so weak that a wall cuts it off
+completely - the edge of the room is also the edge of the signal.
+
+
+
+----------------------------------------------------------------
+  7. WARNING WHEN THE PHONE DISAPPEARS
+----------------------------------------------------------------
+
+After the chosen time without a signal (10 minutes by default)
+a notification appears.
+
+It covers a silent failure: when the phone stops broadcasting,
+the computer locks once and then waits for the phone to show up
+again. Until then it is NOT watching, but it looks as if it is.
+
+
+
+----------------------------------------------------------------
+  8. STARTING AFTER SIGN-IN
+----------------------------------------------------------------
+
+Turn it on during installation, later in the icon menu ("Start
+after signing in to Windows"), or in the app window under
+"Application behaviour". All three do the same thing.
+
+It creates a task in Task Scheduler with these settings:
+  - starts 30 seconds after sign-in (bluetooth needs a moment)
+  - restart on failure: after 1 minute, at most 3 times
+  - no run-time limit (otherwise Windows would stop it after
+    3 days)
+  - runs on battery too
+
+The app CANNOT run as a Windows service - services run in
+a separate session with no access to the desktop, and cannot
+lock the screen from there.
+
+If the user is not allowed to create scheduled tasks, a fallback
+is used: a shortcut in the Startup folder. That can only start
+the app plainly, with no delay and no restart after a crash.
+The log says which of the two was used.
+
+
+
+----------------------------------------------------------------
+  9. WHEN SOMETHING DOES NOT WORK
+----------------------------------------------------------------
+
+Start with  dyn_lock.log  in the data folder - it records when
+the phone was seen, when it disappeared and why it locked.
+
+  It locks while I am sitting at the desk
+      Check that the phone app is broadcasting. If it is, then
+      reception is poor - see the chart and the note below.
+
+  It never locks
+      "Telefon poprve spatren" is missing from the log → pick the
+      right phone in the settings (or in the icon menu).
+
+  I cannot see the icon
+      It is hidden under the arrow next to the clock.
+
+  The app will not start twice
+      That is correct - the second attempt only says it is
+      already running.
+
+
+WHY THE DEFAULT IS 45 SECONDS AND NOT 20
+
+There is only one bluetooth radio in the computer and it has to
+serve the mouse and the keyboard while listening for the phone.
+Measured while sitting at the desk:
+
+  phone on the desk, mouse on    177 signals/min, gaps up to 3 s
+  phone in pocket, mouse off      84 signals/min, gaps up to 9 s
+  phone in pocket, mouse on       20 signals/min, gaps up to 20 s
+
+A pocket costs about 10 dB, and a bluetooth mouse eats roughly
+three quarters of the signals that get through. Either one alone
+is bearable; together they push reception below a usable level.
+
+Three ways to make it faster:
+  - move the mouse and keyboard to their own USB receivers
+  - turn the Wi-Fi radio off (it shares the antenna with
+    bluetooth)
+  - carry the phone in the pocket closer to the computer
+
+
+
+----------------------------------------------------------------
+ 10. SETTINGS IN THE FILE
+----------------------------------------------------------------
+
+The file  config.json  in the data folder
+(%APPDATA%\Da BT Dynamic Lock). Most things are easier to change
+in the app window; only these are edited in the file directly,
+and the app has to be restarted afterwards:
+
+  threshold_window_s   over how many seconds the signal is smoothed
+  countdown_vertical   vertical position of the countdown window
+                       (0.33 = one third from the top, 0.5 = middle)
+  scanner_restart_s    how often to restart reception as a precaution
+  silence_watchdog_s   after how long a silence to restart reception
+  log                  write events to dyn_lock.log
+  language             "cs" or "en" (also switchable in the settings)
+
+The remaining keys match the items in the settings.
+
+
+
+----------------------------------------------------------------
+ 11. FILES
+----------------------------------------------------------------
+
+AFTER INSTALLATION
+
+  C:\Program Files\Da BT Dynamic Lock
+      DaBTDynamicLock.exe  the application
+      odinstalovat.exe     the uninstaller
+      config.default.json  default settings for new users
+      ___INFO-READ.txt     this manual
+      ___INFO-ČTI.txt      the manual in Czech
+
+  %APPDATA%\Da BT Dynamic Lock
+      config.json          your settings
+      dyn_lock.log         event log (at 2 MB it is moved aside
+                           as dyn_lock.log.1)
+      history.json         signal history for the chart
+
+IN THE PROJECT FOLDER (source code)
+
+  windows\dyn_lock.py      the application
+  windows\texts.py         all texts in Czech and English
+  windows\icons\           application icons
+  tests\test_logic.py      decision tests - run after any change
+  tests\test_window.py     window tests (device list, scrolling,
+                           language)
+  tests\test_installer.py  the full install/uninstall cycle
+  tests\preview.py         renders the window to PNG to check the look
+  tools\ble_scan.py        diagnostics: what can be heard nearby
+  tools\track.py           diagnostics: following a single device
+  tools\analyze.py         evaluation of measurements from track.py
+  tools\make_icons.py      icon generator
+  docs\                    these manuals
+  installer\               the installer and how to build it
+  phone\                   the Android app, its source and signing key
+  start.bat                run from source
+  _output\                 tool output (previews, reports)
+  _android-build\          only downloaded tools (~1 GB), nothing
+                           important, can be deleted any time
+
+
+
+----------------------------------------------------------------
+ 12. THE PHONE APP
+----------------------------------------------------------------
+
+It broadcasts a bluetooth signal carrying the phone's name.
+Compared to general tools such as nRF Connect it can also:
+  - start broadcasting after the phone is switched on
+  - pick itself up as soon as bluetooth comes back (after
+    aeroplane mode)
+
+It has no internet permission, so it cannot send anything
+anywhere. Its only permissions are: broadcast over bluetooth,
+run in the foreground, start at boot, show notifications.
+
+The language is switched with the small flags in the top right corner
+(Czech / English).
+
+The broadcasting interval can be set in the app:
+  Fast 100 ms      best response (default)
+  Medium 250 ms    slightly slower response
+  Saving 1 s       slowest, risk of false locking
+
+Battery use is negligible with all three in practice - verified over
+normal daily use. Broadcasting is a short signal, not a data transfer.
+
+CAREFUL: the file  phone\signing-key-DO-NOT-DELETE.jks  must not
+be deleted. Without it the phone app cannot be updated and would
+have to be uninstalled and installed again. Details are in
+signing-key-README.txt next to it.
+
+
+
+----------------------------------------------------------------
+ 13. FOR DEVELOPERS
+----------------------------------------------------------------
+
+RUNNING FROM SOURCE
+
+    start.bat                 normally
+    start.bat --dry-run       without actually locking; can run
+                              alongside the installed version
+
+When run from source the app keeps its data next to itself, not
+in %APPDATA% - so the development and installed versions do not
+share settings.
+
+BUILDING THE INSTALLER
+
+    powershell -ExecutionPolicy Bypass -File
+        "...\Da BT Dynamic Lock\instalace\sestav_instalacku.ps1"
+
+It packs both the application and the installer into a single
+DaBTDynamicLock-setup.exe.
+
+BUILDING THE PHONE APP
+
+    powershell -ExecutionPolicy Bypass -File
+        "...\Da BT Dynamic Lock\telefon\sestav.ps1"
+
+The source code is in  telefon\zdrojovy-kod\ , and the finished
+APK appears directly in  telefon\ . It needs neither the internet
+nor Android Studio, only the tools in the _android-build folder.

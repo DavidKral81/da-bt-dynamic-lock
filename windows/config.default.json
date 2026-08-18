@@ -1,0 +1,48 @@
+{
+  "_about": "Default settings shipped with Da BT Dynamic Lock. Your own settings live in %APPDATA%\\Da BT Dynamic Lock\\config.json. Restart the app after editing.",
+
+  "target": "",
+  "_target": "How to recognise the phone: part of the name it broadcasts, or a MAC address. Empty = pick it in the app.",
+
+  "silence_s": 45,
+  "_silence_s": "Seconds without a signal before locking. Measured: a phone in a pocket plus a Bluetooth mouse leaves gaps up to 20 s, so anything below ~30 s causes false locks.",
+
+  "active": true,
+  "_active": "Master switch. Can also be toggled from the icon near the clock.",
+
+  "countdown": true,
+  "_countdown": "Small countdown window before locking. Information only - it cannot cancel the lock.",
+
+  "countdown_from_s": 15,
+  "_countdown_from_s": "How many seconds before locking the countdown appears.",
+
+  "countdown_vertical": 0.33,
+  "_countdown_vertical": "Vertical position of the countdown window. 0.33 = one third from the top, 0.5 = middle of the screen. Horizontally it is always centred.",
+
+  "rssi_threshold": null,
+  "_rssi_threshold": "Range (sensitivity). null = off, only a complete loss of signal counts. A number (e.g. -86) means a weaker signal no longer counts as 'at the desk', so it locks sooner. Measured: -81 dBm at the desk, -83 dBm three metres away.",
+
+  "threshold_window_s": 6,
+  "_threshold_window_s": "Over how many seconds the signal strength is smoothed (median). Shorter = faster reaction, more noise.",
+
+  "idle_guard": false,
+  "_idle_guard": "Do not lock while the keyboard or mouse is in use. CAREFUL: anyone at the desk can postpone locking this way.",
+
+  "idle_guard_s": 15,
+  "_idle_guard_s": "How long the user must be idle before that guard stops blocking.",
+
+  "scanner_restart_s": 120,
+  "_scanner_restart_s": "How often to restart the Bluetooth scanner as a precaution. A long-running scanner in Windows gradually goes deaf.",
+
+  "silence_watchdog_s": 45,
+  "_silence_watchdog_s": "After this much silence, restart the scanner - the phone may be fine and the receiver stuck.",
+
+  "alert_no_signal_min": 10,
+  "_alert_no_signal_min": "After how many minutes without a signal to warn that watching has stopped working. 0 = never warn.",
+
+  "language": "cs",
+  "_language": "Interface language: 'cs' or 'en'. Can also be switched in the app.",
+
+  "log": true,
+  "_log": "Write events to dyn_lock.log in the data folder."
+}

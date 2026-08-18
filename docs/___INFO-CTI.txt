@@ -1,0 +1,415 @@
+================================================================
+  DA BT DYNAMIC LOCK
+  Zamkne notebook, když se od něj vzdálíš s telefonem.
+================================================================
+
+Náhrada za vestavěný "Dynamický zámek" ve Windows, který zamyká
+pozdě a nedá se nastavit.
+
+Skládá se ze dvou částí:
+  1. aplikace v notebooku  - poslouchá a zamyká
+  2. aplikace v telefonu   - vysílá bluetooth signál
+
+Obě jsou potřeba. Bez vysílání z telefonu nemá notebook co poslouchat.
+
+Aplikace umí jen ZAMKNOUT. Odemknout ne - Windows to programům
+třetích stran nedovolují. Po návratu se přihlásíš PINem nebo otiskem.
+
+OBSAH
+
+   1. INSTALACE
+   2. RYCHLÝ START
+   3. OKNO APLIKACE (GRAF A NASTAVENÍ)
+   4. IKONA V LIŠTĚ
+   5. GRAF SIGNÁLU
+   6. CITLIVOST (DOSAH)
+   7. UPOZORNĚNÍ, KDYŽ TELEFON ZMIZÍ
+   8. SPOUŠTĚNÍ PŘI PŘIHLÁŠENÍ
+   9. KDYŽ NĚCO NEFUNGUJE
+  10. NASTAVENÍ V SOUBORU
+  11. SOUBORY
+  12. APLIKACE PRO TELEFON
+  13. PRO VÝVOJ
+
+
+
+----------------------------------------------------------------
+  1. INSTALACE
+----------------------------------------------------------------
+
+Spusť  instalace\DaBTDynamicLock-setup.exe  (vyžádá si práva správce).
+
+Nabízí tři volby:
+  - přidat zástupce do nabídky Start
+  - přidat zástupce na plochu
+  - spouštět automaticky při přihlášení
+
+Kam se co uloží:
+
+  program                   C:\Program Files\Da BT Dynamic Lock
+  nastavení, log, historie  %APPDATA%\Da BT Dynamic Lock
+
+Program je společný pro všechny uživatele počítače, nastavení má
+každý vlastní. Automatické spouštění platí jen pro toho, kdo ho
+zapnul.
+
+ODINSTALACE
+
+Nastavení → Aplikace → Nainstalované aplikace → Da BT Dynamic Lock.
+Odstraní program, zástupce i úlohu v Plánovači. Nastavení a historii
+ve výchozím stavu NEMAŽE - je na to zvláštní zaškrtávátko, takže
+přeinstalace o data nepřijde.
+
+
+
+----------------------------------------------------------------
+  2. RYCHLÝ START
+----------------------------------------------------------------
+
+V TELEFONU (Android)
+
+  1. Přenes soubor  telefon\DaBTDynamicLock.apk  do telefonu
+     a otevři ho. Povol instalaci z tohoto zdroje.
+  2. Spusť aplikaci, klepni na "Zapnout vysílání".
+     Povol oprávnění "Zařízení v okolí" a "Oznámení".
+  3. Nastavení → Aplikace → Da BT Dynamic Lock:
+       - baterie: bez omezení
+       - automatické spouštění: zapnout
+     (u Xiaomi je automatické spouštění v aplikaci Zabezpečení)
+
+  Hotovo, když je v aplikaci zeleně "Vysílá".
+
+V NOTEBOOKU (Windows)
+
+  4. Spusť Da BT Dynamic Lock. Aplikace nemá okno, běží jako zelená
+     ikona vpravo dole u hodin.
+  5. Klepni na ikonu. Otevře se okno aplikace → záložka "Nastavení"
+     → v sekci "Který telefon hlídat" vyber svůj telefon.
+     (Totéž jde i pravým klikem na ikonu → "Sledovaný telefon".)
+
+  Hotovo. Odejdi s telefonem a notebook se do 45 sekund zamkne.
+
+
+
+----------------------------------------------------------------
+  3. OKNO APLIKACE (GRAF A NASTAVENÍ)
+----------------------------------------------------------------
+
+Otevře se klepnutím na ikonu v liště. Má dvě záložky.
+
+GRAF
+    Síla signálu v čase, rozsah 2 minuty až 1 den. Vysvětlivky jsou
+    přímo v okně. Podrobně v oddílu 5.
+
+NASTAVENÍ
+    Všechno, co jde nastavit, pohromadě:
+
+    Který telefon hlídat
+        Zařízení, která jsou právě slyšet, i se sílou signálu.
+        Vybraný telefon je zeleně. Když je zrovna mimo dosah,
+        zůstane v seznamu s poznámkou "není slyšet".
+
+    Kdy zamknout
+        Automatické zamykání aktivní   hlavní vypínač
+        Zamknout po                    12 s až 120 s (výchozí 45 s)
+        Dosah (citlivost)              viz oddíl 6
+        Před zamknutím ukázat odpočet  okénko "Uzamknutí za X s"
+                                       uprostřed obrazovky; jen
+                                       informace, nejde jím uzamknutí
+                                       zrušit
+        Nezamykat při aktivitě uživatele (myš, klávesnice)
+                                       POZOR: kdokoli u stolu tím může
+                                       uzamknutí odkládat, proto je to
+                                       ve výchozím stavu vypnuté
+
+    Chování aplikace
+        Spouštět po přihlášení do Windows   viz oddíl 8
+        Jazyk                               čeština / angličtina;
+                                            přepne se hned, včetně
+                                            nabídky u ikony
+
+    Když telefon zmizí       viz oddíl 7
+    Dočasně pozastavit       hlídání se na zvolenou dobu vypne
+                             a pak se samo zase zapne
+
+    Dole jsou odkazy na aplikaci do telefonu a na tento návod
+    a tlačítko "Ukončit aplikaci".
+
+Okno si pamatuje velikost i to, jestli je na výšku nebo na šířku.
+Když je široké, nastavení se samo rozdělí do dvou sloupců.
+
+
+
+----------------------------------------------------------------
+  4. IKONA V LIŠTĚ
+----------------------------------------------------------------
+
+Barva ikony:
+  zelená    telefon je slyšet, hlídá se
+  oranžová  běží odpočet do uzamknutí
+  šedá      vypnuto, pozastaveno, nebo už zamčeno
+
+LEVÝ klik   otevře okno aplikace
+PRAVÝ klik  otevře nabídku
+
+Nabídka umí totéž co okno - je to zkratka pro rychlou změnu bez
+otevírání okna. Položky se jmenují stejně jako v nastavení:
+
+  Graf signálu
+  Sledovaný telefon …
+  ---
+  Automatické zamykání aktivní
+  Nezamykat při aktivitě uživatele (myš, klávesnice)
+  Spouštět po přihlášení do Windows
+  ---
+  Uzamknout po … bez signálu       12 s až 120 s (výchozí 45 s)
+  Odpočet se ukáže …               nezobrazovat, nebo 5 s až 30 s předem
+  Citlivost (dosah)                viz oddíl 6
+  Upozornit, když telefon zmizí …  viz oddíl 7
+  ---
+  Pozastavit hlídání …             5 minut až 2 dny
+  Zrušit pozastavení               (jen když je hlídání pozastavené)
+  Ukončit
+
+
+
+----------------------------------------------------------------
+  5. GRAF SIGNÁLU
+----------------------------------------------------------------
+
+Záložka "Graf" v okně aplikace. Rozsah 2 minuty až 1 den,
+vysvětlivky jsou přímo v okně. Historie přežije restart aplikace i počítače; doba,
+kdy aplikace neběžela, je vyznačená zvlášť a nepočítá se jako
+výpadek signálu.
+
+K čemu je: rozliší dvě různé příčiny problémů.
+
+  Křivka nízko              slabý signál - vzdálenost, kapsa, tělo
+  Křivka vysoko, ale děravá příjem ruší něco jiného - bluetooth myš,
+                            klávesnice, Wi-Fi
+  Šedé body                 signál dorazil, ale je pod nastaveným
+                            prahem citlivosti, takže se nepočítá
+
+
+
+----------------------------------------------------------------
+  6. CITLIVOST (DOSAH)
+----------------------------------------------------------------
+
+Určuje, jak slabý signál se ještě počítá za "jsi u stolu".
+
+  Vypnuto      zamkne, až signál úplně zmizí (výchozí)
+  -100 až -85  větší dosah, zamyká později
+  -80 až -60   menší dosah, zamyká dřív
+
+Naměřeno u stolu: telefon v kapse -81 až -83 dBm, na stole -73 dBm.
+Hodnota -80 a vyšší je tedy nad běžným signálem z kapsy a začne
+zamykat, i když sedíš na místě.
+
+Vzdálenost v metrech nastavit NELZE. Rozdíl mezi "u stolu" a "tři
+metry od stolu" jsou 2 dB, což je méně než přirozené kolísání
+signálu. Funguje to proto, že telefon v kapse má signál tak slabý,
+že ho zeď utne úplně - hranice místnosti je zároveň hranicí signálu.
+
+
+
+----------------------------------------------------------------
+  7. UPOZORNĚNÍ, KDYŽ TELEFON ZMIZÍ
+----------------------------------------------------------------
+
+Po nastavené době bez signálu (výchozí 10 minut) vyskočí bublina.
+
+Řeší tichou závadu: když telefon přestane vysílat, notebook se
+jednou zamkne a pak už čeká, až se telefon objeví. Do té doby
+NEHLÍDÁ, ale tváří se, že ano.
+
+
+
+----------------------------------------------------------------
+  8. SPOUŠTĚNÍ PŘI PŘIHLÁŠENÍ
+----------------------------------------------------------------
+
+Zapíná se buď při instalaci, nebo kdykoli později v nabídce ikony
+("Spouštět po přihlášení do Windows"), nebo v okně aplikace
+v sekci "Chování aplikace". Všechny tři cesty dělají totéž.
+
+Vytvoří se úloha v Plánovači s tímto nastavením:
+  - spuštění 30 sekund po přihlášení (než naběhne bluetooth)
+  - restart při selhání: po 1 minutě, nejvýše 3x
+  - bez časového omezení běhu (jinak by ji Windows po 3 dnech
+    ukončily)
+  - běží i na baterii
+
+Aplikace NEMŮŽE běžet jako služba Windows - služby běží v oddělené
+relaci bez přístupu k ploše a obrazovku odtamtud nezamknou.
+
+Pokud uživatel nemá práva zakládat úlohy, použije se náhradní řešení:
+zástupce ve složce Po spuštění. Ten umí jen holý start, bez odkladu
+a bez restartu po pádu. Do logu se zapíše, která z obou cest se
+použila.
+
+
+
+----------------------------------------------------------------
+  9. KDYŽ NĚCO NEFUNGUJE
+----------------------------------------------------------------
+
+Nejdřív  dyn_lock.log  v datové složce - je tam, kdy byl telefon
+vidět, kdy zmizel a proč se zamklo.
+
+  Zamyká, i když sedím u stolu
+      Zkontroluj v telefonu, jestli aplikace vysílá. Pokud ano, je
+      slabý příjem - viz graf a odstavec níže.
+
+  Nezamyká vůbec
+      V logu chybí "Telefon poprve spatren" → v nastavení
+      (nebo v nabídce ikony) vyber správný telefon.
+
+  Ikona není vidět
+      Bude schovaná pod šipkou skrytých ikon vpravo dole.
+
+  Aplikace nejde spustit dvakrát
+      Tak je to správně - druhý pokus jen oznámí, že už běží.
+
+
+PROČ JE VÝCHOZÍ ČAS 45 SEKUND A NE 20
+
+Bluetooth rádio v notebooku je jedno a musí obsluhovat myš
+a klávesnici, a k tomu poslouchat telefon. Naměřeno vsedě u stolu:
+
+  telefon na stole, myš zapnutá     177 signálů/min, výpadky do 3 s
+  telefon v kapse, myš vypnutá       84 signálů/min, výpadky do 9 s
+  telefon v kapse, myš zapnutá       20 signálů/min, výpadky do 20 s
+
+Kapsa ubere asi 10 dB, bluetooth myš ukousne zhruba 4x z počtu
+zachycených signálů. Každý vliv zvlášť je únosný, dohromady srazí
+příjem pod použitelnou mez.
+
+Zrychlit to jde třemi způsoby:
+  - přesunout myš a klávesnici na jejich USB přijímače
+  - vypnout Wi-Fi rádio (sdílí anténu s bluetooth)
+  - nosit telefon v kapse na straně blíž k notebooku
+
+
+
+----------------------------------------------------------------
+  10. NASTAVENÍ V SOUBORU
+----------------------------------------------------------------
+
+Soubor  config.json  v datové složce (%APPDATA%\Da BT Dynamic Lock).
+Většina se dá pohodlněji nastavit z ikony v liště; přímo v souboru
+se mění jen tohle a po změně je nutný restart aplikace:
+
+  threshold_window_s   přes kolik sekund se signál vyhlazuje
+  countdown_vertical   svislá poloha okénka s odpočtem
+                       (0.33 = třetina odshora, 0.5 = střed)
+  scanner_restart_s    jak často preventivně restartovat příjem
+  silence_watchdog_s   po jak dlouhém tichu restartovat příjem
+  log                  zapisovat události do dyn_lock.log
+  language             "cs" nebo "en" (dá se přepnout i v nastavení)
+
+Ostatní klíče odpovídají položkám v nastavení.
+
+
+
+----------------------------------------------------------------
+  11. SOUBORY
+----------------------------------------------------------------
+
+PO INSTALACI
+
+  C:\Program Files\Da BT Dynamic Lock
+      DaBTDynamicLock.exe  aplikace
+      odinstalovat.exe     odinstalátor
+      config.default.json  výchozí nastavení pro nové uživatele
+      ___INFO-ČTI.txt      tento návod
+      ___INFO-READ.txt     návod v angličtině
+
+  %APPDATA%\Da BT Dynamic Lock
+      config.json          tvoje nastavení
+      dyn_lock.log         záznam událostí (při 2 MB se odsune
+                           jako dyn_lock.log.1)
+      history.json         historie signálu pro graf
+
+VE SLOŽCE PROJEKTU (zdrojový kód)
+
+  windows\dyn_lock.py      aplikace
+  windows\texts.py         všechny texty česky i anglicky
+  windows\icons\           ikony aplikace
+  tests\test_logic.py      testy rozhodování - spustit po úpravě
+  tests\test_window.py     testy okna (seznam zařízení, posouvání,
+                           jazyk)
+  tests\test_installer.py  celý cyklus instalace a odinstalace
+  tests\preview.py         vykreslí okno do PNG pro kontrolu vzhledu
+  tools\ble_scan.py        diagnostika: co je v okolí slyšet
+  tools\track.py           diagnostika: sledování jednoho zařízení
+  tools\analyze.py         vyhodnocení měření z track.py
+  tools\make_icons.py      generátor ikon
+  docs\                    tyto návody
+  installer\               instalátor a jeho sestavení
+  phone\                   aplikace pro Android + zdrojový kód + klíč
+  start.bat                spuštění ze zdrojáku
+  _output\                 výstupy nástrojů (náhledy, reporty)
+  _android-build\          jen stažené nástroje (~1 GB), nic
+                           důležitého, jde kdykoli smazat
+
+
+
+----------------------------------------------------------------
+  12. APLIKACE PRO TELEFON
+----------------------------------------------------------------
+
+Vysílá bluetooth signál se jménem telefonu. Proti běžným nástrojům
+typu nRF Connect umí navíc:
+  - spustit vysílání po zapnutí telefonu
+  - nahodit ho, jakmile se vrátí bluetooth (po režimu letadla)
+
+Nemá oprávnění k internetu, takže nemůže nic nikam odeslat.
+Oprávnění má jen tato: vysílat přes bluetooth, běžet na popředí,
+spustit se po startu, zobrazovat oznámení.
+
+Jazyk se přepíná vlaječkami vpravo nahoře (čeština / angličtina).
+
+V aplikaci jde nastavit, jak často vysílat:
+  Rychlý 100 ms   nejlepší reakce (výchozí)
+  Střední 250 ms  o něco pomalejší reakce
+  Úsporný 1 s     nejpomalejší, hrozí plané uzamykání
+
+Spotřeba baterie je u všech tří voleb v praxi zanedbatelná — ověřeno
+běžným denním provozem. Vysílání je krátký signál, ne datový přenos.
+
+POZOR: soubor  phone\signing-key-DO-NOT-DELETE.jks  se nesmí smazat.
+Bez něj nepůjde aplikaci v telefonu aktualizovat, musela by se
+odinstalovat a nainstalovat znovu. Podrobnosti v souboru
+signing-key-README.txt vedle něj.
+
+
+
+----------------------------------------------------------------
+  13. PRO VÝVOJ
+----------------------------------------------------------------
+
+SPUŠTĚNÍ ZE ZDROJOVÉHO KÓDU
+
+    start.bat                 normálně
+    start.bat --dry-run       bez skutečného zamykání; jde spustit
+                              i vedle nainstalované verze
+
+Ze zdrojáku si aplikace ukládá data vedle sebe, ne do %APPDATA% -
+vývojová a nainstalovaná verze si tedy nelezou do nastavení.
+
+SESTAVENÍ INSTALÁTORU
+
+    powershell -ExecutionPolicy Bypass -File
+        "...\Da BT Dynamic Lock\instalace\sestav_instalacku.ps1"
+
+Zabalí aplikaci i instalátor do jednoho DaBTDynamicLock-setup.exe.
+
+SESTAVENÍ APLIKACE PRO TELEFON
+
+    powershell -ExecutionPolicy Bypass -File
+        "...\Da BT Dynamic Lock\telefon\sestav.ps1"
+
+Zdrojový kód je v  telefon\zdrojovy-kod\ , hotová APK se objeví
+rovnou v  telefon\ . Nepotřebuje internet ani Android Studio, jen
+nástroje ve složce _android-build.

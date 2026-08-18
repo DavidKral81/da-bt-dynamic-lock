@@ -1,0 +1,49 @@
+# Vyvojarske poznamky - zustavaji jen lokalne.
+# Jsou v nich interni veci (rozdelana prace, poznamky z konverzaci), ktere
+# na verejny GitHub nepatri. Co z nich ma verejnou hodnotu - mereni,
+# technicka rozhodnuti a jejich duvody - patri do README.md.
+CLAUDE.md
+
+# Podpisovy klic k aplikaci pro Android - NIKDY do repozitare.
+# Kdo ho ma, muze vydat "aktualizaci" tve aplikace.
+phone/*.jks
+
+# Sestavene vystupy - patri do Releases, ne do historie zdrojaku
+phone/*.apk
+installer/*.exe
+# vystupy sestaveni - nikdy do repozitare (drive tu byla jen stara cesta
+# instalace/_build/, takze po prejmenovani slozky se 1001 souboru
+# PyInstalleru dostalo do commitu)
+_build/
+installer/_build/
+
+# Prenosne nastroje (~1 GB) a prostredi
+_android-build/
+.venv/
+
+# Data za behu. Vzory jsou vazane na NAZEV, ne na cestu - po presunu nebo
+# prejmenovani slozky by cestovy vzor prestal platit potichu.
+# Pozor: "config.json" netrefi "config.default.json" (jiny nazev), takze
+# sablona s vychozim nastavenim se verzuje dal.
+dyn_lock.log
+dyn_lock.log.1
+history.json
+config.json
+
+# Vystupy mereni a diagnostiky
+track_log.csv
+analyza.txt
+ble_scan_report.txt
+overeni.txt
+
+__pycache__/
+*.pyc
+
+# vsechny generovane vystupy (nahledy, reporty, mereni) - jedna slozka,
+# at se nehromadi v korenu projektu
+_output/
+
+
+# heslo k podpisovemu klici - NIKDY do repozitare
+phone/signing-key-password.txt
+phone/*backup*.jks
