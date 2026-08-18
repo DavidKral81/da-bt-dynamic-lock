@@ -404,15 +404,15 @@ vývojová a nainstalovaná verze si tedy nelezou do nastavení.
 SESTAVENÍ INSTALÁTORU
 
     powershell -ExecutionPolicy Bypass -File
-        "...\Da BT Dynamic Lock\instalace\sestav_instalacku.ps1"
+        "...\Da BT Dynamic Lock\installer\build_installer.ps1"
 
 Zabalí aplikaci i instalátor do jednoho DaBTDynamicLock-setup.exe.
 
 SESTAVENÍ APLIKACE PRO TELEFON
 
     powershell -ExecutionPolicy Bypass -File
-        "...\Da BT Dynamic Lock\telefon\sestav.ps1"
+        "...\Da BT Dynamic Lock\phone\build.ps1"
 
-Zdrojový kód je v  telefon\zdrojovy-kod\ , hotová APK se objeví
-rovnou v  telefon\ . Nepotřebuje internet ani Android Studio, jen
-nástroje ve složce _android-build.
+Zdrojový kód je v  phone\src\ , hotová APK se objeví rovnou
+v  phone\ . Nepotřebuje internet ani Android Studio, jen nástroje
+ve složce _android-build.

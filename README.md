@@ -4,8 +4,8 @@ Locks your Windows computer when you walk away with your phone — reliably,
 and within seconds rather than minutes.
 
 A replacement for the **Dynamic Lock** feature built into Windows, which locks
-late, cannot be configured, and gives no indication of whether it is working
-at all.
+late, cannot be tuned, and whose own report of whether it is working is not
+something you can rely on.
 
 ---
 
@@ -24,7 +24,17 @@ So this project has two parts:
 | **Android app** | broadcasts a small Bluetooth LE beacon, restarts itself after reboot or aeroplane mode |
 
 The phone app turns those 1.6 signals per minute into a steady stream, which
-makes the decision trustworthy.
+makes the decision trustworthy. It costs almost nothing in battery: an
+advertisement is a short radio signal, not a data transfer, and normal daily
+use shows no drain worth mentioning.
+
+**The phone app is deliberately tiny, and it cannot reach the network.** It
+has no `INTERNET` permission at all, so there is nowhere for anything to be
+sent even in principle — the only permissions it asks for are Bluetooth
+advertising, running in the foreground, starting after a reboot and showing
+its notification, and you can check that yourself in the app's permission
+list. The whole thing is a handful of Java files in `phone/src/` with no
+third-party libraries, so there is not much to audit.
 
 **It can only lock, never unlock.** Windows does not allow third-party
 programs to unlock a session — you come back and sign in with your PIN or

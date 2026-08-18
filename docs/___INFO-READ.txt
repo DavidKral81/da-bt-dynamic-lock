@@ -424,7 +424,7 @@ share settings.
 BUILDING THE INSTALLER
 
     powershell -ExecutionPolicy Bypass -File
-        "...\Da BT Dynamic Lock\instalace\sestav_instalacku.ps1"
+        "...\Da BT Dynamic Lock\installer\build_installer.ps1"
 
 It packs both the application and the installer into a single
 DaBTDynamicLock-setup.exe.
@@ -432,8 +432,8 @@ DaBTDynamicLock-setup.exe.
 BUILDING THE PHONE APP
 
     powershell -ExecutionPolicy Bypass -File
-        "...\Da BT Dynamic Lock\telefon\sestav.ps1"
+        "...\Da BT Dynamic Lock\phone\build.ps1"
 
-The source code is in  telefon\zdrojovy-kod\ , and the finished
-APK appears directly in  telefon\ . It needs neither the internet
-nor Android Studio, only the tools in the _android-build folder.
+The source code is in  phone\src\ , and the finished APK appears
+directly in  phone\ . It needs neither the internet nor Android
+Studio, only the tools in the _android-build folder.
