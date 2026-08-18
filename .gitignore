@@ -30,11 +30,11 @@ dyn_lock.log.1
 history.json
 config.json
 
-# Vystupy mereni a diagnostiky
-track_log.csv
-analyza.txt
-ble_scan_report.txt
-overeni.txt
+# Vystupy mereni a diagnostiky zadny vlastni vzor nepotrebuji - vsechny tri
+# nastroje pisou do _output/, ktere je vyloucene cele (viz nize).
+# POZOR na holy vzor "track_log.csv": vylucoval i tests/track_log.csv, coz je
+# REFERENCNI nahravka, kterou prehrava test_logic.py. Na klonu pak test tise
+# napsal SKIPPED misto aby bezel.
 
 __pycache__/
 *.pyc
