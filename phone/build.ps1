@@ -66,7 +66,13 @@ if ($versionPy -notmatch '(?m)^VERSION\s*=\s*"([^"]+)"') {
     throw "Could not read VERSION out of windows\version.py"
 }
 $version = $Matches[1]
-Write-Host "version $version"
+
+# Android compares releases by versionCode, not by the name it shows. Left at
+# 1 it would call 1.1 the same build as 1.0 and refuse to see it as an update,
+# so it is derived from the same constant: 1.0 -> 10000, 1.2.3 -> 10203.
+$vparts = @($version -split '\.') + @('0', '0')
+$versionCode = [int]$vparts[0] * 10000 + [int]$vparts[1] * 100 + [int]$vparts[2]
+Write-Host "version $version  -> versionCode $versionCode"
 
 Write-Host "1/6  compiling resources (aapt2 compile)"
 & $aapt2 compile --dir "$app\res" -o "$out\res.zip"
@@ -78,7 +84,7 @@ Write-Host "2/6  linking the package + generating R.java (aapt2 link)"
     -I $plat `
     --java "$out\gen" `
     --min-sdk-version 26 --target-sdk-version 34 `
-    --version-code 1 --version-name "$version" `
+    --version-code $versionCode --version-name "$version" `
     "$out\res.zip"
 if ($LASTEXITCODE -ne 0) { throw "aapt2 link failed" }
 

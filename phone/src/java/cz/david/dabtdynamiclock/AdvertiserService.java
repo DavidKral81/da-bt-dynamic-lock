@@ -90,7 +90,14 @@ public class AdvertiserService extends Service {
         Texts.load(this);       // the service runs even with the app closed
         instance = this;
         createChannel();
-        startInForeground(Texts.t("st_starting"));
+        // The state has to be remembered as a key here too, not handed over as
+        // finished text: with stateKey left at "st_not_started" the screen and
+        // the notification each said something else, and a language switch
+        // redrew the notification from the key - "translating" it into a
+        // different state. setState() cannot do it yet, it notifies through
+        // NotificationManager and the service reaches the foreground below.
+        rememberState("st_starting", null, false);
+        startInForeground(stateText());
 
         btReceiver = new BroadcastReceiver() {
             @Override
@@ -300,10 +307,16 @@ public class AdvertiserService extends Service {
     }
 
     private void setState(String key, String parameter, boolean parameterIsKey) {
+        rememberState(key, parameter, parameterIsKey);
+        showState();
+    }
+
+    /** The state without redrawing the notification - for onCreate(), which
+     *  has to put the service in the foreground before it may notify. */
+    private void rememberState(String key, String parameter, boolean parameterIsKey) {
         stateKey = key;
         stateParam = parameter;
         stateParamIsKey = parameterIsKey;
-        showState();
     }
 
     private void showState() {

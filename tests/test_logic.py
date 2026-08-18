@@ -171,8 +171,25 @@ check("an unnamed device does not match a name target", False,
       matches(_Dev(), _Adv(None), "DaKing"))
 
 print("\nTranslations:")
+import re
 import texts
 check("no key is missing in Czech or English", [], texts.missing())
+
+# The phone carries its own dictionary with both languages side by side. It
+# had a missing() of its own, but nothing ever called it - so a key that fell
+# out of English would surface as a Czech sentence in the English interface
+# and nobody would find out. Read straight out of the source: every entry is
+# one put("key", ...), so this needs no Java runtime.
+JAVA_TEXTS = (HERE.parent / "phone" / "src" / "java" / "cz" / "david"
+              / "dabtdynamiclock" / "Texts.java")
+java = JAVA_TEXTS.read_text(encoding="utf-8")
+phone = {lang: set(re.findall(lang + r'\.put\("([^"]+)"', java))
+         for lang in ("CZECH", "ENGLISH")}
+# A typo in the parsing would leave both sets empty and the check would pass
+# on nothing at all - the hollow test this project has been bitten by before.
+check("phone: the dictionary was read at all", True, len(phone["CZECH"]) > 20)
+check("phone: no key is missing in Czech or English", set(),
+      phone["CZECH"] ^ phone["ENGLISH"])
 
 print("\nShipped default settings:")
 # dyn_lock.py claimed in a comment that a test kept DEFAULTS and

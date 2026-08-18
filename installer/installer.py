@@ -320,8 +320,12 @@ def install(task, start_menu, desktop, report):
         raise RuntimeError(tx("ins_err_copy"))
 
     # The app should come up in the language picked here, not in the one the
-    # template happens to carry.
-    ship_language(texts.language())
+    # template happens to carry. When that fails the install is still usable,
+    # so it goes on the list instead of stopping anything - but it must not
+    # pass in silence, or the app comes up in the wrong language and the
+    # installer claims everything went fine.
+    if not ship_language(texts.language()):
+        problems.append(tx("ins_prob_language"))
 
     if start_menu:
         report(tx("ins_startmenu"))

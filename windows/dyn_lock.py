@@ -1365,6 +1365,12 @@ class Chart:
                 if manual:
                     os.startfile(manual)
                     return
+        # Found nothing. Doing nothing at all is the worst answer to a click -
+        # the same manuals are in the repository, so open that and write down
+        # why, instead of leaving the user tapping a dead link.
+        log("No manual found next to the program or in docs/ - "
+            "opening the project page instead.")
+        os.startfile(PROJECT_URL)
 
     def _refresh_settings(self):
         """Bring the tab in line with reality - settings can also be changed

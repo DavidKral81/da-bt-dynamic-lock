@@ -217,6 +217,7 @@ CS = {
     "ins_prob_uninstaller": "odinstalátor",
     "ins_prob_registry": "záznam v Nastavení → Aplikace",
     "ins_prob_task": "spouštění při přihlášení",
+    "ins_prob_language": "předání jazyka aplikaci (naběhne v původním)",
     "uni_prob_files": "soubory programu",
 
     # result window
@@ -417,6 +418,7 @@ EN = {
     "ins_prob_uninstaller": "the uninstaller",
     "ins_prob_registry": "the entry in Settings → Apps",
     "ins_prob_task": "the start on sign-in",
+    "ins_prob_language": "handing the language over (the app starts in the old one)",
     "uni_prob_files": "the program files",
 
     # result window

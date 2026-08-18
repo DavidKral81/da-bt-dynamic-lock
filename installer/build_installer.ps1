@@ -58,6 +58,19 @@ VSVersionInfo(
         $path, $text, (New-Object System.Text.UTF8Encoding($false)))
 }
 
+# PyInstaller does not fail when a --version-file is missing or malformed, it
+# just leaves the properties empty - which is exactly how the first release
+# nearly went out. Both .exe files get one, so both are checked; the program
+# is the one the user keeps in Program Files and looks at through Properties.
+function Assert-VersionResource($path, $label) {
+    if (-not (Test-Path $path)) { throw "$label was not built: $path" }
+    $info = (Get-Item $path).VersionInfo
+    if ($info.FileVersion -notlike "$version*") {
+        throw "$label carries no version resource - expected $version, got '$($info.FileVersion)'"
+    }
+    Write-Host "version resource OK ($label): $($info.ProductName) $($info.FileVersion)"
+}
+
 # --- 1) the program ---------------------------------------------------
 Write-Host "1/2  packing the program"
 if (Test-Path $build) { Remove-Item $build -Recurse -Force }
@@ -76,6 +89,10 @@ New-VersionFile "$build\version-setup.txt" `
     --distpath "$build\dist" --workpath "$build\work" --specpath "$build" `
     "$project\windows\dyn_lock.py"
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller (program) failed" }
+
+# Checked here, before the folder gets packed into the installer - a program
+# with empty properties must not make it that far.
+Assert-VersionResource "$build\dist\DaBTDynamicLock\DaBTDynamicLock.exe" "the program"
 
 # the default settings, the manuals and the phone app belong with the program
 # the template of default values, NOT the developer's own config.json
@@ -117,14 +134,7 @@ foreach ($shared in @("texts", "marks", "version")) {
 
 Remove-Item "$here\DaBTDynamicLock-setup.exe.manifest" -ErrorAction SilentlyContinue
 
-# Check the version resource landed. PyInstaller does not fail when a
-# --version-file is malformed, it just leaves the properties empty - which is
-# exactly how the first release nearly went out.
-$info = (Get-Item "$here\DaBTDynamicLock-setup.exe").VersionInfo
-if ($info.FileVersion -notlike "$version*") {
-    throw "The installer carries no version resource - expected $version, got '$($info.FileVersion)'"
-}
-Write-Host "version resource OK: $($info.ProductName) $($info.FileVersion)"
+Assert-VersionResource "$here\DaBTDynamicLock-setup.exe" "the installer"
 
 $mb = [math]::Round((Get-Item "$here\DaBTDynamicLock-setup.exe").Length / 1MB, 1)
 Write-Host ""

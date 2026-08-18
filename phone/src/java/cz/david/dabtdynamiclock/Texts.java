@@ -139,19 +139,10 @@ public final class Texts {
         ENGLISH.put("int_saving", "saving (1 s)");
     }
 
-    /** Keys present in one language only - in case one ever falls out. */
-    public static String missing() {
-        StringBuilder sb = new StringBuilder();
-        for (String k : CZECH.keySet()) {
-            if (!ENGLISH.containsKey(k)) {
-                sb.append(k).append(" (missing en) ");
-            }
-        }
-        for (String k : ENGLISH.keySet()) {
-            if (!CZECH.containsKey(k)) {
-                sb.append(k).append(" (missing cs) ");
-            }
-        }
-        return sb.toString();
-    }
+    // There used to be a missing() here, listing keys present in one language
+    // only. Nothing ever called it, so it hid the gap instead of closing it:
+    // the dictionary looked guarded while a key falling out of ENGLISH would
+    // still show up as a Czech sentence in the English interface. The check
+    // now lives in tests/test_logic.py, which reads the keys straight out of
+    // this file and DOES run before every release.
 }

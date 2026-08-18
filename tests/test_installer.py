@@ -220,6 +220,17 @@ try:
     I.texts.set_language("cs")
     check("and in Czech after switching back", "Hotovo.", I.tx("ins_done"))
 
+    # The failing branch: handing the language over used to return False into
+    # nothing, so the app came up in the wrong language while the installer
+    # said everything went fine. Forced here, because it never runs otherwise.
+    template = I.TARGET_DIR / "config.default.json"
+    kept = template.read_bytes()
+    template.unlink()
+    check("a language that cannot be handed over is reported", False,
+          I.ship_language("en"))
+    template.write_bytes(kept)
+    check("the template is back for the steps below", True, template.exists())
+
     print("\n9) THE UNINSTALLER FILE")
     # install() only copies itself as the uninstaller when frozen, so this
     # branch never runs from source - a wrong file name would stay invisible
