@@ -7,7 +7,7 @@ It establishes what the whole app stands on:
   - how the RSSI changes with distance
 
 Run:     py tools/track.py [seconds] [MAC]
-Output:  track_log.csv (time, rssi) + a running printout in the console
+Output:  _output/track_log.csv (time, rssi) + a running printout in the console
 """
 
 import asyncio
@@ -26,7 +26,7 @@ LOG = HERE.parent / "_output" / "track_log.csv"
 LOG.parent.mkdir(exist_ok=True)
 
 # What to track. Two options:
-#   - a MAC address   ("4C:4C:1C:FE:16:E3") - for devices with a fixed address
+#   - a MAC address   ("AA:BB:CC:DD:EE:FF") - for devices with a fixed address
 #   - a piece of the advertisement ("nrf", "180d", ...) - for the Android app,
 #     which does not choose its address and rotates it; looked up both in the
 #     name and in the service UUIDs

@@ -39,8 +39,9 @@ CONTENTS
   1. INSTALLATION
 ----------------------------------------------------------------
 
-Run  instalace\DaBTDynamicLock-setup.exe  (it asks for
-administrator rights).
+Download  DaBTDynamicLock-setup.exe  from the GitHub release and run
+it (it asks for administrator rights):
+  https://github.com/DavidKral81/da-bt-dynamic-lock/releases/latest
 
 It offers three options:
   - add a shortcut to the Start menu
@@ -71,8 +72,10 @@ is a separate checkbox for that, so reinstalling keeps your data.
 
 ON THE PHONE (Android)
 
-  1. Copy  telefon\DaBTDynamicLock.apk  to the phone and open it.
-     Allow installation from this source.
+  1. Download  DaBTDynamicLock.apk  from the same release onto the
+     phone and open it. Allow installation from this source.
+     (The APK is not bundled with the installer - the program window
+     has a "Download the phone app" link that takes you there.)
   2. Start the app and tap "Turn broadcasting on".
      Allow the "Nearby devices" and "Notifications" permissions.
   3. Settings → Apps → Da BT Dynamic Lock:
@@ -275,7 +278,7 @@ the phone was seen, when it disappeared and why it locked.
       reception is poor - see the chart and the note below.
 
   It never locks
-      "Telefon poprve spatren" is missing from the log → pick the
+      "Phone seen for the first time" is missing from the log → pick the
       right phone in the settings (or in the icon menu).
 
   I cannot see the icon
@@ -340,7 +343,7 @@ AFTER INSTALLATION
       uninstall.exe        the uninstaller
       config.default.json  default settings for new users
       ___INFO-READ.txt     this manual
-      ___INFO-ČTI.txt      the manual in Czech
+      ___INFO-CTI.txt      the manual in Czech
 
   %APPDATA%\Da BT Dynamic Lock
       config.json          your settings
@@ -370,7 +373,7 @@ IN THE PROJECT FOLDER (source code)
   phone\                   the Android app, its source and signing key
   start.bat                run from source
   _output\                 tool output (previews, reports)
-  _android-build\          only downloaded tools (~1 GB), nothing
+  _android-build\          only downloaded tools (~700 MB), nothing
                            important, can be deleted any time
 
 

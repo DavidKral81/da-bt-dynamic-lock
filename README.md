@@ -63,8 +63,8 @@ else decides for you what "away" means.
 Either way the lock happens only after a delay you choose (12–120 seconds of
 not counting), so a brief dropout never locks your screen.
 
-**Why the app smooths the signal.** A single reading jumps by roughly 8 dB
-with the phone lying perfectly still, and the absolute values shift with the
+**Why the app smooths the signal.** A single reading jumps by several dB with
+the phone lying perfectly still, and the absolute values shift with the
 phone, the pocket, a body in the way, and whatever else shares the Bluetooth
 radio — an active mouse alone swallows a large share of the packets. So the
 threshold is compared against the **median of a short window**, not the last
@@ -134,7 +134,7 @@ powershell -ExecutionPolicy Bypass -File phone\build.ps1                 # APK
 
 The Android build needs no Android Studio and no Gradle, but the tools
 (a JDK and the Android SDK build-tools) have to be present in an
-`_android-build/` folder next to the project — the script does **not**
+`_android-build/` folder in the project root — the script does **not**
 download them, it stops with an error when they are missing. Once they are
 there, the build works offline.
 

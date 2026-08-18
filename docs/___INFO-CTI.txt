@@ -37,7 +37,9 @@ OBSAH
   1. INSTALACE
 ----------------------------------------------------------------
 
-Spusť  instalace\DaBTDynamicLock-setup.exe  (vyžádá si práva správce).
+Stáhni  DaBTDynamicLock-setup.exe  z vydání na GitHubu a spusť ho
+(vyžádá si práva správce):
+  https://github.com/DavidKral81/da-bt-dynamic-lock/releases/latest
 
 Nabízí tři volby:
   - přidat zástupce do nabídky Start
@@ -68,8 +70,10 @@ přeinstalace o data nepřijde.
 
 V TELEFONU (Android)
 
-  1. Přenes soubor  telefon\DaBTDynamicLock.apk  do telefonu
+  1. Stáhni do telefonu  DaBTDynamicLock.apk  ze stejného vydání
      a otevři ho. Povol instalaci z tohoto zdroje.
+     (Aplikace se do instalace nepřibaluje — v okně programu na to
+     vede odkaz "Stáhnout aplikaci do telefonu".)
   2. Spusť aplikaci, klepni na "Zapnout vysílání".
      Povol oprávnění "Zařízení v okolí" a "Oznámení".
   3. Nastavení → Aplikace → Da BT Dynamic Lock:
@@ -262,7 +266,7 @@ vidět, kdy zmizel a proč se zamklo.
       slabý příjem - viz graf a odstavec níže.
 
   Nezamyká vůbec
-      V logu chybí "Telefon poprve spatren" → v nastavení
+      V logu chybí "Phone seen for the first time" → v nastavení
       (nebo v nabídce ikony) vyber správný telefon.
 
   Ikona není vidět
@@ -322,7 +326,7 @@ PO INSTALACI
       DaBTDynamicLock.exe  aplikace
       uninstall.exe        odinstalátor
       config.default.json  výchozí nastavení pro nové uživatele
-      ___INFO-ČTI.txt      tento návod
+      ___INFO-CTI.txt      tento návod
       ___INFO-READ.txt     návod v angličtině
 
   %APPDATA%\Da BT Dynamic Lock
@@ -353,7 +357,7 @@ VE SLOŽCE PROJEKTU (zdrojový kód)
   phone\                   aplikace pro Android + zdrojový kód + klíč
   start.bat                spuštění ze zdrojáku
   _output\                 výstupy nástrojů (náhledy, reporty)
-  _android-build\          jen stažené nástroje (~1 GB), nic
+  _android-build\          jen stažené nástroje (~700 MB), nic
                            důležitého, jde kdykoli smazat
 
 

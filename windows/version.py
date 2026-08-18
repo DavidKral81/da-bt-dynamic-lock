@@ -1,13 +1,21 @@
-"""The version number, in one place.
+"""Facts about the project that more than one program needs.
 
-The app (dyn_lock.py) and the installer (installer.py) both import VERSION
-from here, and build_installer.ps1 reads it straight out of this file to
-generate the Windows VERSIONINFO resource for both .exe files. One constant
-means the line in the app window, the entry in "Installed apps" and the file
-properties cannot end up disagreeing.
+Both the app (dyn_lock.py) and the installer (installer.py) import from here,
+so neither can hold a copy that quietly goes out of date.
+
+VERSION is read by build_installer.ps1 as well, which generates the Windows
+VERSIONINFO resource for both .exe files out of it, and by phone/build.ps1
+for the APK's --version-name. So the version shown in the app window, in the
+file properties, in "Installed apps" and in the phone's app info all come
+from this one line.
 
 To release a new version change it HERE ONLY, then rebuild with
-installer\\build_installer.ps1.
+installer\\build_installer.ps1 (and phone\\build.ps1 for the APK).
 """
 
 VERSION = "1.0"
+
+# Where the releases live. The app opens PROJECT_URL + "/releases/latest" for
+# the phone app, and the installer offers the same page when it finishes -
+# the APK is deliberately not shipped with the installer.
+PROJECT_URL = "https://github.com/DavidKral81/da-bt-dynamic-lock"

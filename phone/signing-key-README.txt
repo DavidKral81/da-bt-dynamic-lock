@@ -16,7 +16,7 @@ Nothing worse happens, but it is a nuisance.
 
 Why it lives here and not with the toolchain
 --------------------------------------------
-The build tools sit in `_android-build` (~2.5 GB), a folder meant to be
+The build tools sit in `_android-build` (~700 MB), a folder meant to be
 deleted once it is no longer needed. The key does not belong there - it
 belongs to the project.
 

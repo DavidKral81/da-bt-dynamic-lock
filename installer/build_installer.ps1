@@ -80,9 +80,9 @@ if ($LASTEXITCODE -ne 0) { throw "PyInstaller (program) failed" }
 # the default settings, the manuals and the phone app belong with the program
 # the template of default values, NOT the developer's own config.json
 Copy-Item "$project\windows\config.default.json" "$build\dist\DaBTDynamicLock\" -Force
-# The manual is looked up by pattern - its name has diacritics and PowerShell
-# 5.1 reads this script as ANSI, so a hard-coded name would fall apart.
-# ALL manuals found (Czech and English), not just the first one.
+# The manuals are looked up by pattern, not by exact name, so renaming one
+# cannot silently stop it from being shipped. ALL manuals found (Czech and
+# English), not just the first one.
 $manuals = @(Get-ChildItem "$project\docs" -Filter "*INFO*.txt")
 foreach ($m in $manuals) { Copy-Item $m.FullName "$build\dist\DaBTDynamicLock\" -Force }
 Write-Host ("  manuals: " + $manuals.Count)

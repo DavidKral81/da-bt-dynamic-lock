@@ -223,12 +223,13 @@ CS = {
     "ins_head_installed": "Nainstalováno",
     "ins_head_uninstalled": "Odinstalováno",
     "ins_ok_desc": "Aby hlídání fungovalo, musí vysílat i telefon — "
-                   "nainstaluj do něj přiloženou aplikaci. Postup najdeš "
-                   "v návodu.",
+                   "nainstaluj do něj aplikaci pro Android. Odkaz na "
+                   "stažení je v okně programu, postup v návodu.",
     "uni_ok_desc": "{app} byl odstraněn z počítače.",
     "uni_partial_desc": "{app} byl odstraněn, ale některé soubory se "
                         "nepodařilo smazat. Zkus to po restartu počítače.",
     "ins_opt_launch": "Spustit {app}",
+    "ins_opt_phone": "Otevřít stránku se stažením aplikace do telefonu",
     "ins_opt_manual": "Otevřít návod",
 
     # message boxes
@@ -429,6 +430,7 @@ EN = {
                         "be deleted. Try again after restarting the "
                         "computer.",
     "ins_opt_launch": "Run {app}",
+    "ins_opt_phone": "Open the download page for the phone app",
     "ins_opt_manual": "Open the manual",
 
     # message boxes

@@ -17,7 +17,7 @@ installer/*.exe
 _build/
 installer/_build/
 
-# Portable toolchain (~1 GB) and virtual environment
+# Portable toolchain (~700 MB) and virtual environment
 _android-build/
 .venv/
 

@@ -174,6 +174,29 @@ print("\nTranslations:")
 import texts
 check("no key is missing in Czech or English", [], texts.missing())
 
+print("\nShipped default settings:")
+# dyn_lock.py claimed in a comment that a test kept DEFAULTS and
+# config.default.json in step. No such test existed, and the two had already
+# drifted (window_geometry, window_maximised). Now the claim is true.
+import json
+from dyn_lock import DEFAULTS
+
+# Runtime state the app writes for itself - it has no place in the template
+# handed to a new user, so it is excluded on purpose.
+RUNTIME_ONLY = {"window_geometry", "window_maximised"}
+
+shipped = json.loads(
+    (HERE.parent / "windows" / "config.default.json").read_text(encoding="utf-8"))
+# Keys starting with "_" are the comments inside the template, not settings.
+shipped_keys = {k for k in shipped if not k.startswith("_")}
+
+check("template has every default", set(),
+      set(DEFAULTS) - RUNTIME_ONLY - shipped_keys)
+check("template invents nothing extra", set(),
+      shipped_keys - set(DEFAULTS))
+check("template values match the defaults", [],
+      [k for k in shipped_keys if shipped[k] != DEFAULTS[k]])
+
 print("\n" + ("ALL OK" if not failures else f"FAILURES: {failures}"))
 # Without this the test ended with code 0 even when there were findings - a
 # failure would slip through the build unnoticed.

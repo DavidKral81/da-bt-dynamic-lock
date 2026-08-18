@@ -43,7 +43,7 @@ if not getattr(sys, "frozen", False):
 import marks
 import texts
 from texts import t as tx
-from version import VERSION
+from version import VERSION, PROJECT_URL
 
 APP_NAME = "Da BT Dynamic Lock"
 REG_KEY = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\DaBTDynamicLock"
@@ -754,12 +754,14 @@ class ResultWindow:
 
         self.launch = tk.BooleanVar(value=not uninstalling)
         self.manual = tk.BooleanVar(value=False)
+        self.phone = tk.BooleanVar(value=False)
         if not uninstalling:
-            # No "open the phone app folder" option: the APK is not shipped
-            # with the installer any more, it is downloaded from the GitHub
-            # release through the link in the app.
+            # The APK is not shipped with the installer, so the only thing we
+            # can do for the user is take them to the page it lives on. On by
+            # default would open a browser uninvited, so it is a choice.
             for text, variable in [(tx("ins_opt_launch", app=APP_NAME),
                                     self.launch),
+                                   (tx("ins_opt_phone"), self.phone),
                                    (tx("ins_opt_manual"), self.manual)]:
                 switch_row(frame, text, variable)
 
@@ -786,6 +788,10 @@ class ResultWindow:
 
     def finish(self):
         if not self.uninstalling:
+            if self.phone.get():
+                # Same address the app itself opens - one constant, so the
+                # two cannot start pointing at different places.
+                os.startfile(PROJECT_URL + "/releases/latest")
             if self.manual.get():
                 # Both manuals are shipped, so the language decides which one
                 # opens - the SAME patterns _open_manual uses in dyn_lock.py.

@@ -44,10 +44,9 @@ import pystray
 import marks
 import texts
 from texts import t as tx
-from version import VERSION
+from version import VERSION, PROJECT_URL
 
 APP_NAME = "Da BT Dynamic Lock"
-PROJECT_URL = "https://github.com/DavidKral81/da-bt-dynamic-lock"
 
 HERE = Path(__file__).resolve().parent
 
@@ -85,8 +84,10 @@ user32 = ctypes.windll.user32
 # ---------------------------------------------------------------- settings
 
 # The single source of truth for default settings. The shipped
-# config.default.json is only a commented copy of these values - a test
-# checks that the two never drift apart.
+# config.default.json is only a commented copy of these values, minus the
+# keys the app writes for itself at runtime (window geometry). test_logic.py
+# checks that the two never drift apart - it did NOT until 18.08.2026, and
+# they had already drifted while this comment claimed otherwise.
 DEFAULTS = {
     "target": "",                        # empty = user picks the phone first
     "silence_s": 45,                    # seconds of silence before locking
@@ -1352,8 +1353,8 @@ class Chart:
 
     def _open_manual(self):
         # in English open the English manual; when it is missing, Czech is
-        # better than nothing (the file has diacritics in its name, so it is
-        # looked up by pattern, not by name)
+        # better than nothing. Looked up by pattern rather than by an exact
+        # name, so a rename of the manual cannot silently break the link.
         patterns = (["*INFO-READ*.txt", "*INFO*.txt"] if texts.language() == "en"
                     else ["*INFO-CTI*.txt", "*INFO*.txt"])
         # installed: manuals sit next to the program; from source they
