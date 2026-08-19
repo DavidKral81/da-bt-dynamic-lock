@@ -12,6 +12,9 @@ nowhere else.
 
 ### Added
 
+- The installer says which version it is installing, in its first window and
+  in the one that reports the result. Uninstalling shows the version that is
+  being removed.
 - Both apps now show their version next to a link to the releases page, so
   updating no longer needs a cable: on the phone the browser downloads the APK
   and installs it over the existing app. Neither app talks to the network by

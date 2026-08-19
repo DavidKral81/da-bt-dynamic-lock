@@ -503,6 +503,26 @@ def uninstall(delete_data, report, wait_for_pid=None):
 
 # ---------------------------------------------------------------- window
 
+def _version_label(parent):
+    """The version, next to the heading of both windows.
+
+    The user has to be able to see WHICH version is being installed, and to
+    still see it once the installing is over - so it appears in the first
+    window and in the result window as well. When uninstalling it is the
+    version that is installed: the uninstaller is a copy of the build that
+    installed it.
+
+    VERSION comes from windows/version.py, the same constant the file
+    properties and the app window use, so the three cannot disagree. No
+    translation key - "v1.1" reads the same in both languages.
+    """
+    # padding at the top lines the small text up with the baseline of the
+    # 17pt heading beside it
+    tk.Label(parent, text=f"v{VERSION}", bg=BACKGROUND, fg=GREY,
+             font=("Segoe UI", 11)).pack(side="left", padx=(8, 0),
+                                         pady=(9, 0))
+
+
 def switch_row(parent, text, variable):
     """A checkbox row - the mark is DRAWN, not left to Tk.
 
@@ -585,6 +605,7 @@ class Window:
         header.pack(fill="x")
         tk.Label(header, text=APP_NAME, bg=BACKGROUND, fg=TEXT,
                  font=("Segoe UI", 17, "bold")).pack(side="left")
+        _version_label(header)
         self._language_picker(header)
 
         self._text(frame, tx("ins_subtitle"), 10, GREY, pady=(2, 14))
@@ -732,9 +753,14 @@ class ResultWindow:
         # done and the language was settled in the first window.
         heading = tx("ins_head_uninstalled" if uninstalling
                      else "ins_head_installed")
-        tk.Label(frame, text=heading, bg=BACKGROUND,
+        head_row = tk.Frame(frame, bg=BACKGROUND)
+        head_row.pack(anchor="w", fill="x")
+        tk.Label(head_row, text=heading, bg=BACKGROUND,
                  fg=GREEN_LIGHT if all_ok else "#fbbf24",
-                 font=("Segoe UI", 17, "bold")).pack(anchor="w")
+                 font=("Segoe UI", 17, "bold")).pack(side="left")
+        # The version again, so the answer to "what have I just got?" does not
+        # disappear with the first window.
+        _version_label(head_row)
 
         if uninstalling:
             description = tx("uni_ok_desc" if all_ok else "uni_partial_desc",

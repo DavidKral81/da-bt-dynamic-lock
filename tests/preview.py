@@ -101,12 +101,14 @@ OUTPUT = pathlib.Path(__file__).resolve().parent.parent / "_output"
 
 
 def preview_installer():
-    """Shoot all four installer windows: both roles times both languages.
+    """Shoot every installer window: both roles, both languages, and the
+    result window that follows each of them.
 
     The installer is the first thing anyone sees of this project, so it gets
-    looked at the same way the app does. Windows are built one at a time and
-    destroyed - two live tk.Tk instances in one process fight over the event
-    loop.
+    looked at the same way the app does - and that has to include the result
+    window. It used to be left out, so half of what the installer shows could
+    not be checked at all. Windows are built one at a time and destroyed - two
+    live tk.Tk instances in one process fight over the event loop.
     """
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "installer"))
     import installer
@@ -114,12 +116,18 @@ def preview_installer():
     for language in ("cs", "en"):
         for uninstalling, role in ((False, "install"), (True, "uninstall")):
             installer.texts.set_language(language)
-            window = installer.Window(uninstalling)
-            window.r.update()
-            time.sleep(0.4)
-            name = f"preview-{role}-{language}.png"
-            print(f"{name}: {_capture(window.r, OUTPUT / name)}")
-            window.r.destroy()
+            for stage, build in (
+                    ("", lambda: installer.Window(uninstalling)),
+                    # all_ok=True: the ordinary ending. The partial one differs
+                    # only in the colour of the heading and in one sentence.
+                    ("-done",
+                     lambda: installer.ResultWindow(uninstalling, True))):
+                window = build()
+                window.r.update()
+                time.sleep(0.4)
+                name = f"preview-{role}{stage}-{language}.png"
+                print(f"{name}: {_capture(window.r, OUTPUT / name)}")
+                window.r.destroy()
 
 
 def main():
