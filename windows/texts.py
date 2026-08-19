@@ -102,6 +102,7 @@ CS = {
     "link_phone_app": "Stáhnout aplikaci do telefonu",
     "link_manual": "Návod",
     "link_project": "Projekt na GitHubu",
+    "link_updates": "Zkontrolovat aktualizace",
     "btn_quit": "Ukončit aplikaci",
 
     # --- chart --------------------------------------------------------
@@ -301,6 +302,7 @@ EN = {
     "link_phone_app": "Download the phone app",
     "link_manual": "Manual",
     "link_project": "Project on GitHub",
+    "link_updates": "Check for updates",
     "btn_quit": "Quit application",
 
     # --- chart --------------------------------------------------------

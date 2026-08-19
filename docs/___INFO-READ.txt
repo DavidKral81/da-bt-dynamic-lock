@@ -149,8 +149,14 @@ SETTINGS
     Pause for a while           watching turns off for the chosen
                                 time and then turns itself back on
 
-    At the bottom there are links to the phone app and to this
-    manual, and a "Quit application" button.
+    At the bottom there are links to the phone app, to this manual
+    and to the project, below them the version number with a
+    "Check for updates" link, and a "Quit application" button.
+
+    "Check for updates" only opens the releases page in the
+    browser - compare the version in the window with the one on
+    the page. The app never asks anything by itself and sends
+    nothing anywhere.
 
 The window remembers its size. When it is wide, the settings
 split into two columns by themselves.
@@ -404,6 +410,17 @@ run in the foreground, start at boot, show notifications.
 
 The language is switched with the small flags in the top right corner
 (Czech / English).
+
+UPDATING WITHOUT A CABLE
+At the bottom there is the version number and a "Download the
+newest version" link. It opens the releases page in the browser -
+download the .apk there and tap the downloaded file. It installs
+over the existing app and the settings are kept. The first time,
+the phone will ask you to allow installing from the browser.
+
+The app itself asks nothing: the link only hands the address to
+the browser, which is a different app. That is why no internet
+permission is needed for it.
 
 The broadcasting interval can be set in the app:
   Fast 100 ms      best response (default)

@@ -87,6 +87,11 @@ public final class Texts {
         CZECH.put("link_project", "Projekt na GitHubu");
         ENGLISH.put("link_project", "Project on GitHub");
 
+        CZECH.put("version", "Verze %s");
+        ENGLISH.put("version", "Version %s");
+        CZECH.put("link_update", "Stáhnout nejnovější verzi");
+        ENGLISH.put("link_update", "Download the newest version");
+
         CZECH.put("language_title", "Jazyk");
         ENGLISH.put("language_title", "Language");
 

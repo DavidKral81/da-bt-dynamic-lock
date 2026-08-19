@@ -10,6 +10,15 @@ nowhere else.
 
 ## Unreleased
 
+### Added
+
+- Both apps now show their version next to a link to the releases page, so
+  updating no longer needs a cable: on the phone the browser downloads the APK
+  and installs it over the existing app. Neither app talks to the network by
+  itself — the link is handed to the browser, and you compare the version you
+  see with the one on the page. The phone app still has no `INTERNET`
+  permission.
+
 ### Changed
 
 - The language is switched with flags in the top right corner — in the app,

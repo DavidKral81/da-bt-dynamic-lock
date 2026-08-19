@@ -201,6 +201,26 @@ public class MainActivity extends Activity {
         });
         l.addView(link);
 
+        // Updating without a cable: the release page opens in the BROWSER,
+        // which downloads the APK straight into the phone. Handing an address
+        // to another app needs no INTERNET permission - this app still cannot
+        // reach the network itself, which is the point of note_internet above.
+        // The version is printed right above the link because that is what the
+        // user compares with the number on the page; without it the link says
+        // nothing.
+        l.addView(text(Texts.t("version", appVersion()), 12, TEXT_GREY,
+                       dp(14), 0));
+        TextView update = text(Texts.t("link_update"), 12, GREEN_LIGHT,
+                               dp(2), 0);
+        update.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(Intent.ACTION_VIEW,
+                        android.net.Uri.parse(PROJECT_URL + "/releases/latest")));
+            }
+        });
+        l.addView(update);
+
         ScrollView s = new ScrollView(this);
         s.setBackgroundColor(BACKGROUND);
         s.addView(l);
@@ -243,6 +263,25 @@ public class MainActivity extends Activity {
     private int dp(int v) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v,
                 getResources().getDisplayMetrics());
+    }
+
+    /**
+     * The version of this APK, read from the package itself.
+     *
+     * Never a constant in the code: the number comes from build.ps1, which
+     * takes it from windows/version.py, so a copy here could disagree with
+     * what the phone's app info shows.
+     */
+    private String appVersion() {
+        try {
+            return getPackageManager()
+                    .getPackageInfo(getPackageName(), 0).versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            // Asking about one's own package cannot fail; the checked
+            // exception has to be handled all the same. A question mark is
+            // honest - it does not invent a number.
+            return "?";
+        }
     }
 
     private TextView text(String s, int size, int color, int top, int bottom) {

@@ -1064,25 +1064,39 @@ class Chart:
         # --- 5. links --------------------------------------------------
         self.links_frame = tk.Frame(self.grid_frame, bg="#1b1f26")
         links = self.links_frame
+
+        def separator(parent):
+            tk.Label(parent, text="   ·   ", bg="#1b1f26", fg="#8b95a3",
+                     font=("Segoe UI", 10)).pack(side="left")
+
         row = tk.Frame(links, bg="#1b1f26")
-        row.pack(anchor="w", pady=(0, 14))
+        row.pack(anchor="w")
         self._link(row, tx("link_phone_app"),
-                   self._open_phone).pack(side="left")
-        tk.Label(row, text="   ·   ", bg="#1b1f26", fg="#8b95a3",
-                 font=("Segoe UI", 10)).pack(side="left")
+                   self._open_releases).pack(side="left")
+        separator(row)
         self._link(row, tx("link_manual"), self._open_manual).pack(side="left")
-        tk.Label(row, text="   ·   ", bg="#1b1f26", fg="#8b95a3",
-                 font=("Segoe UI", 10)).pack(side="left")
+        separator(row)
         self._link(row, tx("link_project"),
                    self._open_project).pack(side="left")
-        tk.Label(row, text="   ·   ", bg="#1b1f26", fg="#8b95a3",
-                 font=("Segoe UI", 10)).pack(side="left")
+
         # The version belongs somewhere a user can find it when reporting a
         # problem. Same constant the installer and the file properties use,
         # so the three can never disagree. No translation key needed - "v1.0"
         # reads the same in both languages.
+        #
+        # The update link sits right beside it because the two answer one
+        # question: am I behind? The app deliberately does NOT ask the network
+        # itself - the browser opens the release page and the user compares the
+        # number here with the number there. A second row, so a narrow window
+        # does not have to fit five items in one line.
+        row = tk.Frame(links, bg="#1b1f26")
+        row.pack(anchor="w", pady=(3, 14))
         tk.Label(row, text=f"v{VERSION}", bg="#1b1f26", fg="#a9b4c2",
                  font=("Segoe UI", 10)).pack(side="left")
+        separator(row)
+        self._link(row, tx("link_updates"),
+                   self._open_releases).pack(side="left")
+
         self._button(links, f"  {tx('btn_quit')}  ",
                      self._quit).pack(anchor="w")
 
@@ -1341,12 +1355,18 @@ class Chart:
         log(f"Paused for {minutes} minutes." if minutes
             else "Pause cancelled.")
 
-    def _open_phone(self):
-        """Open the release page where the phone app can be downloaded.
+    def _open_releases(self):
+        """Open the release page. Two links lead here, one method serves both.
 
-        The installer used to ship the APK in a subfolder, but a link that
-        always points at the latest release is more useful: the phone app
-        gets updated separately from the desktop one.
+        For the phone app: the installer used to ship the APK in a subfolder,
+        but a link that always points at the latest release is more useful,
+        because the phone app is updated separately from the desktop one.
+
+        For updates: this is the whole update check. The app never asks the
+        network on its own - `os.startfile` hands the address to the browser,
+        which is a different program - so the user compares the version shown
+        in the window with the one on the page. That keeps the app free of any
+        network traffic of its own, which is worth more than saving one look.
         """
         os.startfile(PROJECT_URL + "/releases/latest")
 

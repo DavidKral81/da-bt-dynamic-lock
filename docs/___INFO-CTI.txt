@@ -143,8 +143,13 @@ NASTAVENÍ
     Dočasně pozastavit       hlídání se na zvolenou dobu vypne
                              a pak se samo zase zapne
 
-    Dole jsou odkazy na aplikaci do telefonu a na tento návod
-    a tlačítko "Ukončit aplikaci".
+    Dole jsou odkazy na aplikaci do telefonu, na tento návod a na
+    projekt, pod nimi číslo verze s odkazem "Zkontrolovat
+    aktualizace" a tlačítko "Ukončit aplikaci".
+
+    "Zkontrolovat aktualizace" jen otevře v prohlížeči stránku
+    s vydáními — porovnej číslo verze v okně s číslem na stránce.
+    Aplikace se sama nikam neptá a nic neodesílá.
 
 Okno si pamatuje velikost i to, jestli je na výšku nebo na šířku.
 Když je široké, nastavení se samo rozdělí do dvou sloupců.
@@ -384,6 +389,16 @@ Oprávnění má jen tato: vysílat přes bluetooth, běžet na popředí,
 spustit se po startu, zobrazovat oznámení.
 
 Jazyk se přepíná vlaječkami vpravo nahoře (čeština / angličtina).
+
+AKTUALIZACE BEZ KABELU
+Dole je číslo verze a odkaz "Stáhnout nejnovější verzi". Ten otevře
+stránku s vydáními v prohlížeči — tam si stáhni soubor .apk a klepni
+na stažený soubor. Nainstaluje se přes stávající, nastavení zůstane.
+Poprvé si telefon vyžádá povolení instalovat z prohlížeče.
+
+Aplikace se přitom sama nikam neptá: odkaz jen předá adresu
+prohlížeči, což je jiná aplikace. Proto k tomu není potřeba
+oprávnění k internetu.
 
 V aplikaci jde nastavit, jak často vysílat:
   Rychlý 100 ms   nejlepší reakce (výchozí)
