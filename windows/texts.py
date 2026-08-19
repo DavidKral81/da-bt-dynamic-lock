@@ -72,7 +72,6 @@ CS = {
     # --- settings: app behaviour --------------------------------------
     "card_behaviour": "Chování aplikace",
     "sw_autostart": "Spouštět po přihlášení do Windows",
-    "lbl_language": "Jazyk",
 
     # --- settings: phone disappears -----------------------------------
     "card_gone": "Když telefon zmizí",
@@ -173,7 +172,6 @@ CS = {
     "ins_title_install": "Instalace {app}",
     "ins_title_uninstall": "Odinstalace {app}",
     "ins_subtitle": "Zamkne notebook, když se od něj vzdálíš s telefonem.",
-    "ins_lbl_language": "Jazyk / Language",
     "ins_to_folder": "Program {app} se nainstaluje do složky:",
     "ins_from_folder": "Program {app} se odinstaluje ze složky:",
 
@@ -273,7 +271,6 @@ EN = {
     # --- settings: application behaviour ------------------------------
     "card_behaviour": "Application behaviour",
     "sw_autostart": "Start after signing in to Windows",
-    "lbl_language": "Language",
 
     # --- settings: when the phone disappears --------------------------
     "card_gone": "When the phone disappears",
@@ -374,7 +371,6 @@ EN = {
     "ins_title_install": "{app} setup",
     "ins_title_uninstall": "Uninstall {app}",
     "ins_subtitle": "Locks the laptop when you walk away with your phone.",
-    "ins_lbl_language": "Jazyk / Language",
     "ins_to_folder": "{app} will be installed into:",
     "ins_from_folder": "{app} will be removed from:",
 

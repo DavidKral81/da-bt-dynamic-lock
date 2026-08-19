@@ -636,30 +636,19 @@ class Window:
         return switch_row(self.options_frame, text, variable)
 
     def _language_picker(self, parent):
-        """The Czech/English chooser.
+        """The Czech/English chooser: the same flags the app has.
 
         It is in BOTH roles on purpose: someone who installed the app in a
         language they cannot read has to be able to switch before uninstalling
-        it too.
+        it too - and a flag is readable even then, unlike a drop-down whose
+        label is a word.
 
-        A Menubutton rather than an OptionMenu so the arrow can be a readable
-        character instead of the default few-pixel one, and so the choice
-        arrives as a language CODE - the displayed name is never a data value.
+        Drawn in marks.py, so the installer and the app cannot end up with two
+        different language switches (they used to: a drop-down here, flags
+        there).
         """
-        current = dict(texts.LANGUAGES)[texts.language()]
-        button = tk.Menubutton(parent, text=f"{current}  ▾", bg=CARD, fg=TEXT,
-                               activebackground=CARD, activeforeground=TEXT,
-                               font=("Segoe UI", 10), relief="flat",
-                               borderwidth=0, highlightthickness=0,
-                               padx=12, pady=5, cursor="hand2")
-        menu = tk.Menu(button, tearoff=0, bg=CARD, fg=TEXT,
-                       activebackground=GREEN, activeforeground="white",
-                       font=("Segoe UI", 10), borderwidth=0)
-        for code, name in texts.LANGUAGES:
-            menu.add_command(label=name,
-                             command=lambda c=code: self._change_language(c))
-        button.config(menu=menu)
-        button.pack(side="right")
+        marks.LanguageFlags(parent, self._change_language, TEXT).pack(
+            side="right")
 
     def _change_language(self, code):
         if code == texts.language():

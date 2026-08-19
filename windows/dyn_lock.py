@@ -877,6 +877,11 @@ class Chart:
             t.pack(side="left", padx=(0, 4))
             t.bind("<Button-1>", lambda e, k=i: self._tab(k))
             self.tab_buttons.append(t)
+        # The language switch lives in the tab bar, so it stays in the corner
+        # in both tabs instead of scrolling away with the settings content.
+        # Drawn in marks.py, because the INSTALLER shows the same flags.
+        marks.LanguageFlags(bar, self._change_language, "#e6ebf2").pack(
+            side="right", padx=(0, 6))
 
         self.chart_frame = tk.Frame(w, bg="#1b1f26")
         self.settings_frame = tk.Frame(w, bg="#1b1f26")
@@ -995,8 +1000,6 @@ class Chart:
         # the mouse wheel only works while the cursor is over the settings
         self.settings_canvas.bind_all("<MouseWheel>", self._wheel, add="+")
         self.cards = []
-        self.language_var = tk.StringVar(
-            value=dict(texts.LANGUAGES)[texts.language()])
         column = self.grid_frame
         self.columns = 0
         parent.bind("<Configure>", self._relayout)
@@ -1034,9 +1037,9 @@ class Chart:
         card = self._card(column, tx("card_behaviour"), None)
         self.sw_autostart = self._switch(card, tx("sw_autostart"),
                                          None, autostart_enabled, autostart_set)
-        self._select(card, tx("lbl_language"), None,
-                     [(name, code) for code, name in texts.LANGUAGES],
-                     var=self.language_var, action=self._change_language)
+        # No language drop-down here: the flags in the top right corner are
+        # the one place it is switched. Two controls for one setting is two
+        # truths waiting to disagree.
 
         card = self._card(
             column, tx("card_gone"), tx("card_gone_desc"))

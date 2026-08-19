@@ -110,7 +110,10 @@ ON THE COMPUTER (Windows)
   3. THE APP WINDOW (CHART AND SETTINGS)
 ----------------------------------------------------------------
 
-Click the icon in the notification area. The window has two tabs.
+Click the icon in the notification area. The window has two tabs. In
+the top right corner, beside the tabs, are two small flags - that is
+where the language is switched (Czech / English). It changes at once,
+the icon menu included.
 
 CHART
     Signal strength over time, from 2 minutes up to 1 day. The
@@ -141,9 +144,6 @@ SETTINGS
 
     Application behaviour
         Start after signing in to Windows   see section 8
-        Language                            Czech / English;
-                                            switches immediately,
-                                            including the icon menu
 
     When the phone disappears   see section 7
     Pause for a while           watching turns off for the chosen
@@ -334,7 +334,8 @@ and the app has to be restarted afterwards:
   scanner_restart_s    how often to restart reception as a precaution
   silence_watchdog_s   after how long a silence to restart reception
   log                  write events to dyn_lock.log
-  language             "cs" or "en" (also switchable in the settings)
+  language             "cs" or "en" (switched with the flags in the top
+                       right corner of the app window)
 
 The remaining keys match the items in the settings.
 
@@ -364,8 +365,9 @@ IN THE PROJECT FOLDER (source code)
   windows\dyn_lock.py      the application
   windows\texts.py         all texts in Czech and English
                            (the installer uses them too)
-  windows\marks.py         drawing of the checkboxes and radio marks
-                           (shared by the app and the installer)
+  windows\marks.py         drawing of the checkboxes, radio marks and
+                           language flags (shared by the app and the
+                           installer)
   windows\icons\           application icons
   tests\test_logic.py      decision tests - run after any change
   tests\test_window.py     window tests (device list, scrolling,

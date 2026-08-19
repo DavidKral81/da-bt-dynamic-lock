@@ -107,7 +107,9 @@ V NOTEBOOKU (Windows)
   3. OKNO APLIKACE (GRAF A NASTAVENÍ)
 ----------------------------------------------------------------
 
-Otevře se klepnutím na ikonu v liště. Má dvě záložky.
+Otevře se klepnutím na ikonu v liště. Má dvě záložky. Vpravo nahoře,
+vedle záložek, jsou dvě vlaječky — tím se přepíná jazyk (čeština /
+angličtina). Přepne se hned, včetně nabídky u ikony.
 
 GRAF
     Síla signálu v čase, rozsah 2 minuty až 1 den. Vysvětlivky jsou
@@ -136,9 +138,6 @@ NASTAVENÍ
 
     Chování aplikace
         Spouštět po přihlášení do Windows   viz oddíl 8
-        Jazyk                               čeština / angličtina;
-                                            přepne se hned, včetně
-                                            nabídky u ikony
 
     Když telefon zmizí       viz oddíl 7
     Dočasně pozastavit       hlídání se na zvolenou dobu vypne
@@ -318,7 +317,8 @@ se mění jen tohle a po změně je nutný restart aplikace:
   scanner_restart_s    jak často preventivně restartovat příjem
   silence_watchdog_s   po jak dlouhém tichu restartovat příjem
   log                  zapisovat události do dyn_lock.log
-  language             "cs" nebo "en" (dá se přepnout i v nastavení)
+  language             "cs" nebo "en" (přepíná se vlaječkami vpravo
+                       nahoře v okně aplikace)
 
 Ostatní klíče odpovídají položkám v nastavení.
 
@@ -348,7 +348,7 @@ VE SLOŽCE PROJEKTU (zdrojový kód)
   windows\dyn_lock.py      aplikace
   windows\texts.py         všechny texty česky i anglicky
                            (používá je i instalátor)
-  windows\marks.py         kresba zaškrtávátek a přepínačů
+  windows\marks.py         kresba zaškrtávátek, přepínačů a vlaječek
                            (sdílí ji aplikace i instalátor)
   windows\icons\           ikony aplikace
   tests\test_logic.py      testy rozhodování - spustit po úpravě
