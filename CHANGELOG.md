@@ -8,7 +8,7 @@ The version itself lives in `windows/version.py` — one constant the app, the
 installer, both `.exe` resources and the APK all read. Change it there and
 nowhere else.
 
-## Unreleased
+## 1.1 — 19 Aug 2026
 
 ### Added
 
