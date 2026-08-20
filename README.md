@@ -162,6 +162,8 @@ py tests\test_logic.py        the locking decision
 py tests\test_window.py       window behaviour, device list, language switch
 py tests\test_installer.py    a full install and uninstall cycle
 py tests\preview.py           renders the window to PNG so the look can be checked
+py tests\preview.py installer the same for every installer window
+py tools\check_docs.py        checks the documentation against the code
 ```
 
 ---

@@ -380,6 +380,8 @@ IN THE PROJECT FOLDER (source code)
                            language)
   tests\test_installer.py  the full install/uninstall cycle
   tests\preview.py         renders the window to PNG to check the look
+                           (with "installer" the installer windows too)
+  tools\check_docs.py      checks the manuals against reality
   tools\ble_scan.py        diagnostics: what can be heard nearby
   tools\track.py           diagnostics: following a single device
   tools\analyze.py         evaluation of measurements from track.py

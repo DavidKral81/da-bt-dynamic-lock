@@ -361,6 +361,8 @@ VE SLOŽCE PROJEKTU (zdrojový kód)
                            jazyk)
   tests\test_installer.py  celý cyklus instalace a odinstalace
   tests\preview.py         vykreslí okno do PNG pro kontrolu vzhledu
+                           (s parametrem "installer" i okna instalátoru)
+  tools\check_docs.py      kontrola návodů proti skutečnosti
   tools\ble_scan.py        diagnostika: co je v okolí slyšet
   tools\track.py           diagnostika: sledování jednoho zařízení
   tools\analyze.py         vyhodnocení měření z track.py
