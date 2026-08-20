@@ -8,11 +8,13 @@ The version itself lives in `windows/version.py` — one constant the app, the
 installer, both `.exe` resources and the APK all read. Change it there and
 nowhere else.
 
-## Unreleased
+## 1.3 — 20 Aug 2026
 
-Version 1.1 was tagged but never published — no release, no downloads. What
-was going to be in it is listed here and goes out in the next release
-instead, so that no two different builds ever carry the same number.
+Versions 1.1 and 1.2 were never published. 1.1 was tagged and left behind when
+the release was postponed; 1.2 was built only so the wake-up fix could be tried
+on a real machine, and the two log corrections found during that test made it
+obsolete. Everything they would have contained is in this release, so that no
+two different builds ever carry the same number.
 
 ### Added
 
