@@ -5,6 +5,7 @@ SECOND opening of the window: what was drawn was remembered outside the
 window, so a new window considered itself finished. Neither the logic nor the
 measured dimensions showed it.
 """
+import time
 import tkinter as tk
 
 import sys
@@ -183,6 +184,70 @@ def run():
 
         box.hide()
         D.CFG["countdown_vertical"] = original
+        root.after(200, loop_after_sleep)
+
+    def loop_after_sleep():
+        """main_loop from end to end: a gap must not lock, and a decision must
+        not be carried out once it has gone stale.
+
+        decide() alone cannot show either of these - it is a pure function and
+        knows nothing about gaps or about how long the loop took. This is the
+        only place that proves both guards are actually wired into the loop.
+        """
+        D.DRY_RUN = True                 # never really lock the screen
+
+        class FakeTray:
+            def refresh_menu(self):
+                pass
+
+            def set_state(self, colour, label):
+                pass
+
+            def notify(self, message):
+                pass
+
+        tray = FakeTray()
+        box = D.Countdown(root)
+        before = len(D.STATE.locks)
+
+        # --- A: the loop stood still (sleep, hibernation). Silence piled up
+        # while nobody was measuring, so it must not be used to lock.
+        D.STATE.was_near, D.STATE.armed = True, True
+        D.STATE.near_at = time.monotonic() - 700
+        D._last_tick = time.monotonic() - 700       # the previous tick is ancient
+        D.main_loop(root, box, tray)
+        report("a gap in the loop does not lock the screen",
+               len(D.STATE.locks) == before)
+        silence = D.STATE.silence()
+        report("...and the silence is measured from now on",
+               silence is not None and silence < 5)
+
+        # --- B: an honest lock decision that goes stale while it is being
+        # carried out. watch_signal_loss() is where the Windows notification
+        # appears, so that is exactly where the phone gets its chance to speak.
+        D.STATE.near_at = time.monotonic() - 700
+        D._last_tick = time.monotonic()             # no gap this time
+        original_watch = D.watch_signal_loss
+        D.watch_signal_loss = lambda t: D.STATE.record(-50)
+        try:
+            D.main_loop(root, box, tray)
+        finally:
+            D.watch_signal_loss = original_watch
+        report("a decision that went stale is not carried out",
+               len(D.STATE.locks) == before)
+
+        # ...and the very same situation without the phone coming back DOES
+        # lock. Without this the two checks above would pass on an app that
+        # never locks anything at all.
+        D.STATE.near_at = time.monotonic() - 700
+        D.STATE.armed = True
+        D._last_tick = time.monotonic()
+        D.main_loop(root, box, tray)
+        report("without the phone coming back it still locks",
+               len(D.STATE.locks) == before + 1)
+
+        D.CFG["active"] = False          # stop the ticks main_loop scheduled
+        box.hide()
         root.after(200, finish)
 
     def finish():

@@ -285,6 +285,15 @@ vidět, kdy zmizel a proč se zamklo.
       V logu chybí "Phone seen for the first time" → v nastavení
       (nebo v nabídce ikony) vyber správný telefon.
 
+  Zamklo se hned po probuzení notebooku, bez odpočtu
+      Tohle dělaly verze do 1.1 včetně. Zatímco počítač spal,
+      aplikace neměřila, a po probuzení viděla dlouhé ticho, takže
+      zamkla okamžitě - i s telefonem na stole. Od verze 1.2 se
+      měření po probuzení začíná znovu; v logu je řádek
+      "The loop stood still for X s". Hlídání tím nekončí: když
+      telefon opravdu chybí, zamkne se po nastavené době a
+      s odpočtem, jako vždycky.
+
   Ikona není vidět
       Bude schovaná pod šipkou skrytých ikon vpravo dole.
 

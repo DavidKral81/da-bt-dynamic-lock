@@ -432,6 +432,32 @@ class State:
             self.rssi_median = None
             self.armed = True
 
+    def restart_measurement(self):
+        """Start counting the silence again from this moment.
+
+        For when the main loop did not run for a while (sleep, hibernation, a
+        frozen machine): nothing was measured in that time, so the silence that
+        piled up says nothing about where the phone was. Locking on it would
+        mean locking the screen the instant the lid opens, with the phone lying
+        right there - measured on 20.08.2026, an 11.5 minute sleep produced
+        "Locking (silence 0 s)".
+
+        Guarding must NOT stop, though, so this is not target_changed(): the
+        phone stays "known", the clock simply starts from zero. A phone that is
+        really gone therefore still locks the screen, after the full delay and
+        with a countdown.
+        """
+        with self.lock:
+            if not self.was_near:
+                return                  # never seen it - nothing to restart
+            now = time.monotonic()
+            self.near_at = now
+            self.seen_at = now
+            self.samples.clear()        # readings from before the gap are stale
+            self.rssi = None
+            self.rssi_median = None
+            self.armed = True
+
     def silence(self):
         """How long the phone has not been "at the desk". None = never was."""
         with self.lock:
@@ -2069,6 +2095,26 @@ def decide(cfg, silence, armed, pause_left, idle):
 _previous_action = None
 _saved_at = 0.0
 _alerted = False         # we have already reported a long silence
+_last_tick = None        # when the main loop last ran, to notice it stopped
+
+# The loop ticks every 500 ms. Anything above this means it was not running at
+# all - the machine slept, hibernated or was stuck. Deliberately generous: a
+# busy machine can delay a tick by a second or two, and treating that as a gap
+# would keep restarting the measurement and never lock anything.
+STALL_S = 10.0
+
+
+def tick_gap(now):
+    """Seconds since the previous tick; 0.0 on the very first one.
+
+    The "no tick yet" state is None, not 0.0: monotonic() never really returns
+    zero, but a zero sentinel would make the very first tick indistinguishable
+    from "not started" for ever after.
+    """
+    global _last_tick
+    gap = 0.0 if _last_tick is None else now - _last_tick
+    _last_tick = now
+    return gap
 
 
 def watch_signal_loss(tray):
@@ -2099,6 +2145,18 @@ def watch_signal_loss(tray):
 def main_loop(root, countdown, tray):
     global _previous_action
     try:
+        gap = tick_gap(time.monotonic())
+        if gap > STALL_S:
+            # The loop stood still - the machine slept. Nothing was measured in
+            # the meantime, so this tick decides nothing; the clock starts over.
+            log(f"The loop stood still for {gap:.0f} s (sleep?) "
+                f"- the silence is measured again from now.")
+            STATE.restart_measurement()
+            countdown.hide()
+            _previous_action = None
+            root.after(500, main_loop, root, countdown, tray)
+            return
+
         pause = max(0.0, STATE.paused_until - time.monotonic())
         action, label, remaining, reason = decide(
             CFG, STATE.silence(), STATE.armed, pause, idle_seconds())
@@ -2122,6 +2180,21 @@ def main_loop(root, countdown, tray):
         if time.monotonic() - _saved_at > 30:
             _saved_at = time.monotonic()
             save_history()
+
+        if action == "lock":
+            # Ask again with fresh numbers. Between the decision above and this
+            # point sit watch_signal_loss() - which can raise a Windows
+            # notification - and refresh_menu(); on 20.08.2026 that took about
+            # six seconds, and the phone was back before the screen locked. The
+            # log then read "Locking (silence 0 s)", which is a lock nobody
+            # deserved.
+            action, label, remaining, reason = decide(
+                CFG, STATE.silence(), STATE.armed,
+                max(0.0, STATE.paused_until - time.monotonic()), idle_seconds())
+            if action != "lock":
+                log("Locking called off - the phone came back while the "
+                    "decision was being carried out.")
+            _previous_action = action
 
         if action == "lock":
             silence = STATE.silence()

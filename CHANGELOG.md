@@ -29,6 +29,19 @@ instead, so that no two different builds ever carry the same number.
   see with the one on the page. The phone app still has no `INTERNET`
   permission.
 
+### Fixed
+
+- Waking the computer no longer locks the screen straight away. While the
+  machine slept nothing was being measured, so the app woke up seeing a long
+  silence and locked at once — with the phone lying on the desk, and with no
+  countdown, because the countdown window had been skipped over entirely. The
+  measurement now starts again after a gap, and guarding continues: a phone
+  that really is gone still locks the screen after the usual delay.
+- A decision to lock is checked once more immediately before it is carried
+  out. A Windows notification could sit in between and take several seconds,
+  long enough for the phone to come back — the log then read `Locking
+  (silence 0 s)`, a lock nobody had earned.
+
 ### Changed
 
 - The language is switched with flags in the top right corner — in the app,

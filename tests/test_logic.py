@@ -65,6 +65,36 @@ check("without work show the countdown", "countdown",
 check("countdown hides while working even just before locking", "none",
       decide(PO, 19.5, True, 0, 1)[0])
 
+print("\nAfter a gap in the loop (sleep, hibernation):")
+import time as _time
+from dyn_lock import STATE, tick_gap, STALL_S
+
+# Telling an ordinary late tick from a machine that was not running at all.
+tick_gap(1000.0)                       # the first tick only sets the clock
+check("an ordinary tick is not a gap", False, tick_gap(1000.5) > STALL_S)
+check("a tick 11 minutes late IS a gap", True, tick_gap(1690.5) > STALL_S)
+
+# The point of it: silence that piled up while nobody was measuring must not
+# lock the screen the moment the lid opens. Measured on 20.08.2026 - an 11.5
+# minute sleep ended with "Locking (silence 0 s)" and no countdown at all.
+STATE.was_near = True
+STATE.near_at = _time.monotonic() - 700
+check("stale silence from the sleep would lock", "lock",
+      decide(CFG, STATE.silence(), STATE.armed, 0, 99)[0])
+STATE.restart_measurement()
+check("...and restarting the measurement stops it", "none",
+      decide(CFG, STATE.silence(), STATE.armed, 0, 99)[0])
+check("the phone stays known, so guarding does not stop", False,
+      STATE.silence() is None)
+# ...but a phone that really is gone still locks, after the full delay
+STATE.near_at = _time.monotonic() - 60
+check("a phone that really is gone still locks", "lock",
+      decide(CFG, STATE.silence(), STATE.armed, 0, 99)[0])
+# a phone never seen at all stays never seen - no pretending it was here
+STATE.was_near = False
+STATE.restart_measurement()
+check("a phone never seen stays 'never seen'", None, STATE.silence())
+
 # The measured data is not versioned (several MB of raw samples), so a clean
 # clone of the project does not have it. The test has to survive that - it
 # used to fail on FileNotFoundError before it even got to its own message

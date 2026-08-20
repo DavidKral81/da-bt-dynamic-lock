@@ -300,6 +300,15 @@ the phone was seen, when it disappeared and why it locked.
       "Phone seen for the first time" is missing from the log → pick the
       right phone in the settings (or in the icon menu).
 
+  It locked right after waking the computer, with no countdown
+      Versions up to and including 1.1 did that. While the machine
+      slept the app measured nothing, so on waking it saw a long
+      silence and locked at once - even with the phone on the desk.
+      From version 1.2 the measurement starts again after a wake;
+      the log says "The loop stood still for X s". Guarding does
+      not stop: if the phone really is gone, it locks after the
+      set delay and with a countdown, as always.
+
   I cannot see the icon
       It is hidden under the arrow next to the clock.
 
