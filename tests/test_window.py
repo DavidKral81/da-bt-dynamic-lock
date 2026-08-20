@@ -215,12 +215,19 @@ def run():
         D.STATE.was_near, D.STATE.armed = True, True
         D.STATE.near_at = time.monotonic() - 700
         D._last_tick = time.monotonic() - 700       # the previous tick is ancient
+        D._alerted = True              # "the phone has gone missing" was warned
         D.main_loop(root, box, tray)
         report("a gap in the loop does not lock the screen",
                len(D.STATE.locks) == before)
         silence = D.STATE.silence()
         report("...and the silence is measured from now on",
                silence is not None and silence < 5)
+        # The clock going back to zero must not be announced as the phone
+        # coming back - nothing was heard from it.
+        report("...and no good news is invented about the phone",
+               D._alerted is False)
+        report("a forgotten reading reads as unknown, not as None",
+               D.rssi_text() == "unknown")
 
         # --- B: an honest lock decision that goes stale while it is being
         # carried out. watch_signal_loss() is where the Windows notification

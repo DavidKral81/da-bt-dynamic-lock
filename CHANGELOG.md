@@ -37,6 +37,11 @@ instead, so that no two different builds ever carry the same number.
   countdown, because the countdown window had been skipped over entirely. The
   measurement now starts again after a gap, and guarding continues: a phone
   that really is gone still locks the screen after the usual delay.
+- The log no longer reports good news it cannot know. After the measurement
+  restarts, the clock reads zero, and that used to be announced as "Phone is
+  advertising again" about a phone that had said nothing at all. A signal
+  strength that was deliberately forgotten now reads `unknown` instead of
+  `None dBm`, which looked like a measurement.
 - A decision to lock is checked once more immediately before it is carried
   out. A Windows notification could sit in between and take several seconds,
   long enough for the phone to come back — the log then read `Locking

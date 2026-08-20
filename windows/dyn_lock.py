@@ -2104,6 +2104,16 @@ _last_tick = None        # when the main loop last ran, to notice it stopped
 STALL_S = 10.0
 
 
+def rssi_text():
+    """The last signal strength, for the log.
+
+    None does not mean zero - it means the reading was deliberately forgotten,
+    which happens after a gap in the loop. Printing a bare "None dBm" would
+    read like a measurement.
+    """
+    return "unknown" if STATE.rssi is None else f"{STATE.rssi} dBm"
+
+
 def tick_gap(now):
     """Seconds since the previous tick; 0.0 on the very first one.
 
@@ -2143,7 +2153,7 @@ def watch_signal_loss(tray):
 
 
 def main_loop(root, countdown, tray):
-    global _previous_action
+    global _previous_action, _alerted
     try:
         gap = tick_gap(time.monotonic())
         if gap > STALL_S:
@@ -2154,6 +2164,13 @@ def main_loop(root, countdown, tray):
             STATE.restart_measurement()
             countdown.hide()
             _previous_action = None
+            # The warning about a phone gone missing is cleared quietly. The
+            # clock has just been set back to zero, so watch_signal_loss()
+            # would otherwise announce "Phone is advertising again" about a
+            # phone that has said nothing at all - seen in the log at
+            # 20.08.2026 16:08:03. The log is what these faults get diagnosed
+            # from; it must not invent good news.
+            _alerted = False
             root.after(500, main_loop, root, countdown, tray)
             return
 
@@ -2165,7 +2182,7 @@ def main_loop(root, countdown, tray):
         # be verified afterwards that a lock really was preceded by a warning.
         if action == "countdown" and _previous_action != "countdown":
             log(f"Countdown started - {remaining} s left "
-                f"(last RSSI {STATE.rssi} dBm).")
+                f"(last RSSI {rssi_text()}).")
         elif _previous_action == "countdown" and action == "none":
             log("Countdown cancelled - the phone is back at the desk.")
         _previous_action = action
@@ -2199,7 +2216,7 @@ def main_loop(root, countdown, tray):
         if action == "lock":
             silence = STATE.silence()
             log(f"Locking (silence {silence:.0f} s, "
-                f"last RSSI {STATE.rssi} dBm).")
+                f"last RSSI {rssi_text()}).")
             with STATE.lock:
                 STATE.armed = False
                 STATE.locks.append(time.monotonic())
