@@ -134,9 +134,14 @@ SETTINGS
         Range (sensitivity)            see section 6
         Show a countdown before locking
                                        a small "Locking in X s"
-                                       window in the middle of the
-                                       screen; information only, it
+                                       window; information only, it
                                        cannot cancel the lock
+        Where to show the countdown (0 % top, 100 % bottom)
+                                       in tenths of the screen height,
+                                       30 % from the top by default.
+                                       Horizontally the window is
+                                       always centred, and always on
+                                       the primary monitor.
         Do not lock while the user is active (mouse, keyboard)
                                        CAREFUL: anyone at the desk
                                        can postpone locking this
@@ -335,8 +340,6 @@ in the app window; only these are edited in the file directly,
 and the app has to be restarted afterwards:
 
   threshold_window_s   over how many seconds the signal is smoothed
-  countdown_vertical   vertical position of the countdown window
-                       (0.33 = one third from the top, 0.5 = middle)
   scanner_restart_s    how often to restart reception as a precaution
   silence_watchdog_s   after how long a silence to restart reception
   log                  write events to dyn_lock.log

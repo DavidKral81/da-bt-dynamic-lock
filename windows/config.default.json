@@ -16,8 +16,8 @@
   "countdown_from_s": 15,
   "_countdown_from_s": "How many seconds before locking the countdown appears.",
 
-  "countdown_vertical": 0.33,
-  "_countdown_vertical": "Vertical position of the countdown window. 0.33 = one third from the top, 0.5 = middle of the screen. Horizontally it is always centred.",
+  "countdown_vertical": 0.30,
+  "_countdown_vertical": "Vertical position of the countdown window, also settable in the app. 0.30 = 30 % from the top, 0.5 = middle of the screen. The app rounds to the nearest tenth it offers, so the menu and the window always agree. Horizontally it is always centred, on the primary monitor.",
 
   "rssi_threshold": null,
   "_rssi_threshold": "Range (sensitivity). null = off, only a complete loss of signal counts. A number (e.g. -86) means a weaker signal no longer counts as 'at the desk', so it locks sooner. Measured: -81 dBm at the desk, -83 dBm three metres away.",

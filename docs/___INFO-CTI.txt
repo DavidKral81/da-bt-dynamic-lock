@@ -127,10 +127,14 @@ NASTAVENÍ
         Automatické zamykání aktivní   hlavní vypínač
         Zamknout po                    12 s až 120 s (výchozí 45 s)
         Dosah (citlivost)              viz oddíl 6
-        Před zamknutím ukázat odpočet  okénko "Uzamknutí za X s"
-                                       uprostřed obrazovky; jen
+        Před zamknutím ukázat odpočet  okénko "Uzamknutí za X s"; jen
                                        informace, nejde jím uzamknutí
                                        zrušit
+        Kde odpočet ukázat (0 % nahoře, 100 % dole)
+                                       po desetinách výšky obrazovky,
+                                       výchozí 30 % odshora. Vodorovně
+                                       je okénko vždy uprostřed a vždy
+                                       na hlavním monitoru.
         Nezamykat při aktivitě uživatele (myš, klávesnice)
                                        POZOR: kdokoli u stolu tím může
                                        uzamknutí odkládat, proto je to
@@ -317,8 +321,6 @@ Většina se dá pohodlněji nastavit z ikony v liště; přímo v souboru
 se mění jen tohle a po změně je nutný restart aplikace:
 
   threshold_window_s   přes kolik sekund se signál vyhlazuje
-  countdown_vertical   svislá poloha okénka s odpočtem
-                       (0.33 = třetina odshora, 0.5 = střed)
   scanner_restart_s    jak často preventivně restartovat příjem
   silence_watchdog_s   po jak dlouhém tichu restartovat příjem
   log                  zapisovat události do dyn_lock.log

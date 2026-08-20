@@ -94,7 +94,7 @@ DEFAULTS = {
     "active": True,
     "countdown": True,
     "countdown_from_s": 15,
-    "countdown_vertical": 0.33,           # 0.33 = one third from the top
+    "countdown_vertical": 0.30,           # 0.30 = 30 % from the top
     "rssi_threshold": None,                # None = lock only on signal loss
     "threshold_window_s": 6,
     "idle_guard": False,
@@ -674,6 +674,26 @@ def scanner_thread():
 
 # ---------------------------------------------------------------- countdown
 
+COUNTDOWN_STEPS = (10, 20, 30, 40, 50, 60, 70, 80, 90)   # per cent from the top
+
+
+def countdown_percent():
+    """Vertical position of the countdown box - one of COUNTDOWN_STEPS.
+
+    The settings menu offers steps, so whatever is in config.json is snapped to
+    the nearest one. The menu and the box both read THIS function, so they
+    cannot disagree: without it a hand-edited 0.33 would leave the menu showing
+    the first item while the box sat somewhere else entirely.
+    """
+    raw = CFG.get("countdown_vertical", 0.30)
+    try:
+        wanted = float(raw) * 100
+    except (TypeError, ValueError):
+        log(f"countdown_vertical is not a number ({raw!r}) - using 30 %.")
+        wanted = 30.0
+    return min(COUNTDOWN_STEPS, key=lambda p: abs(p - wanted))
+
+
 class Countdown:
     """A small unobtrusive box above the clock in the bottom right corner.
 
@@ -712,13 +732,18 @@ class Countdown:
             self._create()
         self.lbl.config(text=tx("countdown_text", s=remaining))
         self.win.update_idletasks()
-        # Horizontally centred, vertically at 1/3 of the screen from the top -
-        # the eye lands there on its own, unlike the corner by the clock.
+        # Horizontally centred; the height is the user's choice (30 % from the
+        # top by default - the eye lands there on its own, unlike the corner by
+        # the clock).
         left, top, right, bottom = work_area()
         w, h = self.win.winfo_width(), self.win.winfo_height()
-        ratio = float(CFG.get("countdown_vertical", 0.33))
         x = left + (right - left - w) // 2
-        y = top + int((bottom - top) * ratio) - h // 2
+        y = top + int((bottom - top) * countdown_percent() / 100) - h // 2
+        # No clamping to the desktop here on purpose: the offered steps stop at
+        # 90 %, which leaves the whole box on screen for any sane window height.
+        # A clamp would be a branch that never runs - and it would quietly hide
+        # a badly chosen step instead of letting the test say so. That the box
+        # really fits is checked in tests/test_window.py.
         self.win.geometry(f"+{x}+{y}")
         self.win.deiconify()
         self.win.lift()
@@ -1032,6 +1057,16 @@ class Chart:
         self.countdown_var.set(self._countdown_label())
         self._select(card, tx("sw_countdown"), None, self.countdown_pairs,
                      var=self.countdown_var, action=self._set_countdown)
+        # Where the box appears, top to bottom. Not bound to the key directly:
+        # the stored value is a fraction and may sit between two steps, so the
+        # menu is pre-set from countdown_percent() - the same function the box
+        # itself uses.
+        self.position_var = tk.StringVar(
+            value=tx("opt_from_top", p=countdown_percent()))
+        self._select(card, tx("lbl_countdown_position"), None,
+                     [(tx("opt_from_top", p=p), p) for p in COUNTDOWN_STEPS],
+                     var=self.position_var,
+                     action=self._set_countdown_position)
 
         # --- 3. behaviour ----------------------------------------------
         card = self._card(column, tx("card_behaviour"), None)
@@ -1329,6 +1364,13 @@ class Chart:
             CFG["countdown_from_s"] = seconds
         save_cfg(CFG)
         log(f"Countdown: {seconds or 'do not show'}")
+
+    def _set_countdown_position(self, percent):
+        """Stored as a fraction, the same as it always was - only the menu
+        talks in per cent."""
+        CFG["countdown_vertical"] = round(percent / 100, 2)
+        save_cfg(CFG)
+        log(f"Countdown position: {percent} % from the top")
 
     def _change_language(self, code):
         """Switch the language and build the window again.

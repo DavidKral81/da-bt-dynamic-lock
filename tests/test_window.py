@@ -152,7 +152,38 @@ def run():
         report("switching back to Czech works",
                "síla signálu" in chart.win.title())
         chart.toggle()
-        root.after(400, finish)
+        root.after(400, countdown_position)
+
+    def countdown_position():
+        """The countdown box must LAND where the setting says.
+
+        Measured on the real window, not on the setting: the menu and the box
+        read the same function, and this is the only place that proves the
+        result of it ever reaches the screen.
+        """
+        box = D.Countdown(root)
+        left, top, right, bottom = D.work_area()
+        original = D.CFG.get("countdown_vertical")
+
+        # 0.33 is there because that is what shipped in 1.0 - it is not one of
+        # the offered steps and has to snap to the nearest one, 30 %.
+        for stored, percent in ((0.10, 10), (0.50, 50), (0.90, 90), (0.33, 30)):
+            D.CFG["countdown_vertical"] = stored
+            box.show(9)
+            box.win.update()
+            h = box.win.winfo_height()
+            wanted = top + int((bottom - top) * percent / 100) - h // 2
+            got = box.win.winfo_rooty()
+            report(f"countdown sits at {percent} % from the top "
+                   f"(y {got}, wanted {wanted})", abs(got - wanted) <= 2)
+            # ...and the whole box stays on the desktop, ends of the range
+            # included - half a warning is a warning wasted
+            report(f"the whole box is on the desktop at {percent} %",
+                   got >= top and got + h <= bottom)
+
+        box.hide()
+        D.CFG["countdown_vertical"] = original
+        root.after(200, finish)
 
     def finish():
         root.destroy()

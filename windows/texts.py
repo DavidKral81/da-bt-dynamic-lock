@@ -67,6 +67,8 @@ CS = {
     "sw_countdown": "Před zamknutím ukázat odpočet",
     "opt_countdown_from": "{s} sekund předem",
     "opt_countdown_off": "Nezobrazovat",
+    "lbl_countdown_position": "Kde odpočet ukázat (0 % nahoře, 100 % dole)",
+    "opt_from_top": "{p} % odshora",
     "sw_idle_guard": "Nezamykat při aktivitě uživatele (myš, klávesnice)",
 
     # --- settings: app behaviour --------------------------------------
@@ -267,6 +269,8 @@ EN = {
     "sw_countdown": "Show a countdown before locking",
     "opt_countdown_from": "{s} seconds ahead",
     "opt_countdown_off": "Do not show",
+    "lbl_countdown_position": "Where to show the countdown (0 % top, 100 % bottom)",
+    "opt_from_top": "{p} % from the top",
     "sw_idle_guard": "Do not lock while the user is active (mouse, keyboard)",
 
     # --- settings: application behaviour ------------------------------

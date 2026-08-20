@@ -8,10 +8,17 @@ The version itself lives in `windows/version.py` — one constant the app, the
 installer, both `.exe` resources and the APK all read. Change it there and
 nowhere else.
 
-## 1.1 — 19 Aug 2026
+## Unreleased
+
+Version 1.1 was tagged but never published — no release, no downloads. What
+was going to be in it is listed here and goes out in the next release
+instead, so that no two different builds ever carry the same number.
 
 ### Added
 
+- The countdown window's height on the screen is now a setting, in tenths from
+  the top (30 % by default). Horizontally it stays centred, on the primary
+  monitor.
 - The installer says which version it is installing, in its first window and
   in the one that reports the result. Uninstalling shows the version that is
   being removed.
