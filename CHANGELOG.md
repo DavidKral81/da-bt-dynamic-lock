@@ -16,6 +16,9 @@ instead, so that no two different builds ever carry the same number.
 
 ### Added
 
+- The tray menu has a **Settings** item, above Quit. It opens the window on
+  the settings tab — and unlike the chart item it never closes the window,
+  only brings it to the front.
 - The countdown window's height on the screen is now a setting, in tenths from
   the top (30 % by default). Horizontally it stays centred, on the primary
   monitor.

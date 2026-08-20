@@ -198,6 +198,11 @@ named exactly as in the settings:
   ---
   Pause watching …                  5 minutes to 2 days
   Cancel the pause                  (only while watching is paused)
+  ---
+  Settings                          opens the window on the settings
+                                    tab; unlike "Signal chart" it never
+                                    closes the window, only brings it
+                                    to the front
   Quit
 
 

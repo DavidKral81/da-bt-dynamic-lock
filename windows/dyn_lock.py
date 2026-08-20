@@ -871,6 +871,21 @@ class Chart:
             return
         self._create()
 
+    def open_settings(self):
+        """Show the window on the settings tab.
+
+        Deliberately NOT a toggle the way the chart item is: someone who picks
+        "Settings" from the tray menu wants to see the settings, and having the
+        window shut in their face instead would be a surprise. An already open
+        window is brought to the front.
+        """
+        if self.win is None or not self.win.winfo_exists():
+            self._create()
+        self._tab(1)
+        self.win.deiconify()
+        self.win.lift()
+        self.win.focus_force()
+
     def _remember_window(self):
         """Remember size, position and whether the window was maximised.
 
@@ -1943,6 +1958,9 @@ class TrayIcon:
             # runs on its own
             self.root.after(0, self.chart.toggle)
 
+        def open_settings(icon, item):
+            self.root.after(0, self.chart.open_settings)
+
         # Picking the watched phone from the devices currently audible.
         # Typing the name by hand is not needed - and cannot be mistyped.
         def pick_target(name):
@@ -2005,6 +2023,10 @@ class TrayIcon:
             pystray.MenuItem(lambda i: tx("tray_clear_pause"), clear_pause,
                              visible=lambda item:
                                  STATE.paused_until > time.monotonic()),
+            pystray.Menu.SEPARATOR,
+            # The same key as the tab in the window - one name for one place,
+            # so the menu and the window cannot end up calling it differently.
+            pystray.MenuItem(lambda i: tx("tab_settings"), open_settings),
             pystray.MenuItem(lambda i: tx("tray_quit"), quit_app),
         )
 

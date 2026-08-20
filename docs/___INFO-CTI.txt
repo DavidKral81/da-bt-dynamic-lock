@@ -189,6 +189,10 @@ otevírání okna. Položky se jmenují stejně jako v nastavení:
   ---
   Pozastavit hlídání …             5 minut až 2 dny
   Zrušit pozastavení               (jen když je hlídání pozastavené)
+  ---
+  Nastavení                        otevře okno rovnou na nastavení
+                                   (na rozdíl od "Graf signálu" okno
+                                   nezavírá, jen ho vytáhne dopředu)
   Ukončit
 
 

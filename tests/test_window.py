@@ -255,6 +255,36 @@ def run():
 
         D.CFG["active"] = False          # stop the ticks main_loop scheduled
         box.hide()
+        root.after(200, tray_menu)
+
+    def tray_menu():
+        """The tray menu is built out of lambdas and is only ever seen when
+        somebody right-clicks the icon - a broken item would show up in front
+        of the user, not here. So it gets built and read once.
+        """
+        D.CFG["active"] = True
+        icon = D.TrayIcon(root, D.Countdown(root), chart)
+        labels = [item.text for item in icon.icon.menu.items]
+        report("the tray menu builds at all", len(labels) > 5)
+        report("...and offers Settings",
+               D.texts.t("tab_settings") in labels)
+        report("...right above Quit",
+               labels.index(D.texts.t("tab_settings"))
+               == labels.index(D.texts.t("tray_quit")) - 1)
+        # Labels must be read when the menu opens, not baked in when it is
+        # built - a plain string would freeze in whatever language was current
+        # at build time. Asked behaviourally: switch the language and see
+        # whether the SAME menu object now says something else. (Asking pystray
+        # whether the label is a callable does not work: it wraps plain strings
+        # too, so that check passed even on a hardcoded label.)
+        was = D.texts.language()
+        D.texts.set_language("en")
+        english = [item.text for item in icon.icon.menu.items]
+        D.texts.set_language(was)
+        czech = [item.text for item in icon.icon.menu.items]
+        report("switching the language reaches the menu too",
+               "Settings" in english and D.texts.t("tab_settings") in czech
+               and english != czech)
         root.after(200, finish)
 
     def finish():
