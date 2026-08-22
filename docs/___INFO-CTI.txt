@@ -298,6 +298,17 @@ vidět, kdy zmizel a proč se zamklo.
       telefon opravdu chybí, zamkne se po nastavené době a
       s odpočtem, jako vždycky.
 
+  V logu je spousta "Locking" za sebou, po minutě po sobě
+      Tohle dělaly verze do 1.3 včetně. Když byla obrazovka
+      zamčená, stačil jeden signál z telefonu a celý cyklus se
+      rozjel znovu: po nastavené době se nakreslilo okénko
+      odpočtu, jenže schované za zamykací obrazovkou, a pak se
+      "zamklo" podruhé, což už nic neudělá. Od další verze se
+      hlídání po dobu zamčené obrazovky pozastaví (v logu
+      "Screen locked - watching pauses until it is unlocked.")
+      a po odemčení začne měřit od nuly - takže dopsané heslo
+      už nikdy nenásleduje okamžité zamčení.
+
   Ikona není vidět
       Bude schovaná pod šipkou skrytých ikon vpravo dole.
 

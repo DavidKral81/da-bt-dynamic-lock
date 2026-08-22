@@ -8,6 +8,49 @@ The version itself lives in `windows/version.py` — one constant the app, the
 installer, both `.exe` resources and the APK all read. Change it there and
 nowhere else.
 
+## Unreleased
+
+### Fixed
+
+- **The app no longer counts down and locks behind the lock screen.** Once the
+  screen was locked, a single advertisement from the phone started the whole
+  cycle again: after the delay a countdown box was drawn where the lock screen
+  hid it, and then the screen was "locked" a second time, which does nothing.
+  Between 19 and 22 Aug 2026 that accounted for 41 of the 68 locks recorded in
+  the log. Watching now pauses while the screen is locked, and the delay starts
+  from zero when it is unlocked — so finishing your password is never followed
+  by an immediate lock.
+- **A failed lock is no longer reported as a success.** `LockWorkStation` can
+  return an error, and it was never looked at: the log said "Locking", the app
+  settled down to wait for the phone, and the screen stayed wide open. A
+  failure is now written down, the tray says so, and the next tick tries again.
+- **A broken log can no longer stop the app.** Writing to the log was
+  unguarded, and the line that schedules the next tick sat where an error
+  skipped it — one failed write and the app would sit in the tray watching
+  nothing, for ever. Log rotation failing is reported once instead of silently.
+- Settings that cannot be written are reported instead of passing unnoticed —
+  the switch used to move while the file did not, and the old value came back
+  at the next start.
+- Turning start-at-logon on or off now verifies that it really happened rather
+  than trusting the return code of `schtasks`, and says what went wrong when it
+  did not. The installer's own "could not create the task" report can finally
+  fire; the app always handed it a success code before.
+- A damaged `history.json` no longer stops the app from starting. Only the JSON
+  parsing was guarded, so a file that parsed but held the wrong shape raised
+  while it was being read out, before any window appeared.
+- Settings that could not be read were announced with `print`, which goes
+  nowhere in a windowed app. The message now waits and reaches the log.
+- A scanner that refuses to stop, a desktop size Windows would not report and a
+  failed idle-time reading are all written to the log now. Each of them used to
+  be swallowed, and the last two silently substituted a made-up value.
+
+### Added
+
+- When the countdown box appears, the log records where it actually landed, how
+  big it is, whether Windows considers it visible and what window is in front
+  of it. Until now the log only proved that a countdown had been *decided on*,
+  which is not the same as anyone seeing it.
+
 ## 1.3 — 20 Aug 2026
 
 Versions 1.1 and 1.2 were never published. 1.1 was tagged and left behind when

@@ -65,6 +65,46 @@ check("without work show the countdown", "countdown",
 check("countdown hides while working even just before locking", "none",
       decide(PO, 19.5, True, 0, 1)[0])
 
+print("\nBehind the lock screen:")
+# 19.-22.08.2026: 41 of 68 "Locking" lines in the log belonged to a screen that
+# was already locked (cross-checked against the Winlogon event log). Every one
+# of them also drew a countdown box behind the lock screen, where nobody could
+# see it.
+check("locked screen: no countdown, no locking", "stop",
+      decide(C, 300, True, 0, 99, True)[0])
+check("...and it says why", "screen_locked",
+      decide(C, 300, True, 0, 99, True)[3])
+check("locked screen beats an otherwise certain lock", "stop",
+      decide(CFG, 300, True, 0, 99, True)[0])
+# ...and the same situation unlocked MUST lock, or the check above proves
+# nothing at all - it would pass just as well on an app that never locks.
+check("the same moment unlocked does lock", "lock",
+      decide(CFG, 300, True, 0, 99, False)[0])
+check("switched off still wins over the lock screen", "off",
+      decide({**CFG, "active": False}, 300, True, 0, 99, True)[3])
+
+print("\nTelling a locked screen apart (OpenInputDesktop):")
+import dyn_lock as _D
+
+# The real call cannot be exercised from a test - it would need the screen
+# actually locked. What CAN be tested is the reading of the answer, which is
+# the part that can be wrong. ERROR_ACCESS_DENIED is the refusal Windows gives
+# while the secure desktop is in front.
+_original = _D._input_desktop_error
+try:
+    _D._input_desktop_error = lambda: 0
+    check("the desktop is ours = not locked", False, _D.session_locked())
+    _D._input_desktop_error = lambda: 5          # ERROR_ACCESS_DENIED
+    check("access denied = locked", True, _D.session_locked())
+    # Any other failure must NOT be read as "locked": that would switch the
+    # watching off for good and the app would never lock anything again.
+    _D._input_desktop_error = lambda: 6          # ERROR_INVALID_HANDLE
+    check("an unrelated error keeps watching alive", False, _D.session_locked())
+finally:
+    _D._input_desktop_error = _original
+check("...and the real check answers on a live desktop", False,
+      _D.session_locked())
+
 print("\nAfter a gap in the loop (sleep, hibernation):")
 import time as _time
 from dyn_lock import STATE, tick_gap, STALL_S

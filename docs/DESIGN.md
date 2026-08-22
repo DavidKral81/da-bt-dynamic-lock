@@ -69,6 +69,20 @@ is cheap (~0.5 s). It is also rate-limited: a restart cannot conjure up a
 signal that is not there, and without a brake an absent phone caused 47 000
 restarts overnight.
 
+**Nothing is decided while the screen is locked.** After a lock the app waits
+for the phone, and a single advertisement used to re-arm it — so behind the
+lock screen the full cycle ran again: a countdown box drawn where nobody could
+see it, then a second "lock" that does nothing. Cross-checking the app's log
+against the Windows Winlogon events for 19–22 Aug 2026 put 41 of 68 recorded
+locks in that category. The lock screen is recognised through
+`OpenInputDesktop`, which an ordinary process is refused while the secure
+desktop is in front — the refusal is the answer. Any other error counts as
+"not locked", because guessing "locked" when the check itself broke would
+switch the guarding off for good. On unlocking, the measurement restarts from
+zero exactly as it does after a wake: the silence collected behind the lock
+screen says nothing about where the phone is now, and without the restart the
+screen would lock again as soon as the password was typed.
+
 **Pinning to the taskbar is not possible.** Verified by listing the shell
 verbs of both the shortcut and the executable on Windows 11 build 26200 — the
 verb does not exist; Microsoft blocked it so installers cannot help

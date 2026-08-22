@@ -109,6 +109,11 @@ DEFAULTS = {
 }
 
 
+# Messages from before log() could be used (it needs CFG, which does not exist
+# yet while the settings are being read). main() flushes them.
+_early_log = []
+
+
 def load_cfg():
     """Settings = defaults, overlaid with whatever the user has saved.
 
@@ -128,13 +133,30 @@ def load_cfg():
             cfg.update({k: v for k, v in saved.items()
                         if not k.startswith("_")})
         except (OSError, ValueError) as error:
-            # damaged settings must be visible, not silently ignored
-            print(f"config.json unreadable ({error}) - using defaults")
+            # Damaged settings must be visible, and print() alone does not
+            # manage that: the packaged app runs without a console, so the
+            # message went nowhere at all. log() cannot be used here either -
+            # it reads CFG, which is what this function is still building. So
+            # the message waits and main() writes it out.
+            _early_log.append(f"config.json unreadable ({error}) - using defaults")
     return cfg
 
 
 def save_cfg(cfg):
-    CFG_PATH.write_text(json.dumps(cfg, indent=2, ensure_ascii=False), encoding="utf-8")
+    """Write the settings out. True when they really landed on disk.
+
+    Called from a dozen places in the UI, each of them straight after the user
+    flipped something. A failed write used to pass unnoticed: the switch moved,
+    the file did not, and the setting was back to its old value after a
+    restart. Reported the same way a failed history write is.
+    """
+    try:
+        CFG_PATH.write_text(json.dumps(cfg, indent=2, ensure_ascii=False),
+                            encoding="utf-8")
+        return True
+    except OSError as error:
+        log(f"Could not save the settings: {error}")
+        return False
 
 
 CFG = load_cfg()
@@ -151,9 +173,17 @@ if "--quit-after" in sys.argv:
 
 
 LOG_MAX = 2_000_000      # 2 MB, then a new file is started
+_rotate_failed = False   # rotation is only complained about once
 
 
 def log(msg):
+    """Write one line to the log. Must never raise.
+
+    log() is called from the main loop, and an exception escaping from here
+    used to travel up and stop the loop from ever being scheduled again - the
+    app then sat in the tray looking alive and watched nothing.
+    """
+    global _rotate_failed
     line = f"{datetime.now():%d.%m.%Y %H:%M:%S}  {msg}"
     print(line)
     if not CFG.get("log", True):
@@ -165,10 +195,20 @@ def log(msg):
             previous = LOG_PATH.with_suffix(".log.1")
             previous.unlink(missing_ok=True)
             LOG_PATH.rename(previous)
-    except OSError:
-        pass
-    with LOG_PATH.open("a", encoding="utf-8") as f:
-        f.write(line + "\n")
+    except OSError as error:
+        # Failing to rotate is no reason to lose the message - appending to the
+        # old file still works. Said once, and inside the log itself, so that a
+        # file quietly growing past LOG_MAX for weeks is not a mystery.
+        if not _rotate_failed:
+            _rotate_failed = True
+            line = (f"{datetime.now():%d.%m.%Y %H:%M:%S}  Could not rotate the "
+                    f"log ({error}) - it keeps growing.\n") + line
+    try:
+        with LOG_PATH.open("a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except OSError as error:
+        # The only channel left. Deliberately not raising: see the docstring.
+        print(f"Could not write to the log ({error})")
 
 
 # ------------------------------------------------------- start at logon
@@ -182,13 +222,19 @@ _autostart_at = 0.0
 
 
 def _quiet(command):
-    """Run a command without a console window flashing up."""
+    """Run a command without a console window flashing up.
+
+    Returns (ok, detail). The output used to be captured and then thrown away,
+    so whenever schtasks or PowerShell refused to do something, the reason went
+    with it and the app could only say "could not". Same shape as quiet() in
+    the installer.
+    """
     try:
         v = subprocess.run(command, shell=True, capture_output=True, text=True,
                            creationflags=0x08000000)   # CREATE_NO_WINDOW
-        return v.returncode == 0
-    except Exception:
-        return False
+        return v.returncode == 0, (v.stderr or v.stdout or "").strip()
+    except Exception as error:
+        return False, str(error)
 
 
 def _launch_parts():
@@ -274,12 +320,12 @@ def _create_task():
         return _quiet(f'schtasks /Create /F /TN "{TASK_NAME}" /XML "{path}"')
     except OSError as error:
         log(f"Could not prepare the task: {error}")
-        return False
+        return False, str(error)
     finally:
         try:
             path.unlink(missing_ok=True)
-        except OSError:
-            pass
+        except OSError as error:
+            log(f"The temporary task file could not be removed: {error}")
 
 
 def autostart_enabled(refresh=False):
@@ -288,25 +334,33 @@ def autostart_enabled(refresh=False):
     if not refresh and _autostart is not None \
             and time.monotonic() - _autostart_at < 30:
         return _autostart
-    _autostart = _quiet(f'schtasks /Query /TN "{TASK_NAME}"') or STARTUP_LNK.exists()
+    _autostart = (_quiet(f'schtasks /Query /TN "{TASK_NAME}"')[0]
+                  or STARTUP_LNK.exists())
     _autostart_at = time.monotonic()
     return _autostart
 
 
 def autostart_set(enable):
-    """Turn start-at-logon on or off.
+    """Turn start-at-logon on or off. Returns what the setting REALLY is now.
 
     The scheduled task is tried first - it can delay the start (until
     bluetooth is up) and restart the app after a crash. When the user is not
     allowed to create one, a shortcut in the Startup folder is used instead,
     which always works.
+
+    Both halves used to trust the return code of schtasks and announce
+    "enabled" / "disabled" without ever looking. The user got a confirmation,
+    and after a restart nothing came up. So the last word belongs to
+    autostart_enabled(), which goes and checks.
     """
     global _autostart
     if enable:
-        ok = _create_task()
+        ok, detail = _create_task()
         if ok:
             log("Start at logon enabled (scheduled task).")
         else:
+            log(f"The scheduled task could not be created ({detail or 'no detail'})"
+                f" - falling back to the Startup folder.")
             program, arguments = _launch_parts()
             ps = (f'$w=New-Object -ComObject WScript.Shell;'
                   f'$s=$w.CreateShortcut(\'{STARTUP_LNK}\');'
@@ -315,18 +369,26 @@ def autostart_set(enable):
                   f'$s.WorkingDirectory=\'{HERE}\';'
                   f'$s.Save()')
             STARTUP_LNK.parent.mkdir(parents=True, exist_ok=True)
-            ok = _quiet(f'powershell -NoProfile -ExecutionPolicy Bypass -Command "{ps}"')
+            ok, detail = _quiet(
+                f'powershell -NoProfile -ExecutionPolicy Bypass -Command "{ps}"')
             log("Start at logon enabled (Startup folder)." if ok
-                else "Start at logon could not be enabled.")
+                else f"Start at logon could not be enabled: {detail or 'no detail'}")
     else:
-        _quiet(f'schtasks /Delete /F /TN "{TASK_NAME}"')
+        # A missing task is not a failure worth shouting about - the user may
+        # be running from the Startup folder, or from neither. The check at the
+        # end is what decides whether this worked.
+        ok, detail = _quiet(f'schtasks /Delete /F /TN "{TASK_NAME}"')
         try:
             STARTUP_LNK.unlink(missing_ok=True)
-        except OSError:
-            pass
+        except OSError as error:
+            log(f"The Startup shortcut could not be removed: {error}")
         log("Start at logon disabled.")
     _autostart = None
-    autostart_enabled(refresh=True)
+    actual = autostart_enabled(refresh=True)
+    if actual != enable:
+        log(f"...but the check says start at logon is now "
+            f"{'ON' if actual else 'OFF'}, which is not what was asked for.")
+    return actual
 
 
 # ---------------------------------------------------------------- state
@@ -513,43 +575,72 @@ def save_history():
 
 
 def load_history():
-    """Load the history of the previous run and fill in the downtime gap."""
+    """Load the history of the previous run and fill in the downtime gap.
+
+    The whole read is guarded, not just the JSON parsing. Valid JSON with the
+    wrong shape inside - a sample that is not a pair, a string where a number
+    belongs - used to raise while it was being unpacked, OUTSIDE the guard,
+    and the app did not start at all. A damaged chart is worth losing; a
+    program that will not run is not.
+    """
     if not HIST_PATH.exists():
         return
     try:
         d = json.loads(HIST_PATH.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as e:
-        log(f"Could not load the history: {e}")
-        return
 
-    now_mono, now_wall = time.monotonic(), time.time()
+        now_mono, now_wall = time.monotonic(), time.time()
 
-    def to_mono(w):
-        return now_mono - (now_wall - w)
+        def to_mono(w):
+            return now_mono - (now_wall - w)
 
-    cutoff = now_wall - HIST_LENGTH
-    with STATE.lock:
-        for w, r in d.get("samples", []):
-            if w >= cutoff:
-                STATE.history.append((to_mono(w), r))
-        for w in d.get("locks", []):
-            if w >= cutoff:
-                STATE.locks.append(to_mono(w))
-        for a, b in d.get("downtime", []):
-            if b >= cutoff:
-                STATE.downtime.append((to_mono(a), to_mono(b)))
-        # the stretch between the last write and this start = app was down
-        end = d.get("until")
-        if end and now_wall - end > 5:
-            STATE.downtime.append((to_mono(end), now_mono))
-            log(f"App was not running for {(now_wall - end) / 60:.0f} min "
-                f"- marked in the chart.")
+        cutoff = now_wall - HIST_LENGTH
+        with STATE.lock:
+            for w, r in d.get("samples", []):
+                if w >= cutoff:
+                    STATE.history.append((to_mono(w), r))
+            for w in d.get("locks", []):
+                if w >= cutoff:
+                    STATE.locks.append(to_mono(w))
+            for a, b in d.get("downtime", []):
+                if b >= cutoff:
+                    STATE.downtime.append((to_mono(a), to_mono(b)))
+            # the stretch between the last write and this start = app was down
+            end = d.get("until")
+            if end and now_wall - end > 5:
+                STATE.downtime.append((to_mono(end), now_mono))
+                log(f"App was not running for {(now_wall - end) / 60:.0f} min "
+                    f"- marked in the chart.")
+    except (OSError, ValueError, TypeError, AttributeError) as e:
+        log(f"Could not load the history ({e}) - starting with an empty chart.")
 
 
 # ---------------------------------------------------------------- Windows
 
+# A second handle on user32 purely so that ctypes keeps the error code for the
+# one call where we need it. ctypes.windll does not, and reading GetLastError
+# afterwards would report whatever some later call left behind.
+_user32_errors = ctypes.WinDLL("user32", use_last_error=True)
+
+_lock_failed_at = 0.0        # so a failing lock cannot fill the log twice a second
+
+
 def lock_screen():
-    user32.LockWorkStation()
+    """Lock the screen. True only when Windows really did it.
+
+    LockWorkStation returns zero on failure, and that was never looked at: the
+    caller went straight on to set armed = False and write "Locking" into the
+    log, so a failure left the screen wide open while the app waited for the
+    phone to come back. A silent failure of the one thing this program is for.
+    """
+    global _lock_failed_at
+    if _user32_errors.LockWorkStation():
+        return True
+    now = time.monotonic()
+    if now - _lock_failed_at > 60:
+        _lock_failed_at = now
+        log(f"LockWorkStation failed (Windows error "
+            f"{ctypes.get_last_error()}) - THE SCREEN IS NOT LOCKED.")
+    return False
 
 
 _mutex = None
@@ -580,6 +671,10 @@ class LASTINPUTINFO(ctypes.Structure):
     _fields_ = [("cbSize", wintypes.UINT), ("dwTime", wintypes.DWORD)]
 
 
+_idle_failed = False         # both of these are only complained about once
+_work_area_failed = False
+
+
 def idle_seconds():
     """Seconds since the last key press / mouse movement.
 
@@ -592,9 +687,18 @@ def idle_seconds():
          days. The difference is therefore computed in 32bit arithmetic
          (& 0xFFFFFFFF), so the wrap-around comes out right.
     """
+    global _idle_failed
     lii = LASTINPUTINFO()
     lii.cbSize = ctypes.sizeof(LASTINPUTINFO)
     if not user32.GetLastInputInfo(ctypes.byref(lii)):
+        # 999 s reads as "nobody is at the machine", which turns the idle guard
+        # OFF and lets locking proceed - the safe direction for a lock program,
+        # but it is a fallback, not a measurement. Said once: this runs twice a
+        # second.
+        if not _idle_failed:
+            _idle_failed = True
+            log("GetLastInputInfo failed - the idle guard cannot tell whether "
+                "you are working, so it assumes you are not.")
         return 999.0
     k32 = ctypes.windll.kernel32
     k32.GetTickCount64.restype = ctypes.c_ulonglong
@@ -603,10 +707,79 @@ def idle_seconds():
 
 
 def work_area():
-    """Desktop size WITHOUT the taskbar - so the window sits above the clock."""
+    """Desktop size WITHOUT the taskbar - so the window sits above the clock.
+
+    The primary monitor only, which is a deliberate choice (see CLAUDE.md).
+    """
+    global _work_area_failed
     r = wintypes.RECT()
-    user32.SystemParametersInfoW(0x0030, 0, ctypes.byref(r), 0)  # SPI_GETWORKAREA
+    if not user32.SystemParametersInfoW(0x0030, 0, ctypes.byref(r), 0):
+        # SPI_GETWORKAREA
+        # The return value used to be ignored, and RECT starts out as zeros -
+        # so a failure handed back a desktop 0 px wide and the countdown box
+        # would be centred against nothing. The full screen is wrong by the
+        # height of the taskbar and right about everything else.
+        if not _work_area_failed:
+            _work_area_failed = True
+            log("SPI_GETWORKAREA failed - using the full screen size instead, "
+                "so the countdown box may end up under the taskbar.")
+        return 0, 0, user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
     return r.left, r.top, r.right, r.bottom
+
+
+# OpenInputDesktop hands back a HANDLE. Without these declarations ctypes would
+# read it as a 32bit int and cut a 64bit handle in half - the check would then
+# report a locked screen at random.
+_user32_errors.OpenInputDesktop.restype = wintypes.HANDLE
+_user32_errors.OpenInputDesktop.argtypes = [wintypes.DWORD, wintypes.BOOL,
+                                            wintypes.DWORD]
+_user32_errors.CloseDesktop.argtypes = [wintypes.HANDLE]
+
+# Same trap, same reason: a window handle is pointer-sized and the default
+# ctypes return type is a 32bit int.
+user32.GetForegroundWindow.restype = wintypes.HWND
+
+DESKTOP_SWITCHDESKTOP = 0x0100
+ERROR_ACCESS_DENIED = 5
+_desktop_check_failed = False
+
+
+def _input_desktop_error():
+    """0 = the input desktop is ours; otherwise the Windows error code.
+
+    Kept apart from session_locked() so the decision it makes can be tested
+    without a locked screen - see tests/test_logic.py.
+    """
+    desk = _user32_errors.OpenInputDesktop(0, False, DESKTOP_SWITCHDESKTOP)
+    if desk:
+        _user32_errors.CloseDesktop(desk)
+        return 0
+    return ctypes.get_last_error() or -1
+
+
+def session_locked():
+    """True while the lock screen sits in front of the desktop.
+
+    Windows switches the input desktop to a secure one when the session locks,
+    and it will not hand that one over to an ordinary process - so the refusal
+    IS the answer. There is no neater way to ask from a plain user app; the
+    session-change notifications want a window and a message pump.
+
+    An error that is not that refusal answers "not locked" on purpose: watching
+    has to carry on. Answering "locked" whenever the check itself broke would
+    switch the guarding off and the app would never lock anything again.
+    """
+    global _desktop_check_failed
+    error = _input_desktop_error()
+    if error == 0:
+        return False
+    if error == ERROR_ACCESS_DENIED:
+        return True
+    if not _desktop_check_failed:
+        _desktop_check_failed = True
+        log(f"OpenInputDesktop failed (Windows error {error}) - cannot tell "
+            f"whether the screen is locked, carrying on as if it were not.")
+    return False
 
 
 # ---------------------------------------------------------------- scanner
@@ -690,8 +863,12 @@ async def scanner_loop():
             if scanner is not None:
                 try:
                     await scanner.stop()
-                except Exception:
-                    pass
+                except Exception as e:
+                    # This used to be swallowed - and the pile-up described
+                    # just above is exactly what a stop() that does not stop
+                    # produces. Invisible twice over would be careless.
+                    log(f"The scanner could not be stopped ({e}) - it may keep "
+                        f"consuming advertisements in the background.")
 
 
 def scanner_thread():
@@ -732,6 +909,10 @@ class Countdown:
         self.root = root
         self.win = None
         self.lbl = None
+        self.hwnd = None
+        # False = the next show() starts a new appearance and reports where the
+        # box landed. Lives on the box itself, so it cannot outlive it.
+        self.reported = False
 
     def _create(self):
         w = tk.Toplevel(self.root)
@@ -752,6 +933,44 @@ class Countdown:
         user32.SetWindowLongW(hwnd, GWL_EXSTYLE,
                               st | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW)
         self.win = w
+        self.hwnd = hwnd
+
+    def _report(self):
+        """Write down where the box actually landed and what is in front of it.
+
+        Until now the log only proved that a countdown had been DECIDED on,
+        which is not the same as the user seeing one. On 22.08.2026 two locks
+        each had their "Countdown started" line and one box went unnoticed -
+        and there was no way to tell a box drawn on the other monitor from a
+        box buried under a full-screen window from a box simply missed.
+
+        Never allowed to break the countdown: a diagnostic that takes the
+        warning down with it would be worse than no diagnostic.
+        """
+        try:
+            box = wintypes.RECT()
+            user32.GetWindowRect(self.hwnd, ctypes.byref(box))
+            GWL_EXSTYLE, WS_EX_TOPMOST = -20, 0x8
+            visible = bool(user32.IsWindowVisible(self.hwnd))
+            topmost = bool(user32.GetWindowLongW(self.hwnd, GWL_EXSTYLE)
+                           & WS_EX_TOPMOST)
+            left, top, right, bottom = work_area()
+
+            front = user32.GetForegroundWindow()
+            name = ctypes.create_unicode_buffer(120)
+            user32.GetWindowTextW(front, name, 120)
+            over = wintypes.RECT()
+            user32.GetWindowRect(front, ctypes.byref(over))
+
+            log(f"Countdown box at {box.left},{box.top} "
+                f"{box.right - box.left}x{box.bottom - box.top} - "
+                f"{'visible' if visible else 'NOT VISIBLE'}, "
+                f"{'topmost' if topmost else 'NOT TOPMOST'}; "
+                f"work area {left},{top} {right - left}x{bottom - top}; "
+                f"in front '{name.value}' at {over.left},{over.top} "
+                f"{over.right - over.left}x{over.bottom - over.top}.")
+        except Exception as e:
+            log(f"Could not check where the countdown box landed: {e}")
 
     def show(self, remaining):
         if self.win is None:
@@ -773,10 +992,17 @@ class Countdown:
         self.win.geometry(f"+{x}+{y}")
         self.win.deiconify()
         self.win.lift()
+        if not self.reported:
+            self.reported = True
+            # after the move has actually been applied, or the rectangle read
+            # back would still be the old one
+            self.win.update_idletasks()
+            self._report()
 
     def hide(self):
         if self.win is not None:
             self.win.withdraw()
+        self.reported = False
 
 
 # ---------------------------------------------------------------- chart
@@ -2067,7 +2293,7 @@ class TrayIcon:
 
 # ---------------------------------------------------------------- main loop
 
-def decide(cfg, silence, armed, pause_left, idle):
+def decide(cfg, silence, armed, pause_left, idle, screen_locked=False):
     """Pure decision function - no GUI, no locking.
 
     Returns (action, label, remaining_s, reason), where action is one of:
@@ -2079,11 +2305,20 @@ def decide(cfg, silence, armed, pause_left, idle):
     `reason` is a KEY (e.g. "idle_guard", "at_desk") - callers decide by it.
     Never by `label`, that one gets translated.
 
+    `screen_locked` defaults to False so the many tests that predate it still
+    read straightforwardly; main_loop, the only caller in the running app,
+    always passes it - both times it asks.
+
     Kept apart from the loop on purpose, so it can be tested without locking
     the screen (see tests/test_logic.py).
     """
     if not cfg.get("active", True):
         return "stop", tx("st_off"), 0, "off"
+    # Nothing below applies behind the lock screen: the countdown box would be
+    # drawn behind it and LockWorkStation would lock what is already locked.
+    # Measured 19.-22.08.2026 - 41 of 68 "locks" in the log were exactly that.
+    if screen_locked:
+        return "stop", tx("st_screen_locked"), 0, "screen_locked"
     if pause_left > 0:
         return "stop", tx("st_paused", minutes=int(pause_left) // 60 + 1), 0, "paused"
     if silence is None:
@@ -2118,6 +2353,7 @@ _previous_action = None
 _saved_at = 0.0
 _alerted = False         # we have already reported a long silence
 _last_tick = None        # when the main loop last ran, to notice it stopped
+_screen_locked = False   # what the previous tick found the lock screen doing
 
 # The loop ticks every 500 ms. Anything above this means it was not running at
 # all - the machine slept, hibernated or was stuck. Deliberately generous: a
@@ -2175,7 +2411,7 @@ def watch_signal_loss(tray):
 
 
 def main_loop(root, countdown, tray):
-    global _previous_action, _alerted
+    global _previous_action, _alerted, _screen_locked
     try:
         gap = tick_gap(time.monotonic())
         if gap > STALL_S:
@@ -2193,12 +2429,27 @@ def main_loop(root, countdown, tray):
             # 20.08.2026 16:08:03. The log is what these faults get diagnosed
             # from; it must not invent good news.
             _alerted = False
-            root.after(500, main_loop, root, countdown, tray)
-            return
+            return                       # the finally below reschedules
+
+        # Is the lock screen in front? Then this tick decides nothing either.
+        locked = session_locked()
+        if locked != _screen_locked:
+            _screen_locked = locked
+            if locked:
+                log("Screen locked - watching pauses until it is unlocked.")
+            else:
+                # Silence that piled up behind the lock screen says nothing
+                # about where the phone is now - the same situation as waking
+                # from sleep, so the same remedy. Without it the screen would
+                # lock again the moment the user finished typing the PIN.
+                STATE.restart_measurement()
+                _previous_action = None
+                _alerted = False         # quietly - see the gap branch above
+                log("Screen unlocked - the silence is measured again from now.")
 
         pause = max(0.0, STATE.paused_until - time.monotonic())
         action, label, remaining, reason = decide(
-            CFG, STATE.silence(), STATE.armed, pause, idle_seconds())
+            CFG, STATE.silence(), STATE.armed, pause, idle_seconds(), locked)
 
         # The start and the cancellation of a countdown are logged, so it can
         # be verified afterwards that a lock really was preceded by a warning.
@@ -2209,7 +2460,10 @@ def main_loop(root, countdown, tray):
             log("Countdown cancelled - the phone is back at the desk.")
         _previous_action = action
 
-        if CFG.get("active", True):
+        # Not while locked: the warning exists to say "the laptop is sitting
+        # here unlocked and I have stopped guarding it", which is not the
+        # situation behind a lock screen.
+        if CFG.get("active", True) and not locked:
             watch_signal_loss(tray)
         tray.refresh_menu()
 
@@ -2229,7 +2483,8 @@ def main_loop(root, countdown, tray):
             # deserved.
             action, label, remaining, reason = decide(
                 CFG, STATE.silence(), STATE.armed,
-                max(0.0, STATE.paused_until - time.monotonic()), idle_seconds())
+                max(0.0, STATE.paused_until - time.monotonic()), idle_seconds(),
+                session_locked())
             if action != "lock":
                 log("Locking called off - the phone came back while the "
                     "decision was being carried out.")
@@ -2237,17 +2492,28 @@ def main_loop(root, countdown, tray):
 
         if action == "lock":
             silence = STATE.silence()
-            log(f"Locking (silence {silence:.0f} s, "
-                f"last RSSI {rssi_text()}).")
-            with STATE.lock:
-                STATE.armed = False
-                STATE.locks.append(time.monotonic())
-            countdown.hide()
-            tray.set_state("off", tx("st_locked"))
+            # Lock FIRST, then write it down. The other way round the log
+            # announced a locked screen and only then found out it had not
+            # locked - and the bookkeeping below (armed = False) made the app
+            # sit and wait for the phone with the desktop in plain view.
             if DRY_RUN:
-                log("  (dry run - the screen is not really locked)")
+                locked_now = True
             else:
-                lock_screen()
+                locked_now = lock_screen()      # says so itself when it fails
+            if locked_now:
+                log(f"Locking (silence {silence:.0f} s, "
+                    f"last RSSI {rssi_text()}).")
+                if DRY_RUN:
+                    log("  (dry run - the screen is not really locked)")
+                with STATE.lock:
+                    STATE.armed = False
+                    STATE.locks.append(time.monotonic())
+                countdown.hide()
+                tray.set_state("off", tx("st_locked"))
+            else:
+                # Left armed on purpose, so the next tick tries again; the
+                # complaint in the log is throttled, not the attempt.
+                tray.set_state("off", tx("st_lock_failed"))
         elif action == "countdown":
             countdown.show(remaining)
             tray.set_state("countdown", label)
@@ -2263,16 +2529,38 @@ def main_loop(root, countdown, tray):
                 label = f"{label} ({STATE.rssi} dBm)"
             tray.set_state(state, label)
     except Exception as e:
-        log(f"Error in the main loop: {e}")
-    root.after(500, main_loop, root, countdown, tray)
+        try:
+            log(f"Error in the main loop: {e}")
+        except Exception:
+            # Deliberate, and the only suppression in this function: the
+            # reschedule below is what matters, and a broken log must not be
+            # the thing that stops it. log() already swallows OSError itself;
+            # this catches whatever else it might throw.
+            print(f"Error in the main loop, and the log failed too: {e}")
+    finally:
+        # ONE place that schedules the next tick, and it runs no matter what
+        # happened above. It used to sit after the try/except, which looks the
+        # same but is not: an exception raised inside the except branch skipped
+        # it, and the loop was then never scheduled again - the icon stayed in
+        # the tray and the app quietly watched nothing.
+        root.after(500, main_loop, root, countdown, tray)
 
 
 def main():
+    # Anything noticed while the settings were still being read - log() could
+    # not be used back then, it needs CFG.
+    for message in _early_log:
+        log(message)
+    _early_log.clear()
+
     # This is how the installer asks for the task to be created - so that ONE
     # piece of code registers it and the two cannot drift apart
     if "--autostart-on" in sys.argv or "--autostart-off" in sys.argv:
-        autostart_set("--autostart-on" in sys.argv)
-        return 0
+        wanted = "--autostart-on" in sys.argv
+        # The exit code is the installer's answer: it already reports
+        # ins_task_failed on a non-zero one, but always got 0 back, so that
+        # check could never fire.
+        return 0 if autostart_set(wanted) == wanted else 1
 
     if already_running():
         log("The app is already running - not starting a second instance.")

@@ -314,6 +314,18 @@ the phone was seen, when it disappeared and why it locked.
       not stop: if the phone really is gone, it locks after the
       set delay and with a countdown, as always.
 
+  The log is full of "Locking" lines, a minute apart
+      Versions up to and including 1.3 did that. Once the screen
+      was locked, a single signal from the phone started the whole
+      cycle again: after the set delay a countdown box was drawn
+      where the lock screen hid it, and then the screen was
+      "locked" a second time, which does nothing. From the next
+      version watching pauses while the screen is locked (the log
+      says "Screen locked - watching pauses until it is
+      unlocked.") and the delay starts from zero when it is
+      unlocked - so finishing your password is never followed by
+      an immediate lock.
+
   I cannot see the icon
       It is hidden under the arrow next to the clock.
 

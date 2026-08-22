@@ -184,6 +184,47 @@ def run():
 
         box.hide()
         D.CFG["countdown_vertical"] = original
+        root.after(200, countdown_report)
+
+    def countdown_report():
+        """The box has to say in the log where it really landed.
+
+        On 22.08.2026 two locks a minute apart both had their "Countdown
+        started" line and one box was never seen. The log proved the countdown
+        had been DECIDED on and nothing more, so a box on the wrong monitor, a
+        box under a full-screen window and a box simply missed all looked
+        identical. One line per appearance, not per tick.
+        """
+        box = D.Countdown(root)
+        lines = []
+        original_log = D.log
+        D.log = lambda message: lines.append(message)
+        try:
+            box.show(9)
+            box.win.update()
+            first = [l for l in lines if l.startswith("Countdown box at")]
+            report("the box reports where it landed", len(first) == 1)
+            report("...with a position, a size and what is in front of it",
+                   bool(first) and "work area" in first[0]
+                   and "in front" in first[0])
+            report("...and it says the box is visible",
+                   bool(first) and "NOT VISIBLE" not in first[0]
+                   and "visible" in first[0])
+
+            box.show(8)
+            box.show(7)
+            box.win.update()
+            report("...once per appearance, not once per tick",
+                   len([l for l in lines if l.startswith("Countdown box at")]) == 1)
+
+            box.hide()
+            box.show(6)
+            box.win.update()
+            report("...and again the next time it appears",
+                   len([l for l in lines if l.startswith("Countdown box at")]) == 2)
+        finally:
+            D.log = original_log
+        box.hide()
         root.after(200, loop_after_sleep)
 
     def loop_after_sleep():
@@ -254,6 +295,77 @@ def run():
                len(D.STATE.locks) == before + 1)
 
         D.CFG["active"] = False          # stop the ticks main_loop scheduled
+        box.hide()
+        root.after(200, loop_while_locked)
+
+    def loop_while_locked():
+        """Nothing may happen behind the lock screen - and everything must
+        start again cleanly once it goes away.
+
+        decide() alone cannot show this: it is handed the answer, it does not
+        go and ask. Only the loop wires session_locked() in, remembers the
+        change and restarts the measurement on the way out.
+        """
+        D.CFG["active"] = True
+        D.DRY_RUN = True
+
+        class FakeTray:
+            def refresh_menu(self):
+                pass
+
+            def set_state(self, colour, label):
+                self.label = label
+
+            def notify(self, message):
+                pass
+
+        tray = FakeTray()
+        box = D.Countdown(root)
+        original = D.session_locked
+        before = len(D.STATE.locks)
+
+        try:
+            # --- behind the lock screen: silence long past the limit, and
+            # still nothing happens
+            D.session_locked = lambda: True
+            D.STATE.was_near, D.STATE.armed = True, True
+            D.STATE.near_at = time.monotonic() - 700
+            D._last_tick = time.monotonic()
+            D._screen_locked = False           # the change has to be noticed
+            D.main_loop(root, box, tray)
+            report("a locked screen is not locked all over again",
+                   len(D.STATE.locks) == before)
+            report("...and the loop knows it is locked", D._screen_locked is True)
+            report("...and the tray says so", tray.label == D.texts.t("st_screen_locked"))
+
+            # --- unlocking: the silence collected behind the lock screen says
+            # nothing about where the phone is now. Without the restart the
+            # screen would lock again the moment the PIN was typed.
+            D.session_locked = lambda: False
+            D._last_tick = time.monotonic()
+            D.main_loop(root, box, tray)
+            silence = D.STATE.silence()
+            report("unlocking restarts the measurement",
+                   silence is not None and silence < 5)
+            report("...without locking on the way out",
+                   len(D.STATE.locks) == before)
+            report("...and the phone stays known, so watching goes on",
+                   D.STATE.silence() is not None)
+
+            # ...and the very same tick, unlocked and with the phone really
+            # gone, DOES lock. Without this the three checks above would pass
+            # on an app that never locks anything.
+            D.STATE.near_at = time.monotonic() - 700
+            D.STATE.armed = True
+            D._last_tick = time.monotonic()
+            D.main_loop(root, box, tray)
+            report("unlocked, with the phone gone, it still locks",
+                   len(D.STATE.locks) == before + 1)
+        finally:
+            D.session_locked = original
+            D._screen_locked = False
+
+        D.CFG["active"] = False
         box.hide()
         root.after(200, tray_menu)
 

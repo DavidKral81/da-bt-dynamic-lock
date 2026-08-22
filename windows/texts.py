@@ -160,6 +160,8 @@ CS = {
     "st_off": "vypnuto",
     "st_paused": "pozastaveno ({minutes} min)",
     "st_locked": "zamčeno",
+    "st_screen_locked": "obrazovka zamčená — hlídám až po odemčení",
+    "st_lock_failed": "zamknout se NEPODAŘILO — obrazovka je odemčená",
 
     # --- messages -----------------------------------------------------
     "msg_no_signal": "Telefon se neozval {minutes} minut — notebook se "
@@ -362,6 +364,8 @@ EN = {
     "st_off": "off",
     "st_paused": "paused ({minutes} min)",
     "st_locked": "locked",
+    "st_screen_locked": "screen locked — watching resumes after unlock",
+    "st_lock_failed": "locking FAILED — the screen is not locked",
 
     # --- messages -----------------------------------------------------
     "msg_no_signal": "The phone has not been heard for {minutes} minutes — "
