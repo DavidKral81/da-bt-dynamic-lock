@@ -72,6 +72,13 @@ HIST_LENGTH = 93600      # 26 h - so the "1 day" range is always fully filled
 HIST_DETAILED = 3600     # last hour, kept without thinning
 HIST_STEP = 10           # minimum spacing of older samples (s)
 
+# How long the record of "something was heard" is kept, and the window that
+# actually gets reported. The window is shorter than the countdown threshold on
+# purpose, so the answer describes the moment being asked about and not the
+# minute before it.
+HEARD_KEEP_S = 60
+HEARD_WINDOW_S = 15.0
+
 # Window icon. In the packaged build it sits next to the program, otherwise
 # next to the sources.
 _icon_file = ((Path(sys._MEIPASS) if getattr(sys, "frozen", False)
@@ -405,6 +412,7 @@ class State:
         self.locks = deque()    # lock times - drawn as vertical lines
         self.downtime = []      # (from, to) stretches when the app was not running
         self.nearby = {}        # what is audible now: key -> (name, rssi, time)
+        self.adverts = deque()  # (time, address) of EVERY advertisement heard
         self.near_at = 0.0      # last moment the phone counted as "at the desk"
         self.was_near = False
         self.armed = True       # False = already locked, waiting for the return
@@ -455,6 +463,39 @@ class State:
                 message = None     # weak signal = as if absent, no "back" notice
         if message:
             log(message)
+
+    def record_heard(self, address):
+        """Note that SOMETHING was heard, whatever it was.
+
+        Deliberately not part of record_nearby(), which only keeps NAMED
+        devices for the picker - most BLE gadgets advertise without a name, so
+        counting only named ones would answer a different question.
+
+        The question this one answers: when the phone has gone quiet, is the
+        radio still hearing anything at all? A long-running scanner on Windows
+        goes progressively deaf (see scanner_loop), and "the phone stopped
+        broadcasting" and "the laptop stopped listening" look identical from
+        the outside - both end as silence, and both lock the screen.
+        """
+        now = time.monotonic()
+        with self.lock:
+            self.adverts.append((now, address))
+            while self.adverts and now - self.adverts[0][0] > HEARD_KEEP_S:
+                self.adverts.popleft()
+
+    def heard_recently(self, within_s):
+        """(advertisements, distinct devices) heard in the last within_s s.
+
+        The watched phone is not filtered out, and does not need to be: this
+        only ever gets asked while the phone counts as silent, so none of its
+        advertisements are in the window. (With an rssi_threshold set, a weak
+        signal counts as silence while still being heard - then the phone is
+        in here, which is itself worth seeing.)
+        """
+        now = time.monotonic()
+        with self.lock:
+            recent = [a for t, a in self.adverts if now - t <= within_s]
+        return len(recent), len(set(recent))
 
     def record_nearby(self, dev, adv):
         """Keep track of everything audible - for picking the target from the menu.
@@ -784,6 +825,18 @@ def session_locked():
 
 # ---------------------------------------------------------------- scanner
 
+def heard_text(within_s=HEARD_WINDOW_S):
+    """One phrase telling a deaf scanner apart from a quiet phone.
+
+    Written in ONE place because two log lines use it - the countdown starting
+    and the watchdog restarting the scanner. Two copies of the wording would
+    drift, and this is a phrase that gets compared between log entries.
+    """
+    adverts, devices = STATE.heard_recently(within_s)
+    return (f"radio heard {adverts} advertisements from {devices} devices "
+            f"in the last {within_s:.0f} s")
+
+
 def matches(dev, adv, target):
     # No target picked yet = nothing counts. Without this an empty target
     # matched EVERYTHING ("" is a substring of every name), so any BLE device
@@ -804,6 +857,9 @@ async def scanner_loop():
     def on_advertisement(dev, adv):
         if adv.rssi <= -120:      # -127 = "RSSI unknown", not a measurement
             return
+        # Counted before anything else, and for every device: this is the
+        # proof that the radio is still listening at all.
+        STATE.record_heard(dev.address)
         # The target is read on every advertisement, not once at the start -
         # it can be switched at runtime from the tray menu
         if matches(dev, adv, CFG.get("target", "")):
@@ -847,7 +903,7 @@ async def scanner_loop():
                         and time.monotonic() - session_start > wait:
                     futile += 1
                     log(f"No signal for {wait:.0f} s - restarting the scanner "
-                        f"(futile attempt no. {futile}).")
+                        f"(futile attempt no. {futile}); {heard_text()}.")
                     break
             if STATE.seen_at > session_start:    # the session brought something
                 futile = 0
@@ -2454,8 +2510,13 @@ def main_loop(root, countdown, tray):
         # The start and the cancellation of a countdown are logged, so it can
         # be verified afterwards that a lock really was preceded by a warning.
         if action == "countdown" and _previous_action != "countdown":
+            # heard_text() is what says whether the silence is the phone's or
+            # the radio's: a countdown that starts while the scanner is still
+            # picking up hundreds of advertisements means the phone really has
+            # gone quiet, and one that starts while it hears nothing at all
+            # means the scanner went deaf and the lock is unearned.
             log(f"Countdown started - {remaining} s left "
-                f"(last RSSI {rssi_text()}).")
+                f"(last RSSI {rssi_text()}); {heard_text()}.")
         elif _previous_action == "countdown" and action == "none":
             log("Countdown cancelled - the phone is back at the desk.")
         _previous_action = action

@@ -65,6 +65,32 @@ check("without work show the countdown", "countdown",
 check("countdown hides while working even just before locking", "none",
       decide(PO, 19.5, True, 0, 1)[0])
 
+print("\nDeaf scanner vs. quiet phone:")
+# Both end as silence and both lock the screen, so the log has to be able to
+# tell them apart. Between 19. and 22.08.2026 the phone came back 0-9 s after a
+# scanner restart 13 times, which a restart cannot cause - it had been
+# broadcasting the whole time.
+import time as _t
+from dyn_lock import STATE as _S, heard_text, HEARD_KEEP_S
+
+with _S.lock:
+    _S.adverts.clear()
+check("nothing heard yet", (0, 0), _S.heard_recently(15))
+for _address in ("AA:1", "AA:1", "BB:2", "CC:3", "AA:1"):
+    _S.record_heard(_address)
+check("five advertisements from three devices", (5, 3), _S.heard_recently(15))
+check("...and the phrase says so", True,
+      "5 advertisements from 3 devices" in heard_text())
+# A deaf radio has to read as zero, not as the last thing it happened to hear.
+with _S.lock:
+    _S.adverts.clear()
+    _S.adverts.append((_t.monotonic() - 40, "AA:1"))   # heard, but 40 s ago
+check("an old advertisement is not 'heard now'", (0, 0), _S.heard_recently(15))
+check("...but is still remembered for the longer window", (1, 1),
+      _S.heard_recently(HEARD_KEEP_S))
+with _S.lock:
+    _S.adverts.clear()
+
 print("\nBehind the lock screen:")
 # 19.-22.08.2026: 41 of 68 "Locking" lines in the log belonged to a screen that
 # was already locked (cross-checked against the Winlogon event log). Every one

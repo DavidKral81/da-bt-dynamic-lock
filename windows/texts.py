@@ -233,7 +233,7 @@ CS = {
     "uni_partial_desc": "{app} byl odstraněn, ale některé soubory se "
                         "nepodařilo smazat. Zkus to po restartu počítače.",
     "ins_opt_launch": "Spustit {app}",
-    "ins_opt_phone": "Otevřít stránku se stažením aplikace do telefonu",
+    "ins_opt_phone": "Otevřít stránku se stažením aplikace pro telefon",
     "ins_opt_manual": "Otevřít návod",
 
     # message boxes
