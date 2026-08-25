@@ -319,8 +319,8 @@ the phone was seen, when it disappeared and why it locked.
       was locked, a single signal from the phone started the whole
       cycle again: after the set delay a countdown box was drawn
       where the lock screen hid it, and then the screen was
-      "locked" a second time, which does nothing. From the next
-      version watching pauses while the screen is locked (the log
+      "locked" a second time, which does nothing. From version 1.4
+      watching pauses while the screen is locked (the log
       says "Screen locked - watching pauses until it is
       unlocked.") and the delay starts from zero when it is
       unlocked - so finishing your password is never followed by

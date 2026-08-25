@@ -303,7 +303,7 @@ vidět, kdy zmizel a proč se zamklo.
       zamčená, stačil jeden signál z telefonu a celý cyklus se
       rozjel znovu: po nastavené době se nakreslilo okénko
       odpočtu, jenže schované za zamykací obrazovkou, a pak se
-      "zamklo" podruhé, což už nic neudělá. Od další verze se
+      "zamklo" podruhé, což už nic neudělá. Od verze 1.4 se
       hlídání po dobu zamčené obrazovky pozastaví (v logu
       "Screen locked - watching pauses until it is unlocked.")
       a po odemčení začne měřit od nuly - takže dopsané heslo

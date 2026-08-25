@@ -69,6 +69,16 @@ is cheap (~0.5 s). It is also rate-limited: a restart cannot conjure up a
 signal that is not there, and without a brake an absent phone caused 47 000
 restarts overnight.
 
+Because of that deafness, "the phone stopped broadcasting" and "the laptop
+stopped listening" look identical from the outside — both are silence, and
+both lock the screen. So every advertisement is counted, whatever device it
+came from, and the log says how many the radio picked up when a countdown
+starts and when the watchdog restarts the scanner. A countdown beginning
+beside `radio heard 0 advertisements from 0 devices` is a lock nobody earned;
+beside a hundred, the phone really did fall silent. What prompted it: between
+19 and 22 Aug 2026 the phone came back within 0–9 s of a scanner restart
+thirteen times, which a restart cannot cause.
+
 **Nothing is decided while the screen is locked.** After a lock the app waits
 for the phone, and a single advertisement used to re-arm it — so behind the
 lock screen the full cycle ran again: a countdown box drawn where nobody could
