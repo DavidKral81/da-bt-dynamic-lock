@@ -8,7 +8,7 @@ The version itself lives in `windows/version.py` — one constant the app, the
 installer, both `.exe` resources and the APK all read. Change it there and
 nowhere else.
 
-## Unreleased
+## 1.4 — 25 Aug 2026
 
 ### Fixed
 
@@ -50,6 +50,19 @@ nowhere else.
   big it is, whether Windows considers it visible and what window is in front
   of it. Until now the log only proved that a countdown had been *decided on*,
   which is not the same as anyone seeing it.
+- The log can now tell a phone that went quiet from a radio that stopped
+  listening. Both look identical from the outside — silence, then a lock — so
+  the countdown starting and the scanner watchdog restarting both now say how
+  many advertisements the radio picked up, and from how many devices. A
+  countdown beginning next to `radio heard 0 advertisements from 0 devices`
+  is a lock nobody earned; one beginning next to a hundred means the phone
+  really did fall silent.
+
+### Changed
+
+- The link that leads to the phone app now says "for the phone" rather than
+  "into the phone", in the app and the installer alike — it opens a download
+  page, it does not put anything into the phone by itself.
 
 ## 1.3 — 20 Aug 2026
 

@@ -14,7 +14,7 @@ To release a new version change it HERE ONLY, then rebuild with
 installer\\build_installer.ps1 (and phone\\build.ps1 for the APK).
 """
 
-VERSION = "1.3"
+VERSION = "1.4"
 
 # Where the releases live. The app opens PROJECT_URL + "/releases/latest" for
 # the phone app, and the installer offers the same page when it finishes -
