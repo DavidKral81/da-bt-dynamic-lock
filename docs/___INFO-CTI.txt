@@ -81,7 +81,7 @@ V TELEFONU (Android)
   1. Stáhni do telefonu  DaBTDynamicLock.apk  ze stejného vydání
      a otevři ho. Povol instalaci z tohoto zdroje.
      (Aplikace se do instalace nepřibaluje — v okně programu na to
-     vede odkaz "Stáhnout aplikaci do telefonu".)
+     vede odkaz "Stáhnout aplikaci pro telefon".)
   2. Spusť aplikaci, klepni na "Zapnout vysílání".
      Povol oprávnění "Zařízení v okolí" a "Oznámení".
   3. Nastavení → Aplikace → Da BT Dynamic Lock:

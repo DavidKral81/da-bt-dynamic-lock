@@ -101,7 +101,7 @@ CS = {
     "opt_2_days": "2 dny",
 
     # --- links and buttons --------------------------------------------
-    "link_phone_app": "Stáhnout aplikaci do telefonu",
+    "link_phone_app": "Stáhnout aplikaci pro telefon",
     "link_manual": "Návod",
     "link_project": "Projekt na GitHubu",
     "link_updates": "Zkontrolovat aktualizace",
