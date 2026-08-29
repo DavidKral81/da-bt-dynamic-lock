@@ -12,6 +12,16 @@ nowhere else.
 
 ### Fixed
 
+- **The app now knows the screen is locked for as long as it is locked.** The
+  check asked whether the secure desktop was in front, which is true only while
+  the lock screen is being drawn — cross-checked against the Winlogon log on
+  29 Aug 2026, the session was locked for 10 h 40 min and the app saw it for
+  one second of that. Everything built on it was therefore running blind: the
+  pause introduced in 1.4 lasted a second, and the screen went on being
+  "locked" again through the night. Windows is now asked for the session's own
+  lock state (`WTSQuerySessionInformation`), with the old desktop test kept as
+  a fallback for when that call fails.
+
 - **A lock the radio cannot corroborate is held off.** The scanner on Windows
   goes progressively deaf, and the silence it produces looks exactly like a
   phone that walked away — both end with a locked screen. Before locking, the

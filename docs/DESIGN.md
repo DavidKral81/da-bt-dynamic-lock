@@ -97,6 +97,18 @@ bounded to two in a row: a room really can be empty and quiet, and a guard that
 silence can switch off is not a guard. The check lives in the loop rather than
 in `decide()`, which stays pure and knows nothing about radios.
 
+**The lock state is read from the session, not from the desktop.** The obvious
+test for a plain user app is to ask for the input desktop: Windows hands the
+secure one to nobody, so a refusal means the lock screen is in front. It works,
+and it answers the wrong question — the secure desktop is in front only while
+the lock screen is actually drawn. Cross-checked against the Winlogon log on
+29 Aug 2026: the session was locked for 10 h 40 min overnight and the desktop
+test reported it for one second. So `WTSQuerySessionInformation` is asked for
+the session's own lock flag, which lasts as long as the lock does; the desktop
+test remains as a fallback for when that call fails. The layout of the
+structure Windows fills in is verified by a test, because getting the padding
+wrong reads as plausible rubbish rather than as an error.
+
 **Nothing is decided while the screen is locked.** After a lock the app waits
 for the phone, and a single advertisement used to re-arm it — so behind the
 lock screen the full cycle ran again: a countdown box drawn where nobody could

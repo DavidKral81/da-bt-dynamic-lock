@@ -797,6 +797,82 @@ DESKTOP_SWITCHDESKTOP = 0x0100
 ERROR_ACCESS_DENIED = 5
 _desktop_check_failed = False
 
+# Windows keeps the locked/unlocked state of the session itself, and this is
+# the documented way to read it. Why it had to be added: OpenInputDesktop only
+# knows about the SECURE DESKTOP, which is a different thing - it is in front
+# only while the lock screen is actually being drawn. Cross-checked against the
+# Winlogon log on 29.08.2026: the session was locked from 23:00:42 to 09:41:10,
+# and the desktop test said "locked" for exactly one second of it. Every lock
+# in the log looked the same, so the app spent whole nights believing it was
+# looking at an unlocked desktop - and locking it again and again.
+_wtsapi = ctypes.WinDLL("wtsapi32", use_last_error=True)
+WTS_CURRENT_SESSION = 0xFFFFFFFF
+WTS_SESSION_INFO_EX = 25
+WTS_SESSIONSTATE_LOCK = 0        # NOTE: on Server 2008 R2 these two are
+WTS_SESSIONSTATE_UNLOCK = 1      # swapped; this app only runs on the client
+
+
+class _WTSINFOEX_LEVEL1(ctypes.Structure):
+    """Only the head of it is read, but the whole struct is declared so that
+    ctypes lays out the padding the way Windows does."""
+    _fields_ = [("SessionId", wintypes.ULONG),
+                ("SessionState", ctypes.c_int),
+                ("SessionFlags", ctypes.c_long),
+                ("WinStationName", wintypes.WCHAR * 33),
+                ("UserName", wintypes.WCHAR * 21),
+                ("DomainName", wintypes.WCHAR * 18),
+                ("LogonTime", ctypes.c_longlong),
+                ("ConnectTime", ctypes.c_longlong),
+                ("DisconnectTime", ctypes.c_longlong),
+                ("LastInputTime", ctypes.c_longlong),
+                ("CurrentTime", ctypes.c_longlong),
+                ("IncomingBytes", wintypes.DWORD),
+                ("OutgoingBytes", wintypes.DWORD),
+                ("IncomingFrames", wintypes.DWORD),
+                ("OutgoingFrames", wintypes.DWORD),
+                ("IncomingCompressedBytes", wintypes.DWORD),
+                ("OutgoingCompressedBytes", wintypes.DWORD)]
+
+
+class _WTSINFOEX(ctypes.Structure):
+    # Data is a union with a single member, so it lays out as that member.
+    _fields_ = [("Level", wintypes.DWORD), ("Data", _WTSINFOEX_LEVEL1)]
+
+
+_wtsapi.WTSQuerySessionInformationW.restype = wintypes.BOOL
+_wtsapi.WTSQuerySessionInformationW.argtypes = [
+    wintypes.HANDLE, wintypes.DWORD, ctypes.c_int,
+    ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(wintypes.DWORD)]
+_wtsapi.WTSFreeMemory.argtypes = [ctypes.c_void_p]
+_wts_check_failed = False
+
+
+def _session_flags():
+    """SessionFlags of this session, or None when Windows would not say.
+
+    Kept apart from session_locked() so the decision can be tested without
+    locking the screen - the same reason _input_desktop_error() is separate.
+    """
+    global _wts_check_failed
+    buffer, size = ctypes.c_void_p(), wintypes.DWORD()
+    ok = _wtsapi.WTSQuerySessionInformationW(
+        None, WTS_CURRENT_SESSION, WTS_SESSION_INFO_EX,
+        ctypes.byref(buffer), ctypes.byref(size))
+    if not ok or not buffer or size.value < ctypes.sizeof(_WTSINFOEX):
+        if not _wts_check_failed:
+            _wts_check_failed = True
+            log(f"WTSQuerySessionInformation failed (Windows error "
+                f"{ctypes.get_last_error()}) - falling back to the input "
+                f"desktop test to tell whether the screen is locked.")
+        if buffer:
+            _wtsapi.WTSFreeMemory(buffer)
+        return None
+    try:
+        return ctypes.cast(buffer,
+                           ctypes.POINTER(_WTSINFOEX)).contents.Data.SessionFlags
+    finally:
+        _wtsapi.WTSFreeMemory(buffer)
+
 
 def _input_desktop_error():
     """0 = the input desktop is ours; otherwise the Windows error code.
@@ -812,18 +888,26 @@ def _input_desktop_error():
 
 
 def session_locked():
-    """True while the lock screen sits in front of the desktop.
+    """True while the session is locked.
 
-    Windows switches the input desktop to a secure one when the session locks,
-    and it will not hand that one over to an ordinary process - so the refusal
-    IS the answer. There is no neater way to ask from a plain user app; the
-    session-change notifications want a window and a message pump.
+    Asked of Windows itself (WTSQuerySessionInformation), because that is the
+    state that lasts: it stays "locked" for as long as the session is locked,
+    lock screen drawn or not. The input-desktop test below is kept only as a
+    fallback for when that call fails - it answers a narrower question (is the
+    secure desktop in front RIGHT NOW) and on this machine it stopped saying
+    "locked" one second after every lock.
 
-    An error that is not that refusal answers "not locked" on purpose: watching
-    has to carry on. Answering "locked" whenever the check itself broke would
-    switch the guarding off and the app would never lock anything again.
+    An error that is not the desktop refusal answers "not locked" on purpose:
+    watching has to carry on. Answering "locked" whenever the check itself
+    broke would switch the guarding off and the app would never lock anything
+    again.
     """
     global _desktop_check_failed
+    flags = _session_flags()
+    if flags == WTS_SESSIONSTATE_LOCK:
+        return True
+    if flags == WTS_SESSIONSTATE_UNLOCK:
+        return False
     error = _input_desktop_error()
     if error == 0:
         return False

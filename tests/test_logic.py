@@ -145,25 +145,66 @@ check("the same moment unlocked does lock", "lock",
 check("switched off still wins over the lock screen", "off",
       decide({**CFG, "active": False}, 300, True, 0, 99, True)[3])
 
-print("\nTelling a locked screen apart (OpenInputDesktop):")
+print("\nTelling a locked screen apart (the session's own state):")
+import ctypes as _c
 import dyn_lock as _D
 
 # The real call cannot be exercised from a test - it would need the screen
 # actually locked. What CAN be tested is the reading of the answer, which is
-# the part that can be wrong. ERROR_ACCESS_DENIED is the refusal Windows gives
-# while the secure desktop is in front.
+# the part that can be wrong.
+_original_flags = _D._session_flags
 _original = _D._input_desktop_error
 try:
+    _D._session_flags = lambda: _D.WTS_SESSIONSTATE_UNLOCK
+    check("Windows says unlocked", False, _D.session_locked())
+    _D._session_flags = lambda: _D.WTS_SESSIONSTATE_LOCK
+    check("Windows says locked", True, _D.session_locked())
+    # When Windows will not say, the older desktop test still answers. It is a
+    # narrower question (is the secure desktop in front right now), which is
+    # why it is no longer the first one asked.
+    _D._session_flags = lambda: None
     _D._input_desktop_error = lambda: 0
-    check("the desktop is ours = not locked", False, _D.session_locked())
+    check("no answer from Windows: the desktop is ours = not locked", False,
+          _D.session_locked())
     _D._input_desktop_error = lambda: 5          # ERROR_ACCESS_DENIED
-    check("access denied = locked", True, _D.session_locked())
+    check("no answer from Windows: access denied = locked", True,
+          _D.session_locked())
     # Any other failure must NOT be read as "locked": that would switch the
     # watching off for good and the app would never lock anything again.
     _D._input_desktop_error = lambda: 6          # ERROR_INVALID_HANDLE
     check("an unrelated error keeps watching alive", False, _D.session_locked())
 finally:
+    _D._session_flags = _original_flags
     _D._input_desktop_error = _original
+
+# The layout of the structure Windows fills in is the part that breaks
+# silently: get the padding wrong and the flags read as rubbish. The proof is
+# that the strings in the same structure come out readable and the size Windows
+# reports matches the one declared here.
+_buffer, _size = _c.c_void_p(), _c.wintypes.DWORD()
+_ok = _D._wtsapi.WTSQuerySessionInformationW(
+    None, _D.WTS_CURRENT_SESSION, _D.WTS_SESSION_INFO_EX,
+    _c.byref(_buffer), _c.byref(_size))
+check("Windows answers the session query", True, bool(_ok))
+if _ok:
+    _info = _c.cast(_buffer, _c.POINTER(_D._WTSINFOEX)).contents
+    check("...with exactly the number of bytes declared here",
+          _c.sizeof(_D._WTSINFOEX), _size.value)
+    check("...at level 1", 1, _info.Level)
+    # The layout is proved by a field that sits BEHIND the fixed-length
+    # strings: shift any of them by one character and the user name comes out
+    # cut or shifted. Compared with the account the test runs under, so no
+    # name is written down here. (A weaker check on the first string alone
+    # passed even with a deliberately wrong length - the padding absorbed it.)
+    import os as _os
+    check("...and the user name matches the account this runs under", True,
+          _info.Data.UserName.casefold()
+          == _os.environ.get("USERNAME", "").casefold()
+          and _info.Data.UserName != "")
+    check("...and the flags are one of the documented values", True,
+          _info.Data.SessionFlags in (_D.WTS_SESSIONSTATE_LOCK,
+                                      _D.WTS_SESSIONSTATE_UNLOCK, -1))
+    _D._wtsapi.WTSFreeMemory(_buffer)
 check("...and the real check answers on a live desktop", False,
       _D.session_locked())
 
