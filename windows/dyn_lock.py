@@ -1896,7 +1896,7 @@ class Chart:
             self.win.after(500, self._draw)
             return
 
-        now = time.monotonic()
+        now, now_wall = time.monotonic(), time.time()
         since = now - self.span
         with STATE.lock:
             points = [(t, r) for t, r in STATE.history if t >= since]
@@ -1924,18 +1924,25 @@ class Chart:
         step = (30 if self.span <= 120 else 60 if self.span <= 900 else
                 300 if self.span <= 3600 else
                 3600 if self.span <= 28800 else 10800)
-        t = now - (now % step)
-        while t > since:
-            x = x_at(t)
+        # The labels show the time of day, so the grid is anchored to whole
+        # minutes/hours of the LOCAL clock. Anchoring it to monotonic time
+        # (seconds since boot, the previous behaviour) put the lines on a
+        # random second and the labels would read 14:23:37, 14:24:37, ...
+        # The offset is needed because time.time() is UTC and some zones are
+        # half an hour off the hour.
+        zone = -(time.altzone if time.localtime().tm_isdst else time.timezone)
+        fmt = "%H:%M:%S" if step < 60 else "%H:%M"
+        t_wall = now_wall - ((now_wall + zone) % step)
+        while now - (now_wall - t_wall) > since:
+            x = x_at(now - (now_wall - t_wall))
             c.create_line(x, self.MARGIN_T, x, height - self.MARGIN_B,
                           fill="#242a33")
-            ago = int(round(now - t))
-            label = tx("chart_now") if ago < step / 2 else (
-                f"−{ago // 3600} h" if ago >= 3600 else
-                f"−{ago // 60} min" if ago >= 60 else f"−{ago} s")
-            c.create_text(x, height - self.MARGIN_B + 14, text=label,
+            # strftime on localtime of THAT moment, so a DST change inside
+            # the range still labels every line with the time it really was
+            c.create_text(x, height - self.MARGIN_B + 14,
+                          text=time.strftime(fmt, time.localtime(t_wall)),
                           fill="#6b7684", font=("Segoe UI", 8))
-            t -= step
+            t_wall -= step
 
         # Silence bands longer than 5 s. The start of the range only counts
         # when we really do have older records - otherwise the time before the

@@ -202,7 +202,9 @@ otevírání okna. Položky se jmenují stejně jako v nastavení:
 ----------------------------------------------------------------
 
 Záložka "Graf" v okně aplikace. Rozsah 2 minuty až 1 den,
-vysvětlivky jsou přímo v okně. Historie přežije restart aplikace i počítače; doba,
+vysvětlivky jsou přímo v okně. Vodorovná osa ukazuje čas podle
+hodin (u rozsahu 2 minuty i se sekundami), svislá sílu signálu
+v dBm. Historie přežije restart aplikace i počítače; doba,
 kdy aplikace neběžela, je vyznačená zvlášť a nepočítá se jako
 výpadek signálu.
 

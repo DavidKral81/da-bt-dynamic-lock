@@ -153,6 +153,72 @@ def run():
         report("switching back to Czech works",
                "síla signálu" in chart.win.title())
         chart.toggle()
+        root.after(400, chart_time_axis)
+
+    def chart_time_axis():
+        """The X axis shows the time of day - and it has to be the real one.
+
+        The samples carry time.monotonic() (seconds since boot), so a grid
+        anchored to it lands on a random second and the labels would read
+        09:23:37, 09:24:37... Only a running window shows what was drawn, so
+        the labels are read straight off the canvas.
+        """
+        chart.toggle()
+        chart._tab(0)
+        chart.win.update()
+        time.sleep(0.4)
+        chart._draw()
+        chart.win.update()
+
+        c, bottom = chart.canvas, chart.canvas.winfo_height() - D.Chart.MARGIN_B
+        labels = [c.itemcget(i, "text") for i in c.find_all()
+                  if c.type(i) == "text" and c.coords(i)[1] > bottom]
+        report(f"the chart has labels under the X axis ({len(labels)})",
+               len(labels) >= 3)
+
+        shape = all(len(s) == 5 and s[2] == ":" and s.replace(":", "").isdigit()
+                    for s in labels)
+        report(f"they are times of day, not '-x min' ({', '.join(labels)})",
+               shape and not any("min" in s for s in labels))
+
+        if shape and labels:
+            secs = [int(s[:2]) * 3600 + int(s[3:]) * 60 for s in labels]
+            # the 5 min range steps by a minute, and every line has to sit on
+            # a whole minute of the clock (that is what "anchored" means)
+            gaps = {(a - b) % 86400 for a, b in zip(secs, secs[1:])}
+            report(f"the lines sit a minute apart ({sorted(gaps)})",
+                   gaps == {60})
+            lt = time.localtime()
+            now_s = lt.tm_hour * 3600 + lt.tm_min * 60 + lt.tm_sec
+            age = (now_s - secs[0]) % 86400
+            report(f"the newest label is the current minute ({labels[0]}, "
+                   f"{age} s old)", 0 <= age < 60)
+
+        # The 2 min range labels seconds too - and that is the only place
+        # where the anchoring is provable: whole minutes hide the seconds, so
+        # a grid drifted off the clock would still print a plausible HH:MM.
+        chart.span_var.set(120)
+        chart._change_span()
+        chart.win.update()
+        short = [c.itemcget(i, "text") for i in c.find_all()
+                 if c.type(i) == "text" and c.coords(i)[1] > bottom]
+        fine = all(len(s) == 8 and s.count(":") == 2 for s in short)
+        report(f"the 2 min range labels seconds ({', '.join(short[:3])}…)",
+               fine and len(short) >= 3)
+        if fine and short:
+            secs = [int(s[:2]) * 3600 + int(s[3:5]) * 60 + int(s[6:])
+                    for s in short]
+            report("every line sits on a whole half minute of the clock",
+                   all(s % 30 == 0 for s in secs))
+            lt = time.localtime()
+            now_s = lt.tm_hour * 3600 + lt.tm_min * 60 + lt.tm_sec
+            age = (now_s - secs[0]) % 86400
+            report(f"...and the newest one is at most half a minute old "
+                   f"({short[0]}, {age} s)", 0 <= age < 30)
+        chart.span_var.set(300)
+        chart._change_span()
+
+        chart.toggle()
         root.after(400, countdown_position)
 
     def countdown_position():

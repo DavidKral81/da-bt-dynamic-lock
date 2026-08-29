@@ -212,7 +212,9 @@ named exactly as in the settings:
 ----------------------------------------------------------------
 
 The "Chart" tab in the app window. Ranges from 2 minutes to
-1 day; the legend is in the window. The history survives both an
+1 day; the legend is in the window. The horizontal axis shows the
+time of day (with seconds on the 2 minute range), the vertical one
+the signal strength in dBm. The history survives both an
 app restart and a computer restart. Time when the app was not
 running is marked separately and does not count as a lost signal.
 

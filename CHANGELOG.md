@@ -8,6 +8,16 @@ The version itself lives in `windows/version.py` — one constant the app, the
 installer, both `.exe` resources and the APK all read. Change it there and
 nowhere else.
 
+## Unreleased
+
+### Changed
+
+- **The chart's time axis shows the time of day** (`09:45`, `09:46`, …) instead
+  of the distance from now (`−1 min`, `−2 min`). On the 2 minute range the
+  labels carry seconds as well. The grid lines moved with it: they now sit on
+  whole minutes or hours of the clock, where they used to sit on a random
+  second, because they were anchored to the time since the computer booted.
+
 ## 1.4 — 25 Aug 2026
 
 ### Fixed

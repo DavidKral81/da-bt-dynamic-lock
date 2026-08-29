@@ -58,6 +58,14 @@ canvas objects per refresh — the window froze and ate hundreds of MB. Without
 the anchoring, boundaries shifted on every refresh, samples hopped between
 neighbouring buckets and the curve flickered.
 
+**The time axis is labelled with the time of day, and its grid is anchored to
+the clock.** Samples are timestamped with monotonic time (seconds since the
+computer booted), so a grid spaced from "now" landed on a random second — fine
+while the labels only said how long ago it was, useless once they say 09:46.
+The lines are therefore placed on whole minutes or hours of the local clock,
+and each label is formatted from the local time of that very moment, so a
+daylight saving change inside the range still labels every line correctly.
+
 **The signal history is thinned.** The last hour is kept in full, anything
 older only every ~10 s. A day at full resolution is ~150 000 samples for no
 visible gain.
