@@ -91,6 +91,42 @@ check("...but is still remembered for the longer window", (1, 1),
 with _S.lock:
     _S.adverts.clear()
 
+print("\nHolding off a lock the radio cannot corroborate:")
+# 29.08.2026: the screen locked with the phone on the desk while the radio was
+# hearing 3 advertisements from 1 device in 15 s. That is a deaf scanner, not a
+# phone that left - so the lock is held off, but only a bounded number of times,
+# because a quiet room must not be able to switch the guard off for good.
+import dyn_lock as _D
+
+_D.SCANNER_RESTART.clear()
+_D._deaf_hold_offs = 0
+for _address in ("AA:1", "BB:2", "CC:3", "DD:4", "EE:5", "FF:6"):
+    _S.record_heard(_address)
+check("a radio that hears the room does not hold anything off", False,
+      _D.deaf_radio_holds_off_lock())
+check("...and asks for no scanner restart", False, _D.SCANNER_RESTART.is_set())
+
+with _S.lock:
+    _S.adverts.clear()
+_S.record_heard("AA:1")          # 1 advertisement from 1 device = deaf
+check("a deaf radio holds the lock off", True, _D.deaf_radio_holds_off_lock())
+check("...and has the scanner restarted", True, _D.SCANNER_RESTART.is_set())
+_D.SCANNER_RESTART.clear()
+check("...twice at most", True, _D.deaf_radio_holds_off_lock())
+check("...and then the screen locks anyway", False,
+      _D.deaf_radio_holds_off_lock())
+check("...with the counter back to zero for next time", 0, _D._deaf_hold_offs)
+
+# A hold-off must not leave a mark once the radio recovers, or two unrelated
+# deaf spells hours apart would spend the same allowance.
+_D._deaf_hold_offs = 1
+for _address in ("AA:1", "BB:2", "CC:3", "DD:4", "EE:5", "FF:6"):
+    _S.record_heard(_address)
+_D.deaf_radio_holds_off_lock()
+check("a recovered radio clears the hold-off count", 0, _D._deaf_hold_offs)
+with _S.lock:
+    _S.adverts.clear()
+
 print("\nBehind the lock screen:")
 # 19.-22.08.2026: 41 of 68 "Locking" lines in the log belonged to a screen that
 # was already locked (cross-checked against the Winlogon event log). Every one

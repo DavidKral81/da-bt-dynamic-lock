@@ -264,6 +264,16 @@ It covers a silent failure: when the phone stops broadcasting,
 the computer locks once and then waits for the phone to show up
 again. Until then it is NOT watching, but it looks as if it is.
 
+Since version 1.5 there is one more check: before locking, the app
+looks at whether the radio can hear anything else nearby at all
+(a mouse, a TV, someone else's gadget). When it hears nothing
+whatsoever, the silence belongs to the receiver rather than to the
+phone - a scanner that has been running for hours sometimes stops
+listening. The lock is then held off, the scanner is restarted and
+the measurement starts again. This can happen at most twice in a
+row, so watching still works in a genuinely quiet room. The log
+line reads "Locking held off".
+
 
 
 ----------------------------------------------------------------

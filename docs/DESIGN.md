@@ -87,6 +87,16 @@ beside a hundred, the phone really did fall silent. What prompted it: between
 19 and 22 Aug 2026 the phone came back within 0–9 s of a scanner restart
 thirteen times, which a restart cannot cause.
 
+**And that count now decides, not just explains.** Once the log could tell the
+two apart, the first measurement settled it: on 29 Aug 2026 the screen locked
+with the phone lying on the desk while the radio was hearing 3 advertisements
+from 1 device in 15 s, where the same night's honest locks had 29–37 from 4–5.
+So a lock is held off when the radio hears next to nothing from anyone, the
+scanner is restarted and the silence is measured afresh. The hold-off is
+bounded to two in a row: a room really can be empty and quiet, and a guard that
+silence can switch off is not a guard. The check lives in the loop rather than
+in `decide()`, which stays pure and knows nothing about radios.
+
 **Nothing is decided while the screen is locked.** After a lock the app waits
 for the phone, and a single advertisement used to re-arm it — so behind the
 lock screen the full cycle ran again: a countdown box drawn where nobody could

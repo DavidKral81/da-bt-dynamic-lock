@@ -10,6 +10,18 @@ nowhere else.
 
 ## Unreleased
 
+### Fixed
+
+- **A lock the radio cannot corroborate is held off.** The scanner on Windows
+  goes progressively deaf, and the silence it produces looks exactly like a
+  phone that walked away — both end with a locked screen. Before locking, the
+  app now checks what the radio hears from *any* device: when that is nothing
+  at all, the lock waits, the scanner is restarted and the silence is measured
+  again. Bounded to two hold-offs in a row, so a genuinely quiet room cannot
+  switch the guard off. Measured on 29 Aug 2026: a lock landed with the phone
+  on the desk while the radio heard 3 advertisements from 1 device in 15 s,
+  where the honest locks that night had 29–37 from 4–5 devices.
+
 ### Changed
 
 - **The chart's time axis shows the time of day** (`09:45`, `09:46`, …) instead

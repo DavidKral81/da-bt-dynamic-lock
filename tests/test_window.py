@@ -29,6 +29,20 @@ def _add_devices():
         D.STATE.record_nearby(None, _Advertisement(name, rssi))
 
 
+def _radio_hears_the_room():
+    """The radio is picking up other devices - so a silence is the phone's.
+
+    Without this the app rightly holds a lock off (deaf_radio_holds_off_lock),
+    and every test that expects a lock would be testing the hold-off instead.
+    """
+    with D.STATE.lock:
+        D.STATE.adverts.clear()
+    for address in ("AA:1", "BB:2", "CC:3", "DD:4", "EE:5", "FF:6"):
+        D.STATE.record_heard(address)
+    D._deaf_hold_offs = 0
+    D.SCANNER_RESTART.clear()
+
+
 def run():
     failures = []
     # the test must not depend on the developer's personal settings - it picks
@@ -353,12 +367,41 @@ def run():
         # ...and the very same situation without the phone coming back DOES
         # lock. Without this the two checks above would pass on an app that
         # never locks anything at all.
+        _radio_hears_the_room()
         D.STATE.near_at = time.monotonic() - 700
         D.STATE.armed = True
         D._last_tick = time.monotonic()
         D.main_loop(root, box, tray)
         report("without the phone coming back it still locks",
                len(D.STATE.locks) == before + 1)
+
+        # --- C: the same silence, but the radio hears nothing from anyone.
+        # That is a deaf scanner, so the lock waits and the scanner is told to
+        # restart. Only visible in the real loop: decide() knows nothing about
+        # the radio.
+        with D.STATE.lock:
+            D.STATE.adverts.clear()
+        D._deaf_hold_offs = 0
+        D.SCANNER_RESTART.clear()
+        held = len(D.STATE.locks)
+        D.STATE.near_at = time.monotonic() - 700
+        D.STATE.armed = True
+        D._last_tick = time.monotonic()
+        D.main_loop(root, box, tray)
+        report("a lock the radio cannot corroborate is held off",
+               len(D.STATE.locks) == held)
+        report("...and the scanner is asked to restart",
+               D.SCANNER_RESTART.is_set())
+        report("...and the countdown box is not left on screen",
+               not box.win or not box.win.winfo_ismapped())
+        # The allowance is finite: keep asking and the screen does lock.
+        for _ in range(D.DEAF_HOLD_OFF_MAX + 1):
+            D.STATE.near_at = time.monotonic() - 700
+            D.STATE.armed = True
+            D._last_tick = time.monotonic()
+            D.main_loop(root, box, tray)
+        report("...but a quiet room cannot switch the guard off for good",
+               len(D.STATE.locks) > held)
 
         D.CFG["active"] = False          # stop the ticks main_loop scheduled
         box.hide()
@@ -421,6 +464,7 @@ def run():
             # ...and the very same tick, unlocked and with the phone really
             # gone, DOES lock. Without this the three checks above would pass
             # on an app that never locks anything.
+            _radio_hears_the_room()
             D.STATE.near_at = time.monotonic() - 700
             D.STATE.armed = True
             D._last_tick = time.monotonic()

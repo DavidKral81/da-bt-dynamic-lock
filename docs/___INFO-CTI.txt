@@ -249,6 +249,14 @@ Po nastavené době bez signálu (výchozí 10 minut) vyskočí bublina.
 jednou zamkne a pak už čeká, až se telefon objeví. Do té doby
 NEHLÍDÁ, ale tváří se, že ano.
 
+Od verze 1.5 navíc: než aplikace zamkne, podívá se, jestli rádio
+slyší aspoň něco jiného v okolí (myš, televizi, cizí zařízení).
+Když neslyší vůbec nic, ticho nepatří telefonu, ale přijímači - ten
+po delším běhu občas přestane vnímat. Zámek se tehdy odloží,
+skener se restartuje a měří se znovu. Odložit to jde nejvýše
+dvakrát po sobě, aby v opravdu tiché místnosti hlídání nepřestalo
+fungovat. V logu je pak řádek "Locking held off".
+
 
 
 ----------------------------------------------------------------

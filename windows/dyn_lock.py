@@ -79,6 +79,19 @@ HIST_STEP = 10           # minimum spacing of older samples (s)
 HEARD_KEEP_S = 60
 HEARD_WINDOW_S = 15.0
 
+# A lock is held off when the radio hears next to nothing from ANY device.
+# That is the signature of a scanner gone deaf (see scanner_loop), not of a
+# phone that walked away: a room with a mouse, a TV and the neighbours in it
+# gives tens of advertisements in 15 s. Measured 29.08.2026 - a lock landed
+# with the phone on the desk while the radio heard 3 advertisements from
+# 1 device; the honest locks that night had 29-37 from 4-5.
+DEAF_ADVERTS = 5         # below this many advertisements in the window...
+DEAF_DEVICES = 2         # ...and below this many devices, the radio is deaf
+# How many locks in a row may be held off. Not unlimited: a room really can
+# be empty and quiet, and a guard that can be switched off by silence is no
+# guard at all. Each hold-off costs one more silence threshold (45 s).
+DEAF_HOLD_OFF_MAX = 2
+
 # Window icon. In the packaged build it sits next to the program, otherwise
 # next to the sources.
 _icon_file = ((Path(sys._MEIPASS) if getattr(sys, "frozen", False)
@@ -837,6 +850,45 @@ def heard_text(within_s=HEARD_WINDOW_S):
             f"in the last {within_s:.0f} s")
 
 
+# Set from the main loop, cleared by the scanner when it acts on it. An Event
+# rather than a flag because the two live in different threads.
+SCANNER_RESTART = threading.Event()
+_deaf_hold_offs = 0      # locks held off in a row because the radio went deaf
+
+
+def deaf_radio_holds_off_lock():
+    """True when the silence belongs to the scanner, not to the phone.
+
+    Both look identical from the outside - the phone stops being heard and
+    the screen locks - and until now the app could not tell them apart. What
+    separates them is everything ELSE the radio hears: a deaf scanner hears
+    nothing from anyone.
+
+    Holding off is not free, so it is bounded and it does something about the
+    cause: the scanner is restarted (the same cure the watchdog uses) and the
+    silence is measured again, which gives the fresh scanner a full threshold
+    to hear the phone before the question comes back.
+    """
+    global _deaf_hold_offs
+    adverts, devices = STATE.heard_recently(HEARD_WINDOW_S)
+    if adverts >= DEAF_ADVERTS or devices >= DEAF_DEVICES:
+        _deaf_hold_offs = 0             # the radio is fine; the phone is gone
+        return False
+    if _deaf_hold_offs >= DEAF_HOLD_OFF_MAX:
+        log(f"Locking anyway - the radio stayed silent through "
+            f"{_deaf_hold_offs} hold-offs, so the room may really be empty; "
+            f"{heard_text()}.")
+        _deaf_hold_offs = 0
+        return False
+    _deaf_hold_offs += 1
+    log(f"Locking held off ({_deaf_hold_offs}/{DEAF_HOLD_OFF_MAX}) - "
+        f"{heard_text()}, which is the scanner gone deaf rather than the "
+        f"phone leaving. Restarting the scanner and measuring again.")
+    SCANNER_RESTART.set()
+    STATE.restart_measurement()
+    return True
+
+
 def matches(dev, adv, target):
     # No target picked yet = nothing counts. Without this an empty target
     # matched EVERYTHING ("" is a substring of every name), so any BLE device
@@ -898,6 +950,13 @@ async def scanner_loop():
                 # forever (on 15.08.2026 that produced 47 000 restarts
                 # overnight and as many log lines). So after every futile
                 # attempt the wait doubles, up to 10 minutes.
+                # The main loop asks for a restart when it is about to lock on
+                # a silence the radio cannot corroborate. It is not throttled
+                # like the watchdog below, because it can only happen as often
+                # as a lock is held off - at most DEAF_HOLD_OFF_MAX times.
+                if SCANNER_RESTART.is_set():
+                    SCANNER_RESTART.clear()
+                    break
                 wait = min(watchdog * (2 ** min(futile, 4)), 600)
                 if STATE.was_near and time.monotonic() - STATE.seen_at > wait \
                         and time.monotonic() - session_start > wait:
@@ -2557,6 +2616,12 @@ def main_loop(root, countdown, tray):
                 log("Locking called off - the phone came back while the "
                     "decision was being carried out.")
             _previous_action = action
+
+        # Last question before the screen goes: is the phone really gone, or
+        # did the radio stop hearing anything at all? Asked here rather than
+        # in decide(), which is pure and knows nothing about the scanner.
+        if action == "lock" and deaf_radio_holds_off_lock():
+            action = _previous_action = "none"
 
         if action == "lock":
             silence = STATE.silence()
