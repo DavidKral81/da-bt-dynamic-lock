@@ -105,8 +105,9 @@ signal chart and all the settings:
 - **which device to watch** — picked from whatever is currently heard
 - **when to lock** — 12 to 120 seconds of silence
 - **range (sensitivity)** — optionally require a minimum signal strength
-- **countdown** before locking (information only, it cannot be cancelled), and
-  how high up the screen it appears
+- **countdown** before locking (information only, it cannot be cancelled), how
+  high up the screen it appears, and whether it shows on every monitor or on
+  the primary one alone
 - **do not lock while typing or moving the mouse** (off by default — anyone at
   the desk could otherwise postpone locking)
 - **warning when the phone disappears** for good, so a silent failure does not
