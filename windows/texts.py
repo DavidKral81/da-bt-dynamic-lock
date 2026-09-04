@@ -69,6 +69,7 @@ CS = {
     "opt_countdown_off": "Nezobrazovat",
     "lbl_countdown_position": "Kde odpočet ukázat (0 % nahoře, 100 % dole)",
     "opt_from_top": "{p} % odshora",
+    "sw_countdown_primary_only": "Zobrazovat odpočet jen na primárním monitoru",
     "sw_idle_guard": "Nezamykat při aktivitě uživatele (myš, klávesnice)",
 
     # --- settings: app behaviour --------------------------------------
@@ -272,6 +273,7 @@ EN = {
     "opt_countdown_off": "Do not show",
     "lbl_countdown_position": "Where to show the countdown (0 % top, 100 % bottom)",
     "opt_from_top": "{p} % from the top",
+    "sw_countdown_primary_only": "Show the countdown on the primary monitor only",
     "sw_idle_guard": "Do not lock while the user is active (mouse, keyboard)",
 
     # --- settings: application behaviour ------------------------------

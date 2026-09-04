@@ -7,6 +7,7 @@ measured dimensions showed it.
 """
 import time
 import tkinter as tk
+import traceback
 
 import sys
 from pathlib import Path
@@ -251,19 +252,94 @@ def run():
         for stored, percent in ((0.10, 10), (0.50, 50), (0.90, 90), (0.33, 30)):
             D.CFG["countdown_vertical"] = stored
             box.show(9)
-            box.win.update()
-            h = box.win.winfo_height()
+            root.update()
+            first = box.boxes[0].win            # the primary monitor comes first
+            h = first.winfo_height()
             wanted = top + int((bottom - top) * percent / 100) - h // 2
-            got = box.win.winfo_rooty()
+            got = first.winfo_rooty()
             report(f"countdown sits at {percent} % from the top "
                    f"(y {got}, wanted {wanted})", abs(got - wanted) <= 2)
             # ...and the whole box stays on the desktop, ends of the range
             # included - half a warning is a warning wasted
             report(f"the whole box is on the desktop at {percent} %",
                    got >= top and got + h <= bottom)
+            # the position is computed from the REQUESTED size before the box is
+            # shown; if the two ever differed, everything above would be off
+            report(f"the box is as wide as it asked to be at {percent} %",
+                   first.winfo_width() == first.winfo_reqwidth())
 
         box.hide()
         D.CFG["countdown_vertical"] = original
+        root.after(200, countdown_monitors)
+
+    def countdown_monitors():
+        """A box on every monitor - and only one when the setting says so.
+
+        The second monitor is faked, because the machine running the test has
+        whatever it has. Its work area deliberately sits at NEGATIVE x, the way
+        Windows numbers a monitor to the left of the primary one: Tk reads a
+        bare "-100" in a geometry string as "from the right edge", so that is
+        the case which would silently put the box on the wrong screen.
+        """
+        box = D.Countdown(root)
+        real = D.monitor_work_areas()
+        primary = real[0]
+        # 900x600 of desktop starting 1000 px left of the primary monitor
+        second = (primary[0] - 1000, primary[1] + 40,
+                  primary[0] - 100, primary[1] + 640)
+        original_areas = D.monitor_work_areas
+        original_only = D.CFG.get("countdown_primary_only", False)
+        D.monitor_work_areas = lambda: [primary, second]
+        try:
+            D.CFG["countdown_primary_only"] = False
+            box.show(9)
+            root.update()
+            report(f"two monitors get two boxes ({len(box.boxes)})",
+                   len(box.boxes) == 2)
+            for i, area in enumerate((primary, second)):
+                if i >= len(box.boxes):     # already reported as a failure -
+                    continue                # measuring it would raise instead
+                b = box.boxes[i]
+                w, h = b.win.winfo_width(), b.win.winfo_height()
+                wanted_x = area[0] + (area[2] - area[0] - w) // 2
+                wanted_y = (area[1] + int((area[3] - area[1])
+                                          * D.countdown_percent() / 100) - h // 2)
+                got = (b.win.winfo_rootx(), b.win.winfo_rooty())
+                report(f"box {i + 1} sits on its own monitor "
+                       f"(at {got}, wanted {(wanted_x, wanted_y)})",
+                       abs(got[0] - wanted_x) <= 2 and abs(got[1] - wanted_y) <= 2)
+                report(f"...and box {i + 1} is on screen",
+                       bool(b.win.winfo_ismapped()))
+
+            # ...and the setting really takes the second one away, without
+            # leaving it hanging on the screen it was drawn on
+            D.CFG["countdown_primary_only"] = True
+            box.show(8)
+            root.update()
+            report(f"'primary monitor only' leaves one box ({len(box.boxes)})",
+                   len(box.boxes) == 1)
+            report("...and it is the primary one",
+                   bool(box.boxes) and box.boxes[0].area == primary)
+
+            D.CFG["countdown_primary_only"] = False
+            box.show(7)
+            root.update()
+            report("switching it back brings the second box again",
+                   len(box.boxes) == 2)
+            box.hide()
+            root.update()
+            report("...and hiding takes down every box",
+                   all(not b.win.winfo_ismapped() for b in box.boxes))
+        finally:
+            # The boxes have to come down even when something above raises:
+            # a failing test that leaves a "Locking in 9 s" box sitting on the
+            # desktop is a test that broke the machine it was checking.
+            D.monitor_work_areas = original_areas
+            D.CFG["countdown_primary_only"] = original_only
+            box.hide()
+            for b in box.boxes:
+                b.win.destroy()
+            root.update()
         root.after(200, countdown_report)
 
     def countdown_report():
@@ -278,30 +354,36 @@ def run():
         box = D.Countdown(root)
         lines = []
         original_log = D.log
+        said = lambda: [l for l in lines if l.startswith("Countdown box ")]
         D.log = lambda message: lines.append(message)
         try:
             box.show(9)
-            box.win.update()
-            first = [l for l in lines if l.startswith("Countdown box at")]
-            report("the box reports where it landed", len(first) == 1)
+            root.update()
+            # one line per box, however many monitors this machine has
+            screens = len(box.boxes)
+            first = said()
+            report(f"every box reports where it landed "
+                   f"({len(first)} of {screens})", len(first) == screens)
             report("...with a position, a size and what is in front of it",
                    bool(first) and "work area" in first[0]
                    and "in front" in first[0])
             report("...and it says the box is visible",
                    bool(first) and "NOT VISIBLE" not in first[0]
                    and "visible" in first[0])
+            report("...and which box of how many it is",
+                   bool(first) and first[0].startswith(f"Countdown box 1/{screens} at"))
 
             box.show(8)
             box.show(7)
-            box.win.update()
+            root.update()
             report("...once per appearance, not once per tick",
-                   len([l for l in lines if l.startswith("Countdown box at")]) == 1)
+                   len(said()) == screens)
 
             box.hide()
             box.show(6)
-            box.win.update()
+            root.update()
             report("...and again the next time it appears",
-                   len([l for l in lines if l.startswith("Countdown box at")]) == 2)
+                   len(said()) == 2 * screens)
         finally:
             D.log = original_log
         box.hide()
@@ -393,7 +475,7 @@ def run():
         report("...and the scanner is asked to restart",
                D.SCANNER_RESTART.is_set())
         report("...and the countdown box is not left on screen",
-               not box.win or not box.win.winfo_ismapped())
+               all(not b.win.winfo_ismapped() for b in box.boxes))
         # The allowance is finite: keep asking and the screen does lock.
         for _ in range(D.DEAF_HOLD_OFF_MAX + 1):
             D.STATE.near_at = time.monotonic() - 700
@@ -512,6 +594,20 @@ def run():
     def finish():
         root.destroy()
 
+    def crashed(kind, value, tb):
+        """A step that raises must not leave the test hanging - or a box up.
+
+        Tk swallows exceptions from after() callbacks, so the next step was
+        never scheduled: mainloop ran for ever with a "Locking in 9 s" box
+        sitting on the desktop and nothing in the output to say why. Found on
+        04.09.2026 by deliberately breaking the multi-monitor code to prove the
+        test could see it - the sabotage was caught by a person, not by this.
+        """
+        traceback.print_exception(kind, value, tb)
+        report(f"a step of the test crashed: {value!r}", False)
+        root.destroy()
+
+    root.report_callback_exception = crashed
     round_trip(1, lambda: round_trip(2, gone_quiet))
     root.mainloop()
 

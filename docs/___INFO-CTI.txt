@@ -133,8 +133,11 @@ NASTAVENÍ
         Kde odpočet ukázat (0 % nahoře, 100 % dole)
                                        po desetinách výšky obrazovky,
                                        výchozí 30 % odshora. Vodorovně
-                                       je okénko vždy uprostřed a vždy
-                                       na hlavním monitoru.
+                                       je okénko vždy uprostřed.
+        Zobrazovat odpočet jen na primárním monitoru
+                                       ve výchozím stavu je odpočet
+                                       vidět na všech monitorech, na
+                                       každém uprostřed jeho obrazovky
         Nezamykat při aktivitě uživatele (myš, klávesnice)
                                        POZOR: kdokoli u stolu tím může
                                        uzamknutí odkládat, proto je to

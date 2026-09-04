@@ -115,6 +115,7 @@ DEFAULTS = {
     "countdown": True,
     "countdown_from_s": 15,
     "countdown_vertical": 0.30,           # 0.30 = 30 % from the top
+    "countdown_primary_only": False,      # False = a box on every monitor
     "rssi_threshold": None,                # None = lock only on signal loss
     "threshold_window_s": 6,
     "idle_guard": False,
@@ -763,7 +764,7 @@ def idle_seconds():
 def work_area():
     """Desktop size WITHOUT the taskbar - so the window sits above the clock.
 
-    The primary monitor only, which is a deliberate choice (see CLAUDE.md).
+    The primary monitor only. Used as the fallback for monitor_work_areas().
     """
     global _work_area_failed
     r = wintypes.RECT()
@@ -779,6 +780,77 @@ def work_area():
                 "so the countdown box may end up under the taskbar.")
         return 0, 0, user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
     return r.left, r.top, r.right, r.bottom
+
+
+class MONITORINFO(ctypes.Structure):
+    _fields_ = [("cbSize", wintypes.DWORD),
+                ("rcMonitor", wintypes.RECT),   # the whole monitor
+                ("rcWork", wintypes.RECT),      # ...without the taskbar
+                ("dwFlags", wintypes.DWORD)]
+
+
+MONITORINFOF_PRIMARY = 0x1
+# EnumDisplayMonitors hands the monitors over one at a time through a callback,
+# so the prototype has to exist before the call. The declarations are not
+# decoration: the handle is pointer-sized and ctypes would read it as a 32bit
+# int without them (the same trap as with the desktop handles above).
+_MONITORENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HANDLE,
+                                      wintypes.HDC,
+                                      ctypes.POINTER(wintypes.RECT),
+                                      wintypes.LPARAM)
+user32.EnumDisplayMonitors.argtypes = [wintypes.HDC,
+                                       ctypes.POINTER(wintypes.RECT),
+                                       _MONITORENUMPROC, wintypes.LPARAM]
+user32.EnumDisplayMonitors.restype = wintypes.BOOL
+user32.GetMonitorInfoW.argtypes = [wintypes.HANDLE, ctypes.POINTER(MONITORINFO)]
+user32.GetMonitorInfoW.restype = wintypes.BOOL
+
+_monitors_failed = False
+
+
+def monitor_work_areas():
+    """Work area of every monitor, the primary one first.
+
+    A countdown that only ever appears on the primary monitor is a warning
+    half the desk never sees, so there is one box per monitor. The list is
+    asked for again at every appearance instead of being remembered: monitors
+    get plugged in and unplugged, and a box placed on a screen that is no
+    longer there would be a box nobody sees.
+
+    Coordinates are the ones Windows uses for the whole virtual desktop, so a
+    monitor to the LEFT of the primary one has negative x - which is exactly
+    what the boxes need to be positioned with.
+    """
+    global _monitors_failed
+    found = []
+
+    def collect(handle, _hdc, _rect, _data):
+        info = MONITORINFO()
+        info.cbSize = ctypes.sizeof(MONITORINFO)
+        if user32.GetMonitorInfoW(handle, ctypes.byref(info)):
+            r = info.rcWork
+            found.append((bool(info.dwFlags & MONITORINFOF_PRIMARY),
+                          (r.left, r.top, r.right, r.bottom)))
+        return True             # keep going, we want them all
+
+    try:
+        ok = user32.EnumDisplayMonitors(None, None, _MONITORENUMPROC(collect), 0)
+    except OSError as e:
+        ok, found = False, []
+        log(f"EnumDisplayMonitors raised {e}.")
+    if not ok or not found:
+        # Never silently: the countdown still appears, but only on one screen,
+        # and that difference has to be traceable in the log. Said once - this
+        # runs twice a second while a countdown is on.
+        if not _monitors_failed:
+            _monitors_failed = True
+            log("Could not list the monitors - the countdown will be shown on "
+                "the primary one only.")
+        return [work_area()]
+    # Primary first, then left to right: the first line in the log is then the
+    # main screen, which is what anyone reading it assumes anyway.
+    found.sort(key=lambda m: (not m[0], m[1][0], m[1][1]))
+    return [area for _, area in found]
 
 
 # OpenInputDesktop hands back a HANDLE. Without these declarations ctypes would
@@ -1096,26 +1168,18 @@ def countdown_percent():
     return min(COUNTDOWN_STEPS, key=lambda p: abs(p - wanted))
 
 
-class Countdown:
-    """A small unobtrusive box above the clock in the bottom right corner.
+class CountdownBox:
+    """One countdown window, belonging to one monitor.
 
-    Deliberately WITHOUT a way to cancel - it only tells the time left. The
-    window never steals focus (WS_EX_NOACTIVATE) and clicks go through it
+    The window never steals focus (WS_EX_NOACTIVATE) and clicks go through it
     (WS_EX_TRANSPARENT) so that it is never in the way.
     """
 
-    def __init__(self, root):
-        self.root = root
-        self.win = None
-        self.lbl = None
-        self.hwnd = None
-        # False = the next show() starts a new appearance and reports where the
-        # box landed. Lives on the box itself, so it cannot outlive it.
-        self.reported = False
-
-    def _create(self):
-        w = tk.Toplevel(self.root)
-        w.overrideredirect(True)
+    def __init__(self, root, area):
+        self.area = area                     # work area of its monitor
+        w = tk.Toplevel(root)
+        w.withdraw()                         # placed first, shown afterwards -
+        w.overrideredirect(True)             # otherwise it flashes in the corner
         w.attributes("-topmost", True)
         w.configure(bg="#e8a33d")            # bright orange border
         frame = tk.Frame(w, bg="#241a10")
@@ -1134,8 +1198,72 @@ class Countdown:
         self.win = w
         self.hwnd = hwnd
 
+    def place(self, text):
+        """Put the text in and move the box to its place on this monitor."""
+        self.lbl.config(text=text)
+        self.win.update_idletasks()
+        # Horizontally centred; the height is the user's choice (30 % from the
+        # top by default - the eye lands there on its own, unlike the corner by
+        # the clock).
+        left, top, right, bottom = self.area
+        # The requested size, not winfo_width(): a box that has not been shown
+        # yet answers 1 px there, and the first appearance would be centred
+        # against nothing. Nothing resizes an overrideredirect window, so the
+        # two agree once it is on screen - which test_window.py measures.
+        w, h = self.win.winfo_reqwidth(), self.win.winfo_reqheight()
+        x = left + (right - left - w) // 2
+        y = top + int((bottom - top) * countdown_percent() / 100) - h // 2
+        # No clamping to the desktop here on purpose: the offered steps stop at
+        # 90 %, which leaves the whole box on screen for any sane window height.
+        # A clamp would be a branch that never runs - and it would quietly hide
+        # a badly chosen step instead of letting the test say so. That the box
+        # really fits is checked in tests/test_window.py.
+        #
+        # A monitor left of the primary one has negative coordinates, and Tk
+        # reads a bare "-100" as "100 px from the RIGHT edge" - "+-100" is the
+        # form that means what it says.
+        self.win.geometry(f"+{x}+{y}")
+        self.win.deiconify()
+        self.win.lift()
+
+
+class Countdown:
+    """The "locking in X s" boxes - one on every monitor.
+
+    Deliberately WITHOUT a way to cancel: it only tells the time left. Showing
+    it on every screen is the point - the countdown is a warning, and a warning
+    on a monitor the user is not looking at is a warning wasted. Someone who
+    would rather have just the one can say so in the settings
+    (countdown_primary_only).
+    """
+
+    def __init__(self, root):
+        self.root = root
+        self.boxes = []
+        # False = the next show() starts a new appearance and reports where the
+        # boxes landed. Lives on the countdown itself, so it cannot outlive it.
+        self.reported = False
+
+    def _sync(self):
+        """Keep one box per monitor - rebuilt when the desk changes, not per tick.
+
+        The layout comes from Windows every time rather than being remembered:
+        a monitor can be plugged in or unplugged between two countdowns, and the
+        setting can be switched while one is running. Enumerating the monitors
+        is cheap; building windows is not, hence the comparison.
+        """
+        areas = monitor_work_areas()
+        if CFG.get("countdown_primary_only", False):
+            areas = areas[:1]
+        if [b.area for b in self.boxes] == areas:
+            return
+        for b in self.boxes:
+            b.win.destroy()
+        self.boxes = [CountdownBox(self.root, a) for a in areas]
+        self.reported = False           # new boxes, so say where these landed
+
     def _report(self):
-        """Write down where the box actually landed and what is in front of it.
+        """Write down where the boxes actually landed and what is in front.
 
         Until now the log only proved that a countdown had been DECIDED on,
         which is not the same as the user seeing one. On 22.08.2026 two locks
@@ -1147,60 +1275,47 @@ class Countdown:
         warning down with it would be worse than no diagnostic.
         """
         try:
-            box = wintypes.RECT()
-            user32.GetWindowRect(self.hwnd, ctypes.byref(box))
             GWL_EXSTYLE, WS_EX_TOPMOST = -20, 0x8
-            visible = bool(user32.IsWindowVisible(self.hwnd))
-            topmost = bool(user32.GetWindowLongW(self.hwnd, GWL_EXSTYLE)
-                           & WS_EX_TOPMOST)
-            left, top, right, bottom = work_area()
-
             front = user32.GetForegroundWindow()
             name = ctypes.create_unicode_buffer(120)
             user32.GetWindowTextW(front, name, 120)
             over = wintypes.RECT()
             user32.GetWindowRect(front, ctypes.byref(over))
 
-            log(f"Countdown box at {box.left},{box.top} "
-                f"{box.right - box.left}x{box.bottom - box.top} - "
-                f"{'visible' if visible else 'NOT VISIBLE'}, "
-                f"{'topmost' if topmost else 'NOT TOPMOST'}; "
-                f"work area {left},{top} {right - left}x{bottom - top}; "
-                f"in front '{name.value}' at {over.left},{over.top} "
-                f"{over.right - over.left}x{over.bottom - over.top}.")
+            total = len(self.boxes)
+            for i, b in enumerate(self.boxes, 1):
+                box = wintypes.RECT()
+                user32.GetWindowRect(b.hwnd, ctypes.byref(box))
+                visible = bool(user32.IsWindowVisible(b.hwnd))
+                topmost = bool(user32.GetWindowLongW(b.hwnd, GWL_EXSTYLE)
+                               & WS_EX_TOPMOST)
+                left, top, right, bottom = b.area
+                log(f"Countdown box {i}/{total} at {box.left},{box.top} "
+                    f"{box.right - box.left}x{box.bottom - box.top} - "
+                    f"{'visible' if visible else 'NOT VISIBLE'}, "
+                    f"{'topmost' if topmost else 'NOT TOPMOST'}; "
+                    f"work area {left},{top} {right - left}x{bottom - top}; "
+                    f"in front '{name.value}' at {over.left},{over.top} "
+                    f"{over.right - over.left}x{over.bottom - over.top}.")
         except Exception as e:
             log(f"Could not check where the countdown box landed: {e}")
 
     def show(self, remaining):
-        if self.win is None:
-            self._create()
-        self.lbl.config(text=tx("countdown_text", s=remaining))
-        self.win.update_idletasks()
-        # Horizontally centred; the height is the user's choice (30 % from the
-        # top by default - the eye lands there on its own, unlike the corner by
-        # the clock).
-        left, top, right, bottom = work_area()
-        w, h = self.win.winfo_width(), self.win.winfo_height()
-        x = left + (right - left - w) // 2
-        y = top + int((bottom - top) * countdown_percent() / 100) - h // 2
-        # No clamping to the desktop here on purpose: the offered steps stop at
-        # 90 %, which leaves the whole box on screen for any sane window height.
-        # A clamp would be a branch that never runs - and it would quietly hide
-        # a badly chosen step instead of letting the test say so. That the box
-        # really fits is checked in tests/test_window.py.
-        self.win.geometry(f"+{x}+{y}")
-        self.win.deiconify()
-        self.win.lift()
-        if not self.reported:
+        self._sync()
+        text = tx("countdown_text", s=remaining)
+        for b in self.boxes:
+            b.place(text)
+        if not self.reported and self.boxes:
             self.reported = True
-            # after the move has actually been applied, or the rectangle read
-            # back would still be the old one
-            self.win.update_idletasks()
+            # after the moves have actually been applied, or the rectangles
+            # read back would still be the old ones
+            for b in self.boxes:
+                b.win.update_idletasks()
             self._report()
 
     def hide(self):
-        if self.win is not None:
-            self.win.withdraw()
+        for b in self.boxes:
+            b.win.withdraw()
         self.reported = False
 
 
@@ -1533,6 +1648,11 @@ class Chart:
                      [(tx("opt_from_top", p=p), p) for p in COUNTDOWN_STEPS],
                      var=self.position_var,
                      action=self._set_countdown_position)
+        # Right below the position, because it answers the same question -
+        # where the countdown shows up. Off by default: a warning belongs on
+        # every screen, and this is for whoever finds that too much.
+        self.sw_countdown_primary_only = self._switch(
+            card, tx("sw_countdown_primary_only"), "countdown_primary_only")
 
         # --- 3. behaviour ----------------------------------------------
         card = self._card(column, tx("card_behaviour"), None)

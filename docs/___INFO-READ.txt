@@ -140,8 +140,11 @@ SETTINGS
                                        in tenths of the screen height,
                                        30 % from the top by default.
                                        Horizontally the window is
-                                       always centred, and always on
-                                       the primary monitor.
+                                       always centred.
+        Show the countdown on the primary monitor only
+                                       by default the countdown appears
+                                       on every monitor, centred on
+                                       each of the screens
         Do not lock while the user is active (mouse, keyboard)
                                        CAREFUL: anyone at the desk
                                        can postpone locking this

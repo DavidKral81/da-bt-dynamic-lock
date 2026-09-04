@@ -34,6 +34,15 @@ nowhere else.
 
 ### Changed
 
+- **The countdown appears on every monitor**, one box per screen, each centred
+  on its own and at the height set in the settings. It used to be drawn on the
+  primary monitor only, so anyone working on a second screen got no warning at
+  all before the lock. Whoever prefers the old behaviour can switch on *Show
+  the countdown on the primary monitor only*, right below the position in the
+  settings (`countdown_primary_only` in `config.json`). The log now names each
+  box — `Countdown box 1/2 at …` — so it stays possible to tell which screen a
+  box landed on.
+
 - **The chart's time axis shows the time of day** (`09:45`, `09:46`, …) instead
   of the distance from now (`−1 min`, `−2 min`). On the 2 minute range the
   labels carry seconds as well. The grid lines moved with it: they now sit on
