@@ -153,7 +153,9 @@ powershell -ExecutionPolicy Bypass -File phone\build.ps1                 # APK
 
 The Android build needs no Android Studio and no Gradle, but the tools
 (a JDK and the Android SDK build-tools) have to be present in an
-`_android-build/` folder in the project root — the script does **not**
+`_android-build/` folder **next to the project folder**, one level above
+it — they are ~700 MB of downloads that nothing at run time depends on, so
+they are deliberately kept out of the project. The script does **not**
 download them, it stops with an error when they are missing. Once they are
 there, the build works offline.
 

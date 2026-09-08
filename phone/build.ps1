@@ -16,11 +16,13 @@ $ErrorActionPreference = "Stop"
 $base  = $PSScriptRoot
 
 # The source code and the key live here with the app. The tools (Java +
-# Android SDK) sit next to it in the _android-build folder, which is meant to
-# be deletable - so nothing that could be lost may live there.
-$tools = Join-Path (Split-Path $base -Parent) "_android-build"
+# Android SDK) sit OUTSIDE the project, in an _android-build folder one level
+# above the project folder: 700 MB of downloads that are meant to be deletable,
+# so nothing that could be lost may live there. Two Split-Path calls: from
+# phone\ up to the project, and from the project up to the workspace.
+$tools = Join-Path (Split-Path (Split-Path $base -Parent) -Parent) "_android-build"
 if (-not (Test-Path "$tools\jdk")) {
-    throw "No tools in the _android-build folder. How to restore them is in its '___LZE SMAZAT.txt' file."
+    throw "No tools in the _android-build folder next to the project. How to restore them is in its '___LZE SMAZAT.txt' file."
 }
 
 # The Android SDK tools (aapt2, d8, apksigner) are native and CANNOT handle

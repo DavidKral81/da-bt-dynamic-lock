@@ -35,9 +35,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# Folders that are not the project: the virtual environment and the downloaded
-# Android toolchain hold thousands of files (pip alone ships an installer.py),
-# and a name found in there would vouch for a path the project does not have.
+# Folders that are not the project: the virtual environment holds thousands of
+# files (pip alone ships an installer.py), and a name found in there would vouch
+# for a path the project does not have. _android-build sits outside the project
+# since 08.09.2026, so it is skipped only in case it ever comes back.
 SKIP_DIRS = {".git", ".venv", "_android-build", "_output", "_build",
              "__pycache__", "dist", "build"}
 
@@ -80,7 +81,7 @@ ALLOWED_MISSING = {
     "signing-key-DO-NOT-DELETE.jks": "the key itself is never committed",
     "signing-key-password.txt": "never committed, by design",
     "_output": "created by the tools when they run",
-    "_android-build": "downloaded toolchain, not in the repository",
+    "_android-build": "downloaded toolchain, outside the project entirely",
     ".venv": "created locally by the developer",
 }
 

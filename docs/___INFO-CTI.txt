@@ -411,8 +411,10 @@ VE SLOŽCE PROJEKTU (zdrojový kód)
   phone\                   aplikace pro Android + zdrojový kód + klíč
   start.bat                spuštění ze zdrojáku
   _output\                 výstupy nástrojů (náhledy, reporty)
-  _android-build\          jen stažené nástroje (~700 MB), nic
-                           důležitého, jde kdykoli smazat
+
+Nástroje pro sestavení aplikace pro Android (Java + Android SDK,
+~700 MB) leží ve složce _android-build O ÚROVEŇ VÝŠ, tedy vedle
+složky projektu. Nejsou jeho součástí a jdou kdykoli smazat.
 
 
 
@@ -483,4 +485,4 @@ SESTAVENÍ APLIKACE PRO TELEFON
 
 Zdrojový kód je v  phone\src\ , hotová APK se objeví rovnou
 v  phone\ . Nepotřebuje internet ani Android Studio, jen nástroje
-ve složce _android-build.
+ve složce _android-build vedle složky projektu (o úroveň výš).

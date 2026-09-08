@@ -435,8 +435,11 @@ IN THE PROJECT FOLDER (source code)
   phone\                   the Android app, its source and signing key
   start.bat                run from source
   _output\                 tool output (previews, reports)
-  _android-build\          only downloaded tools (~700 MB), nothing
-                           important, can be deleted any time
+
+The tools for building the Android app (Java + the Android SDK,
+~700 MB) live in an _android-build folder ONE LEVEL UP, next to the
+project folder. They are not part of the project and can be deleted
+at any time.
 
 
 
@@ -512,4 +515,5 @@ BUILDING THE PHONE APP
 
 The source code is in  phone\src\ , and the finished APK appears
 directly in  phone\ . It needs neither the internet nor Android
-Studio, only the tools in the _android-build folder.
+Studio, only the tools in the _android-build folder that sits next
+to the project folder (one level up).

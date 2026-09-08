@@ -17,7 +17,10 @@ installer/*.exe
 _build/
 installer/_build/
 
-# Portable toolchain (~700 MB) and virtual environment
+# Portable toolchain (~700 MB) and virtual environment.
+# _android-build/ now lives OUTSIDE the project, one level up, so this pattern
+# matches nothing today - it stays as a safety net, because putting those 700 MB
+# back into the project and committing them is exactly the accident above.
 _android-build/
 .venv/
 
