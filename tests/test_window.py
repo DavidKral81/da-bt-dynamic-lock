@@ -61,37 +61,63 @@ def run():
         if not ok:
             failures.append(what)
 
-    # --- the line about saved networks in the settings -------------------
-    # Five situations, and the third one is the reason this is tested at all:
-    # with a mesh the name stays while the access point changes, so watching
-    # switches itself back on halfway across the flat. Nothing else would tell
-    # the user why, so if that line ever stopped appearing it would look like
-    # a bug in the locking.
+    # --- the list of networks without locking ----------------------------
+    # The mesh case is why this is tested at all: same name, another access
+    # point. That row has to be there, has to start unticked, and has to be
+    # tellable apart from the saved one - otherwise the user faces two
+    # identical lines and watching switches back on with no explanation.
     _saved_networks = D.CFG.get("trusted_networks")
     _live_network = D.current_network
     try:
         D.CFG["trusted_networks"] = []
-        report("nothing saved: the line says so",
-               chart._network_summary() == D.tx("lbl_trusted_empty"))
+        D.current_network = lambda: None
+        report("nothing saved and no Wi-Fi: the list is empty",
+               chart._network_rows() == [])
+        D.current_network = lambda: ("Hotel", "11:22:33:44:55:66")
+        report("on an unsaved network: one row, unticked, marked connected",
+               chart._network_rows()
+               == [("Hotel", "11:22:33:44:55:66", False, True)])
         D.CFG["trusted_networks"] = [{"ssid": "Kancelar",
                                       "bssid": "AA:BB:CC:DD:EE:FF"}]
         D.current_network = lambda: ("Kancelar", "AA:BB:CC:DD:EE:FF")
-        report("on a saved network: the line names it",
-               chart._network_summary()
-               == D.tx("lbl_trusted_here", ssid="Kancelar", n=1))
-        D.current_network = lambda: ("Kancelar", "11:22:33:44:55:66")
-        report("same name, different access point: the mesh is explained",
-               chart._network_summary()
-               == D.tx("lbl_trusted_same_name", ssid="Kancelar", n=1))
-        D.current_network = lambda: ("Cizi", "11:22:33:44:55:66")
-        report("an unrelated network: the line says it is not saved",
-               chart._network_summary() == D.tx("lbl_trusted_away", n=1))
+        report("on a selected network: one row, ticked",
+               chart._network_rows()
+               == [("Kancelar", "AA:BB:CC:DD:EE:FF", True, True)])
+        # Out of range it must stay listed, or the only way to remove it would
+        # be to travel back to it.
         D.current_network = lambda: None
-        report("no wireless at all: the line says it is not saved",
-               chart._network_summary() == D.tx("lbl_trusted_away", n=1))
+        report("a selected network out of range stays on the list",
+               chart._network_rows()
+               == [("Kancelar", "AA:BB:CC:DD:EE:FF", True, False)])
+        D.current_network = lambda: ("Kancelar", "11:22:33:44:55:66")
+        rows = chart._network_rows()
+        report("mesh: the new access point is a row of its own, unticked",
+               rows == [("Kancelar", "11:22:33:44:55:66", False, True),
+                        ("Kancelar", "AA:BB:CC:DD:EE:FF", True, False)])
+        labels = [chart._network_label(s, b, c, rows) for s, b, _, c in rows]
+        report("mesh: the two rows do not read the same",
+               labels[0] != labels[1] and "55:66" in labels[0])
+        # A name nothing else shares must not carry technical noise.
+        D.CFG["trusted_networks"] = []
+        D.current_network = lambda: ("Hotel", "11:22:33:44:55:66")
+        single = chart._network_rows()
+        report("a unique name carries no MAC address",
+               "55:66" not in chart._network_label(
+                   "Hotel", "11:22:33:44:55:66", True, single))
+        # Ticking and unticking a row.
+        chart._toggle_network("Hotel", "11:22:33:44:55:66")
+        report("ticking a row puts the network on the list",
+               D.CFG["trusted_networks"]
+               == [{"ssid": "Hotel", "bssid": "11:22:33:44:55:66"}])
+        chart._toggle_network("Hotel", "11:22:33:44:55:66")
+        report("unticking takes it off again",
+               D.CFG["trusted_networks"] == [])
     finally:
         D.current_network = _live_network
         D.CFG["trusted_networks"] = _saved_networks
+        # _toggle_network writes to disk, so putting the value back in memory
+        # is not enough - the file would keep a network nobody chose.
+        D.save_cfg(D.CFG)
 
     def round_trip(number, then):
         chart.toggle()                      # open (as if from the tray)
@@ -445,6 +471,15 @@ def run():
         box = D.Countdown(root)
         before = len(D.STATE.locks)
 
+        # The screen state is answered here, not asked of Windows. These cases
+        # are about the loop, and the loop refuses to lock behind a lock screen
+        # - correctly so. Run with the workstation actually locked (the tester
+        # walked away, a screensaver kicked in), the three cases below that
+        # REQUIRE a lock would fail and read exactly like a regression. Telling
+        # a locked screen apart has its own tests in test_logic.py.
+        _screen_state = D.session_locked
+        D.session_locked = lambda: False
+
         # --- A: the loop stood still (sleep, hibernation). Silence piled up
         # while nobody was measuring, so it must not be used to lock.
         D.STATE.was_near, D.STATE.armed = True, True
@@ -517,6 +552,7 @@ def run():
         report("...but a quiet room cannot switch the guard off for good",
                len(D.STATE.locks) > held)
 
+        D.session_locked = _screen_state     # the next case asks for itself
         D.CFG["active"] = False          # stop the ticks main_loop scheduled
         box.hide()
         root.after(200, loop_while_locked)

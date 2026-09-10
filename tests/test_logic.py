@@ -205,8 +205,16 @@ if _ok:
           _info.Data.SessionFlags in (_D.WTS_SESSIONSTATE_LOCK,
                                       _D.WTS_SESSIONSTATE_UNLOCK, -1))
     _D._wtsapi.WTSFreeMemory(_buffer)
-check("...and the real check answers on a live desktop", False,
-      _D.session_locked())
+# Only meaningful while somebody is actually sitting here. Run with the
+# workstation locked - the tester walked away, a screensaver kicked in - the
+# honest answer is True, and demanding False would report a working check as
+# broken. Skipped out loud rather than silently, so nobody reads a run that
+# skipped it as a run that passed it.
+if _D._session_flags() == _D.WTS_SESSIONSTATE_LOCK:
+    print("  --   the workstation is locked right now, live answer not checked")
+else:
+    check("...and the real check answers on a live desktop", False,
+          _D.session_locked())
 
 print("\nOn a saved network (one that needs no locking):")
 # This setting exists to STOP locking, so every case here has a twin that must

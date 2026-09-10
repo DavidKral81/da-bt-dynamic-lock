@@ -1888,22 +1888,14 @@ class Chart:
         card = self._card(column, tx("card_trusted"), tx("card_trusted_desc"))
         self.sw_trusted_network = self._switch(
             card, tx("sw_trusted_network"), "trusted_network_pause")
-        # What is saved lives in a label of its own, not in the menu items.
-        # A Tk OptionMenu is built from a fixed list, so a menu that named the
-        # saved networks would have to be rebuilt after every change; a label
-        # is simply rewritten. And it is the label that answers the question
-        # the user actually has - am I on a trusted network right now?
-        self.network_label = tk.Label(
-            card, text=self._network_summary(), bg=card["bg"], fg="#9aa4b2",
-            justify="left", wraplength=self.SETTINGS_WIDTH - 40,
-            font=("Segoe UI", 9))
-        self.network_label.pack(anchor="w", pady=(6, 0))
-        self.network_var = tk.StringVar(value=tx("opt_trusted_keep"))
-        self._select(card, None, None,
-                     [(tx("opt_trusted_keep"), None),
-                      (tx("opt_trusted_add"), "add"),
-                      (tx("opt_trusted_forget"), "forget")],
-                     var=self.network_var, action=self._set_network)
+        # Built like the phone card above: one row per network, ticked when it
+        # counts. The first attempt was a drop-down of actions (save / forget
+        # all), which meant the saved networks could only be COUNTED, never
+        # seen, and a single one could not be removed at all. A list also makes
+        # the mesh case explain itself - the access point you are on is simply
+        # a row that is not ticked yet.
+        self.networks_frame = tk.Frame(card, bg="#151920")
+        self.networks_frame.pack(fill="x", pady=(6, 0))
 
         # --- 5. pause --------------------------------------------------
         card = self._card(column, tx("card_pause"),
@@ -2193,66 +2185,71 @@ class Chart:
         save_cfg(CFG)
         log(f"Countdown position: {percent} % from the top")
 
-    def _network_summary(self):
-        """One line: what is saved, and how this network relates to it.
+    def _network_rows(self):
+        """What the network list shows: (ssid, bssid, ticked, connected now).
 
-        Read from the live adapter every time it is drawn rather than kept in
-        a variable - a remembered "you are on a saved network" would go stale
-        the moment the laptop moved, and it would say so with confidence.
+        The network in use comes first, then the saved ones. Both are read
+        fresh every time rather than remembered - a kept "you are here" would
+        go stale the moment the laptop moved and would still sound certain.
 
-        The middle case earns a sentence of its own. With a mesh or a repeater
-        the name stays while the access point changes, so watching switches
-        itself back on halfway across the flat with nothing to explain it. A
-        line saying so where it happens beats a paragraph nobody reads.
+        Saved networks stay on the list even when they are out of range,
+        otherwise the only way to remove one would be to travel to it.
+
+        Returned as data, apart from the drawing, so a test can check what the
+        list says without opening a window.
         """
-        saved = CFG.get("trusted_networks") or []
-        if not saved:
-            return tx("lbl_trusted_empty")
+        saved = list(CFG.get("trusted_networks") or [])
         now = current_network()
-        if now is None:
-            return tx("lbl_trusted_away", n=len(saved))
-        ssid, bssid = now
-        if any(n.get("ssid") == ssid and n.get("bssid") == bssid
-               for n in saved):
-            return tx("lbl_trusted_here", ssid=ssid, n=len(saved))
-        if any(n.get("ssid") == ssid for n in saved):
-            return tx("lbl_trusted_same_name", ssid=ssid, n=len(saved))
-        return tx("lbl_trusted_away", n=len(saved))
+        rows = []
+        if now:
+            ssid, bssid = now
+            rows.append((ssid, bssid,
+                         any(n.get("ssid") == ssid and n.get("bssid") == bssid
+                             for n in saved), True))
+        for n in saved:
+            ssid, bssid = n.get("ssid", ""), n.get("bssid", "")
+            if now and (ssid, bssid) == now:
+                continue                        # already the first row
+            rows.append((ssid, bssid, True, False))
+        return rows
 
-    def _set_network(self, what):
-        """Save the network in use, or forget the lot.
+    def _network_label(self, ssid, bssid, connected, rows):
+        """The text of one row.
 
-        The menu returns to its first item afterwards: these are actions, not
-        a setting that holds a value, and leaving "Forget them" on display
-        would read as the current state.
-
-        Neither the name nor the MAC address goes into the log - logs get
-        shared when reporting a problem, and the MAC of somebody's router is
-        not ours to hand out. The counts are enough to follow what happened.
+        The tail of the MAC address is shown ONLY when another row would read
+        exactly the same, which is what a mesh looks like: one name, several
+        access points. Showing it always would put technical noise in front of
+        everyone; never showing it would leave two identical rows and no way
+        to tell which is which.
         """
-        if what == "add":
-            now = current_network()
-            if now is None:
-                log("Trusted network not saved - the laptop is not on a "
-                    "wireless network, or the network could not be read.")
-            else:
-                ssid, bssid = now
-                saved = list(CFG.get("trusted_networks") or [])
-                if any(n.get("ssid") == ssid and n.get("bssid") == bssid
-                       for n in saved):
-                    log("Trusted network not saved - already on the list.")
-                else:
-                    saved.append({"ssid": ssid, "bssid": bssid})
-                    CFG["trusted_networks"] = saved
-                    save_cfg(CFG)
-                    log(f"Trusted network saved ({len(saved)} in total).")
-        elif what == "forget":
-            log(f"Trusted networks forgotten "
-                f"({len(CFG.get('trusted_networks') or [])} removed).")
-            CFG["trusted_networks"] = []
-            save_cfg(CFG)
-        self.network_var.set(tx("opt_trusted_keep"))
-        self.network_label.config(text=self._network_summary())
+        if sum(1 for s, _, _, _ in rows if s == ssid) > 1:
+            ssid = tx("net_same_name", name=ssid, mac=bssid[-5:])
+        return tx("net_here", name=ssid) if connected else ssid
+
+    def _toggle_network(self, ssid, bssid):
+        """Put a network on the no-locking list, or take it off.
+
+        Neither the name nor the MAC goes into the log - logs get shared when
+        reporting a problem, and somebody's access point is not ours to hand
+        out. How many are on the list is enough to follow what happened.
+        """
+        before = CFG.get("trusted_networks") or []
+        saved = [n for n in before
+                 if (n.get("ssid"), n.get("bssid")) != (ssid, bssid)]
+        added = len(saved) == len(before)
+        if added:
+            saved.append({"ssid": ssid, "bssid": bssid})
+        CFG["trusted_networks"] = saved
+        save_cfg(CFG)
+        log(f"Network {'added to' if added else 'removed from'} the "
+            f"no-locking list ({len(saved)} on it).")
+        # Ask for a redraw so the row shows its new state at once. The frame
+        # only exists while the settings tab is built, and the setting itself
+        # is valid without it - so a missing frame means "nothing to redraw",
+        # not an error.
+        frame = getattr(self, "networks_frame", None)
+        if frame is not None:
+            frame.signature = None
 
     def _change_language(self, code):
         """Switch the language and build the window again.
@@ -2393,6 +2390,26 @@ class Chart:
                          text=tx("dev_not_heard", name=current),
                          bg="#151920", fg="#fbbf24",
                          font=("Segoe UI", 10)).pack(anchor="w")
+
+        # The network list follows the same rule as the device list above:
+        # redrawn only when it has changed, and the signature of what is drawn
+        # lives on the frame itself, so it dies together with the window.
+        rows = self._network_rows()
+        if tuple(rows) != getattr(self.networks_frame, "signature", None):
+            self.networks_frame.signature = tuple(rows)
+            for w in self.networks_frame.winfo_children():
+                w.destroy()
+            if not rows:
+                tk.Label(self.networks_frame, text=tx("net_none"),
+                         bg="#151920", fg="#8b95a3",
+                         font=("Segoe UI", 9)).pack(anchor="w")
+            for ssid, bssid, ticked, connected in rows:
+                self._option(
+                    self.networks_frame,
+                    self._network_label(ssid, bssid, connected, rows),
+                    ticked,
+                    lambda s=ssid, b=bssid: self._toggle_network(s, b),
+                    color="#d7dde5" if connected else "#a9b4c2")
 
     def _select_target(self, name):
         if CFG.get("target") == name:

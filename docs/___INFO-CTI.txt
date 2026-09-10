@@ -147,18 +147,17 @@ NASTAVENÍ
         Spouštět po přihlášení do Windows   viz oddíl 8
 
     Když telefon zmizí       viz oddíl 7
-    Sítě bez zamykání        na uložených Wi-Fi se hlídání
-                             pozastaví a obrazovka se nezamyká —
-                             pro místa, kde zamykat nepotřebujete.
+    Sítě bez zamykání        seznam Wi-Fi, na kterých se obrazovka
+                             nezamyká — pro místa, kde zamykat
+                             nepotřebujete. Zaškrtnutím síť přidáte,
+                             odškrtnutím odeberete; ta, ke které jste
+                             právě připojeni, je v seznamu označená.
+                             Ve výchozím stavu je celá volba vypnutá.
                              Síť se pozná podle názvu i podle adresy
                              přístupového bodu, takže cizí Wi-Fi se
-                             stejným názvem hlídání nevypne. Ve
-                             výchozím stavu vypnuté; sítě se ukládají
-                             volbou "Uložit síť, na které právě jsem".
-                             POZOR: mesh a opakovače mají pod jedním
-                             názvem víc přístupových bodů — každý se
-                             musí uložit zvlášť. Aplikace na to sama
-                             upozorní, až na takový bod narazíte
+                             stejným názvem hlídání nevypne. Mesh
+                             a opakovače mají proto v seznamu řádek
+                             pro každý přístupový bod
     Dočasně pozastavit       hlídání se na zvolenou dobu vypne
                              a pak se samo zase zapne
 

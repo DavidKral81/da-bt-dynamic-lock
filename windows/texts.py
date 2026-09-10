@@ -88,27 +88,13 @@ CS = {
 
     # --- settings: networks without locking ---------------------------
     "card_trusted": "Sítě bez zamykání",
-    "card_trusted_desc": "Na uložených Wi-Fi se hlídání pozastaví a obrazovka "
-                         "se nezamyká — hodí se tam, kde zamykat nepotřebujete. "
-                         "Síť se pozná podle názvu i podle adresy přístupového "
-                         "bodu, takže cizí Wi-Fi se stejným názvem hlídání "
-                         "nevypne. Máte-li víc přístupových bodů (mesh, "
-                         "opakovač), uložte si každý zvlášť.",
-    "sw_trusted_network": "Nezamykat, když jsem na uložené Wi-Fi",
-    "lbl_trusted_empty": "Zatím není uložená žádná síť. Připojte se k té, na "
-                         "které nechcete zamykat, a zvolte „Uložit síť, na "
-                         "které právě jsem“.",
-    "lbl_trusted_here": "Právě jste na uložené síti „{ssid}“. "
-                        "Uložených sítí: {n}.",
-    "lbl_trusted_same_name": "Tahle Wi-Fi se jmenuje „{ssid}“ stejně jako "
-                             "uložená, ale je to jiný přístupový bod — bývá "
-                             "to u meshe a opakovačů. Zvolte „Uložit síť, na "
-                             "které právě jsem“ a bude se počítat taky. "
-                             "Uložených sítí: {n}.",
-    "lbl_trusted_away": "Tohle není uložená síť. Uložených sítí: {n}.",
-    "opt_trusted_keep": "Ponechat uložené sítě",
-    "opt_trusted_add": "Uložit síť, na které právě jsem",
-    "opt_trusted_forget": "Zapomenout všechny uložené sítě",
+    "card_trusted_desc": "Na vybraných Wi-Fi se obrazovka nezamyká.",
+    "sw_trusted_network": "Nezamykat na vybraných sítích",
+    "net_none": "Nejste připojen k Wi-Fi.",
+    "net_here": "{name} — právě připojeno",
+    # Only shown when two rows would otherwise read the same, which happens
+    # with a mesh: same name, different access point.
+    "net_same_name": "{name} · {mac}",
 
     # --- settings: pause ----------------------------------------------
     "card_pause": "Dočasně pozastavit",
@@ -317,28 +303,14 @@ EN = {
 
     # --- settings: networks without locking ---------------------------
     "card_trusted": "Networks without locking",
-    "card_trusted_desc": "On a saved Wi-Fi, watching pauses and the screen is "
-                         "not locked - useful wherever you do not need it to. "
-                         "A network is recognised by its name AND by the "
-                         "access point's address, so somebody else's Wi-Fi "
-                         "with the same name cannot switch the guarding off. "
-                         "With several access points (mesh, repeater), save "
-                         "each of them.",
-    "sw_trusted_network": "Do not lock while on a saved Wi-Fi",
-    "lbl_trusted_empty": "No network saved yet. Connect to the one you do not "
-                         "want locking on and choose \"Save the network I am "
-                         "on\".",
-    "lbl_trusted_here": "You are on the saved network \"{ssid}\". "
-                        "Networks saved: {n}.",
-    "lbl_trusted_same_name": "This Wi-Fi is called \"{ssid}\" just like a "
-                             "saved one, but it is a different access point - "
-                             "usual with a mesh or a repeater. Choose \"Save "
-                             "the network I am on\" and it will count too. "
-                             "Networks saved: {n}.",
-    "lbl_trusted_away": "This is not a saved network. Networks saved: {n}.",
-    "opt_trusted_keep": "Keep the saved networks",
-    "opt_trusted_add": "Save the network I am on",
-    "opt_trusted_forget": "Forget all saved networks",
+    "card_trusted_desc": "The screen is not locked on the selected Wi-Fi "
+                         "networks.",
+    "sw_trusted_network": "Do not lock on the selected networks",
+    "net_none": "Not connected to Wi-Fi.",
+    "net_here": "{name} - connected now",
+    # Only shown when two rows would otherwise read the same, which happens
+    # with a mesh: same name, different access point.
+    "net_same_name": "{name} · {mac}",
 
     # --- settings: pause ----------------------------------------------
     "card_pause": "Pause for a while",

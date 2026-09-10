@@ -12,17 +12,19 @@ nowhere else.
 
 ### Added
 
-- **Watching pauses on saved wireless networks.** Wherever locking is not
-  needed, save the network and the screen stays unlocked while the laptop is
-  on it; the tray icon says why. Off by default; networks are stored in the
-  settings under *Networks without locking*, which reads whichever one the
-  laptop is on. A network has to match by its name **and** by the access
-  point's MAC address: a name on its own is trivially forged, and what this
-  setting does is stop the screen locking, so being fooled here costs security
-  rather than convenience. A mesh or a repeater therefore needs each access
-  point saved — and because that is not obvious, the settings say so on the
-  spot when the laptop reaches an access point it does not know under a name
-  it does. The network is read through `wlanapi` rather than by parsing
+- **Networks where the screen is not locked.** For wherever locking is not
+  wanted — an office, a workshop — the settings now carry a list of Wi-Fi
+  networks under *Networks without locking*: tick one to add it, untick to
+  remove it, and the network in use is marked in the list. While the laptop is
+  on a ticked network the screen stays unlocked and the tray icon says why.
+  Off by default.
+
+  A network has to match by its name **and** by the access point's MAC
+  address: a name on its own is trivially forged, and what this setting does
+  is stop the screen locking, so being fooled here costs security rather than
+  convenience. A mesh or a repeater therefore appears as one row per access
+  point, each ticked separately — visible in the list rather than needing an
+  explanation. The network is read through `wlanapi` rather than by parsing
   `netsh wlan show interfaces`, whose output is localised and would stop being
   recognised after a language change (`trusted_network_pause` and
   `trusted_networks` in `config.json`).

@@ -154,19 +154,18 @@ SETTINGS
         Start after signing in to Windows   see section 8
 
     When the phone disappears   see section 7
-    Networks without locking    on a saved Wi-Fi, watching pauses and
-                                the screen is not locked - for wherever
-                                you do not need it to. A network is
-                                recognised by its name AND by the
-                                access point's address, so somebody
-                                else's Wi-Fi with the same name cannot
-                                switch the guarding off. Off by
-                                default; networks are stored with
-                                "Save the network I am on".
-                                CAREFUL: a mesh or a repeater has
-                                several access points under one name -
-                                each has to be saved. The app says so
-                                itself when you reach one
+    Networks without locking    a list of the Wi-Fi networks where the
+                                screen is not locked - for wherever you
+                                do not need it to be. Tick a network to
+                                add it, untick to remove it; the one
+                                you are connected to is marked in the
+                                list. The whole option is off by
+                                default. A network is recognised by its
+                                name AND by the access point's address,
+                                so somebody else's Wi-Fi with the same
+                                name cannot switch the guarding off -
+                                which is why a mesh or a repeater gets
+                                one row per access point
     Pause for a while           watching turns off for the chosen
                                 time and then turns itself back on
 
