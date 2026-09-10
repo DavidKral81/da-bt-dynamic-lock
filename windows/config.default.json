@@ -34,6 +34,12 @@
   "idle_guard_s": 15,
   "_idle_guard_s": "How long the user must be idle before that guard stops blocking.",
 
+  "trusted_network_pause": false,
+  "_trusted_network_pause": "true = while the laptop is on one of the saved wireless networks, watching pauses and the screen is not locked. Also settable in the app.",
+
+  "trusted_networks": [],
+  "_trusted_networks": "Networks that count as home, e.g. [{\"ssid\": \"MyWifi\", \"bssid\": \"AA:BB:CC:DD:EE:FF\"}]. Add them in the app - it reads both values from the network you are on. BOTH have to match: a name on its own is trivially forged, and this setting stops the screen locking. A mesh with several access points needs each one saved.",
+
   "scanner_restart_s": 120,
   "_scanner_restart_s": "How often to restart the Bluetooth scanner as a precaution. A long-running scanner in Windows gradually goes deaf.",
 

@@ -208,6 +208,81 @@ if _ok:
 check("...and the real check answers on a live desktop", False,
       _D.session_locked())
 
+print("\nOn a trusted network (home Wi-Fi):")
+# This setting exists to STOP locking, so every case here has a twin that must
+# still lock. A check that only ever sees the safe answer would pass just as
+# happily on an app that never locks at all.
+check("on a trusted network: no locking", "stop",
+      decide(CFG, 300, True, 0, 99, False, True)[0])
+check("...and it says why", "trusted_network",
+      decide(CFG, 300, True, 0, 99, False, True)[3])
+check("the same moment off that network does lock", "lock",
+      decide(CFG, 300, True, 0, 99, False, False)[0])
+# The manual pause is the more specific of the two - it can say when it runs
+# out - so that is the one reported when both apply.
+check("a manual pause is reported ahead of it", "paused",
+      decide(CFG, 300, True, 120, 99, False, True)[3])
+check("a locked screen still wins", "screen_locked",
+      decide(CFG, 300, True, 0, 99, True, True)[3])
+check("switched off still wins", "off",
+      decide({**CFG, "active": False}, 300, True, 0, 99, False, True)[3])
+
+print("\nWhich network counts as home:")
+# The forged hotspot is the whole reason the router's MAC is stored too:
+# anyone can name a hotspot after somebody's home network, and being fooled
+# here switches the guarding off.
+_original_network = _D.current_network
+_saved_networks = _D.CFG.get("trusted_networks")
+_saved_pause = _D.CFG.get("trusted_network_pause")
+try:
+    _D.CFG["trusted_networks"] = [{"ssid": "Doma",
+                                   "bssid": "AA:BB:CC:DD:EE:FF"}]
+    _D.CFG["trusted_network_pause"] = True
+    _D.current_network = lambda: ("Doma", "AA:BB:CC:DD:EE:FF")
+    check("the saved network counts", True, _D.on_trusted_network())
+    _D.current_network = lambda: ("Doma", "11:22:33:44:55:66")
+    check("same name, DIFFERENT router = not trusted", False,
+          _D.on_trusted_network())
+    _D.current_network = lambda: ("Jina", "AA:BB:CC:DD:EE:FF")
+    check("same router, different name = not trusted", False,
+          _D.on_trusted_network())
+    _D.current_network = lambda: None
+    check("no wireless network at all = not trusted", False,
+          _D.on_trusted_network())
+    _D.current_network = lambda: ("Doma", "AA:BB:CC:DD:EE:FF")
+    _D.CFG["trusted_network_pause"] = False
+    check("switched off: even the saved network does not count", False,
+          _D.on_trusted_network())
+    # An empty list must trust NOTHING. The same trap an empty target once
+    # had, where "" was a substring of every device name and so matched all
+    # of them.
+    _D.CFG["trusted_network_pause"] = True
+    _D.CFG["trusted_networks"] = []
+    check("nothing saved trusts nothing", False, _D.on_trusted_network())
+finally:
+    _D.current_network = _original_network
+    _D.CFG["trusted_networks"] = _saved_networks
+    _D.CFG["trusted_network_pause"] = _saved_pause
+
+# Reading the real adapter. The machine running this need not be on Wi-Fi, so
+# "not connected" is a fair answer - what must never happen is a plausible
+# ANSWER from a mislaid structure, which is the trap the session structure
+# already taught us (a wrong field does not raise, it returns nonsense that
+# looks fine). current_network() rejects a signal quality above 100 for that
+# reason; these checks confirm the rest of the layout on live data.
+_live = _D.current_network()
+if _live is None:
+    print("  --   not on a wireless network here, layout not exercised")
+else:
+    _ssid, _bssid = _live
+    _parts = _bssid.split(":")
+    check("live network: the name is not empty", True, bool(_ssid))
+    check("live network: the name is a sane length", True, len(_ssid) <= 32)
+    check("live network: the MAC has six parts", 6, len(_parts))
+    check("live network: the MAC is hexadecimal", True,
+          all(len(p) == 2 and all(c in "0123456789ABCDEF" for c in p)
+              for p in _parts))
+
 print("\nAfter a gap in the loop (sleep, hibernation):")
 import time as _time
 from dyn_lock import STATE, tick_gap, STALL_S

@@ -86,6 +86,22 @@ CS = {
     "opt_no_warning": "Neupozorňovat",
     "opt_after_minutes": "po {m} minutách bez signálu",
 
+    # --- settings: home network ---------------------------------------
+    "card_home": "Domácí síť",
+    "card_home_desc": "Když je notebook připojený k vaší vlastní Wi-Fi, "
+                      "hlídání se pozastaví a obrazovka se nezamyká. Síť se "
+                      "pozná podle názvu i podle adresy routeru, takže cizí "
+                      "Wi-Fi se stejným názvem hlídání nevypne.",
+    "sw_trusted_network": "Nezamykat, když jsem na domácí Wi-Fi",
+    "lbl_trusted_empty": "Zatím není uložená žádná síť. Připojte se k domácí "
+                         "Wi-Fi a zvolte „Uložit síť, na které právě jsem“.",
+    "lbl_trusted_here": "Právě jste na uložené síti „{ssid}“. "
+                        "Uložených sítí: {n}.",
+    "lbl_trusted_away": "Tohle není uložená síť. Uložených sítí: {n}.",
+    "opt_trusted_keep": "Ponechat uložené sítě",
+    "opt_trusted_add": "Uložit síť, na které právě jsem",
+    "opt_trusted_forget": "Zapomenout všechny uložené sítě",
+
     # --- settings: pause ----------------------------------------------
     "card_pause": "Dočasně pozastavit",
     "card_pause_desc": "Hlídání se na zvolenou dobu vypne a pak se samo "
@@ -159,6 +175,7 @@ CS = {
     "st_at_desk": "telefon u stolu",
     "st_off": "vypnuto",
     "st_paused": "pozastaveno ({minutes} min)",
+    "st_trusted_network": "domácí síť — nezamykám",
     "st_locked": "zamčeno",
     "st_screen_locked": "obrazovka zamčená — hlídám až po odemčení",
     "st_lock_failed": "zamknout se NEPODAŘILO — obrazovka je odemčená",
@@ -290,6 +307,23 @@ EN = {
     "opt_no_warning": "Do not warn",
     "opt_after_minutes": "after {m} minutes without a signal",
 
+    # --- settings: home network ---------------------------------------
+    "card_home": "Home network",
+    "card_home_desc": "While the laptop is on your own Wi-Fi, watching pauses "
+                      "and the screen is not locked. A network is recognised "
+                      "by its name AND by the router's address, so somebody "
+                      "else's Wi-Fi with the same name cannot switch the "
+                      "guarding off.",
+    "sw_trusted_network": "Do not lock while on my home Wi-Fi",
+    "lbl_trusted_empty": "No network saved yet. Connect to your home Wi-Fi "
+                         "and choose \"Save the network I am on\".",
+    "lbl_trusted_here": "You are on the saved network \"{ssid}\". "
+                        "Networks saved: {n}.",
+    "lbl_trusted_away": "This is not a saved network. Networks saved: {n}.",
+    "opt_trusted_keep": "Keep the saved networks",
+    "opt_trusted_add": "Save the network I am on",
+    "opt_trusted_forget": "Forget all saved networks",
+
     # --- settings: pause ----------------------------------------------
     "card_pause": "Pause for a while",
     "card_pause_desc": "Watching turns off for the chosen time and then "
@@ -363,6 +397,7 @@ EN = {
     "st_at_desk": "phone at the desk",
     "st_off": "off",
     "st_paused": "paused ({minutes} min)",
+    "st_trusted_network": "home network — not locking",
     "st_locked": "locked",
     "st_screen_locked": "screen locked — watching resumes after unlock",
     "st_lock_failed": "locking FAILED — the screen is not locked",

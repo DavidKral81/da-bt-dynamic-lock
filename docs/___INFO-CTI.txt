@@ -147,6 +147,14 @@ NASTAVENÍ
         Spouštět po přihlášení do Windows   viz oddíl 8
 
     Když telefon zmizí       viz oddíl 7
+    Domácí síť               když je notebook připojený k vaší
+                             vlastní Wi-Fi, hlídání se pozastaví
+                             a obrazovka se nezamyká. Síť se pozná
+                             podle názvu i podle adresy routeru,
+                             takže cizí Wi-Fi se stejným názvem
+                             hlídání nevypne. Ve výchozím stavu
+                             vypnuté; sítě se ukládají volbou
+                             "Uložit síť, na které právě jsem"
     Dočasně pozastavit       hlídání se na zvolenou dobu vypne
                              a pak se samo zase zapne
 

@@ -154,6 +154,15 @@ SETTINGS
         Start after signing in to Windows   see section 8
 
     When the phone disappears   see section 7
+    Home network                while the laptop is on your own
+                                Wi-Fi, watching pauses and the screen
+                                is not locked. A network is recognised
+                                by its name AND by the router's
+                                address, so somebody else's Wi-Fi with
+                                the same name cannot switch the
+                                guarding off. Off by default; networks
+                                are stored with "Save the network I am
+                                on"
     Pause for a while           watching turns off for the chosen
                                 time and then turns itself back on
 

@@ -120,6 +120,8 @@ DEFAULTS = {
     "threshold_window_s": 6,
     "idle_guard": False,
     "idle_guard_s": 15,
+    "trusted_network_pause": False,       # do not lock on a home network
+    "trusted_networks": [],               # [{"ssid": ..., "bssid": ...}]
     "scanner_restart_s": 120,
     "silence_watchdog_s": 45,
     "alert_no_signal_min": 10,
@@ -992,6 +994,218 @@ def session_locked():
     return False
 
 
+# ---------------------------------------------------------------- wi-fi
+
+# Which wireless network the laptop sits on, asked of Windows directly.
+#
+# NOT by parsing `netsh wlan show interfaces`: that output is localised, so
+# the labels to match are Czech on a Czech Windows and English elsewhere. A
+# guard that quietly stops recognising home after a language change is worse
+# than no guard at all.
+#
+# The network is identified by name AND by the access point's MAC address.
+# The name alone is trivially forged - anyone can call a hotspot "HomeWifi"
+# and the guarding would switch itself off - and this setting exists to STOP
+# locking, so being fooled here costs security, not convenience.
+try:
+    _wlanapi = ctypes.WinDLL("wlanapi", use_last_error=True)
+except OSError:              # no wireless stack at all (rare, but possible)
+    _wlanapi = None
+
+WLAN_INTERFACE_CONNECTED = 1        # wlan_interface_state_connected
+WLAN_OPCODE_CURRENT_CONNECTION = 7  # wlan_intf_opcode_current_connection
+WLAN_CLIENT_VERSION = 2             # Vista and later
+DOT11_SSID_MAX_LENGTH = 32
+WLAN_MAX_NAME_LENGTH = 256
+
+
+class _GUID(ctypes.Structure):
+    _fields_ = [("Data1", wintypes.DWORD),
+                ("Data2", wintypes.WORD),
+                ("Data3", wintypes.WORD),
+                ("Data4", ctypes.c_ubyte * 8)]
+
+
+class _DOT11_SSID(ctypes.Structure):
+    _fields_ = [("uSSIDLength", wintypes.ULONG),
+                ("ucSSID", ctypes.c_ubyte * DOT11_SSID_MAX_LENGTH)]
+
+
+class _WLAN_ASSOCIATION_ATTRIBUTES(ctypes.Structure):
+    _fields_ = [("dot11Ssid", _DOT11_SSID),
+                ("dot11BssType", ctypes.c_int),
+                ("dot11Bssid", ctypes.c_ubyte * 6),
+                ("dot11PhyType", ctypes.c_int),
+                ("uDot11PhyIndex", wintypes.ULONG),
+                ("wlanSignalQuality", wintypes.ULONG),
+                ("ulRxRate", wintypes.ULONG),
+                ("ulTxRate", wintypes.ULONG)]
+
+
+class _WLAN_SECURITY_ATTRIBUTES(ctypes.Structure):
+    _fields_ = [("bSecurityEnabled", wintypes.BOOL),
+                ("bOneXEnabled", wintypes.BOOL),
+                ("dot11AuthAlgorithm", ctypes.c_int),
+                ("dot11CipherAlgorithm", ctypes.c_int)]
+
+
+class _WLAN_CONNECTION_ATTRIBUTES(ctypes.Structure):
+    _fields_ = [("isState", ctypes.c_int),
+                ("wlanConnectionMode", ctypes.c_int),
+                ("strProfileName", wintypes.WCHAR * WLAN_MAX_NAME_LENGTH),
+                ("wlanAssociationAttributes", _WLAN_ASSOCIATION_ATTRIBUTES),
+                ("wlanSecurityAttributes", _WLAN_SECURITY_ATTRIBUTES)]
+
+
+class _WLAN_INTERFACE_INFO(ctypes.Structure):
+    _fields_ = [("InterfaceGuid", _GUID),
+                ("strInterfaceDescription", wintypes.WCHAR * WLAN_MAX_NAME_LENGTH),
+                ("isState", ctypes.c_int)]
+
+
+class _WLAN_INTERFACE_INFO_LIST(ctypes.Structure):
+    # The array is declared with one element and actually holds
+    # dwNumberOfItems of them - read past the first only through a cast.
+    _fields_ = [("dwNumberOfItems", wintypes.DWORD),
+                ("dwIndex", wintypes.DWORD),
+                ("InterfaceInfo", _WLAN_INTERFACE_INFO * 1)]
+
+
+if _wlanapi is not None:
+    _wlanapi.WlanOpenHandle.restype = wintypes.DWORD
+    _wlanapi.WlanOpenHandle.argtypes = [
+        wintypes.DWORD, ctypes.c_void_p, ctypes.POINTER(wintypes.DWORD),
+        ctypes.POINTER(wintypes.HANDLE)]
+    _wlanapi.WlanCloseHandle.restype = wintypes.DWORD
+    _wlanapi.WlanCloseHandle.argtypes = [wintypes.HANDLE, ctypes.c_void_p]
+    _wlanapi.WlanEnumInterfaces.restype = wintypes.DWORD
+    _wlanapi.WlanEnumInterfaces.argtypes = [
+        wintypes.HANDLE, ctypes.c_void_p,
+        ctypes.POINTER(ctypes.POINTER(_WLAN_INTERFACE_INFO_LIST))]
+    _wlanapi.WlanQueryInterface.restype = wintypes.DWORD
+    _wlanapi.WlanQueryInterface.argtypes = [
+        wintypes.HANDLE, ctypes.POINTER(_GUID), ctypes.c_int, ctypes.c_void_p,
+        ctypes.POINTER(wintypes.DWORD), ctypes.POINTER(ctypes.c_void_p),
+        ctypes.c_void_p]
+    _wlanapi.WlanFreeMemory.argtypes = [ctypes.c_void_p]
+
+_wlan_check_failed = False       # so a broken call complains once, not forever
+
+
+def _wlan_failed(what, code):
+    """Report a failing WLAN call once and answer 'no network'.
+
+    Once, because this runs twice a second: a wireless stack that is off or
+    unavailable would otherwise fill the log with the same line. Answering
+    "no network" on purpose - an unreadable network is not a trusted one, so
+    an error can only ever make the app lock MORE, never less.
+    """
+    global _wlan_check_failed
+    if not _wlan_check_failed:
+        _wlan_check_failed = True
+        log(f"Cannot read the wireless network ({what} failed, code {code}) "
+            f"- treating it as 'not on a trusted network'.")
+    return None
+
+
+def current_network():
+    """(ssid, bssid) of the wireless network in use, or None.
+
+    None means every one of: no wireless stack, no adapter, not connected,
+    or the query failed. All four answer the same question the same way, so
+    the caller does not have to tell them apart.
+
+    BEWARE, the same trap as with the session structure: a mislaid field does
+    not raise, it returns a plausible-looking value. The sanity check on
+    signal quality below is what catches it - see tests/test_logic.py.
+    """
+    if _wlanapi is None:
+        return _wlan_failed("loading wlanapi.dll", "not present")
+    handle, version = wintypes.HANDLE(), wintypes.DWORD()
+    code = _wlanapi.WlanOpenHandle(WLAN_CLIENT_VERSION, None,
+                                   ctypes.byref(version), ctypes.byref(handle))
+    if code != 0:
+        return _wlan_failed("WlanOpenHandle", code)
+    try:
+        lst = ctypes.POINTER(_WLAN_INTERFACE_INFO_LIST)()
+        code = _wlanapi.WlanEnumInterfaces(handle, None, ctypes.byref(lst))
+        if code != 0:
+            return _wlan_failed("WlanEnumInterfaces", code)
+        try:
+            count = lst.contents.dwNumberOfItems
+            items = ctypes.cast(
+                lst.contents.InterfaceInfo,
+                ctypes.POINTER(_WLAN_INTERFACE_INFO * count)).contents
+            for interface in items:
+                if interface.isState != WLAN_INTERFACE_CONNECTED:
+                    continue
+                found = _connection_of(handle, interface.InterfaceGuid)
+                if found:
+                    return found
+            return None                 # adapter present, just not connected
+        finally:
+            _wlanapi.WlanFreeMemory(lst)
+    finally:
+        _wlanapi.WlanCloseHandle(handle, None)
+
+
+def _connection_of(handle, guid):
+    """The network one connected adapter is on, or None.
+
+    Split off from current_network() so the loop above stays readable and so
+    the memory of each query is freed on its own path.
+    """
+    data, size = ctypes.c_void_p(), wintypes.DWORD()
+    code = _wlanapi.WlanQueryInterface(
+        handle, ctypes.byref(guid), WLAN_OPCODE_CURRENT_CONNECTION, None,
+        ctypes.byref(size), ctypes.byref(data), None)
+    if code != 0 or not data:
+        return _wlan_failed("WlanQueryInterface", code)
+    try:
+        if size.value < ctypes.sizeof(_WLAN_CONNECTION_ATTRIBUTES):
+            return _wlan_failed("WlanQueryInterface", "short buffer")
+        conn = ctypes.cast(
+            data, ctypes.POINTER(_WLAN_CONNECTION_ATTRIBUTES)).contents
+        assoc = conn.wlanAssociationAttributes
+        # Cheap proof that the structure is laid out as declared: quality is
+        # a percentage. A shifted field lands outside 0-100 almost every time,
+        # which is the difference between noticing and silently trusting a
+        # wrong network.
+        if assoc.wlanSignalQuality > 100:
+            return _wlan_failed("WlanQueryInterface",
+                                f"signal quality {assoc.wlanSignalQuality}")
+        length = min(assoc.dot11Ssid.uSSIDLength, DOT11_SSID_MAX_LENGTH)
+        raw = bytes(assoc.dot11Ssid.ucSSID[:length])
+        # A name that is not valid UTF-8 is still a name; it must not crash
+        # the app, and it must not silently become a DIFFERENT name either -
+        # so undecodable bytes are kept as escapes and compare consistently.
+        ssid = raw.decode("utf-8", "backslashreplace")
+        bssid = ":".join(f"{b:02X}" for b in assoc.dot11Bssid)
+        return (ssid, bssid) if ssid else None
+    finally:
+        _wlanapi.WlanFreeMemory(data)
+
+
+def on_trusted_network():
+    """True while the laptop is on a network the user marked as trusted.
+
+    Both the name and the access point have to match. Comparing the name only
+    would let a forged hotspot switch the guarding off, and switching the
+    guarding off is exactly what this setting does.
+    """
+    if not CFG.get("trusted_network_pause", False):
+        return False
+    known = CFG.get("trusted_networks") or []
+    if not known:
+        return False
+    now = current_network()
+    if now is None:
+        return False
+    ssid, bssid = now
+    return any(n.get("ssid") == ssid and n.get("bssid") == bssid
+               for n in known)
+
+
 # ---------------------------------------------------------------- scanner
 
 def heard_text(within_s=HEARD_WINDOW_S):
@@ -1670,7 +1884,28 @@ class Chart:
                      + [(tx("opt_after_minutes", m=m), m) for m in
                         (1, 2, 5, 10, 20, 30, 60)])
 
-        # --- 4. pause --------------------------------------------------
+        # --- 4. home network -------------------------------------------
+        card = self._card(column, tx("card_home"), tx("card_home_desc"))
+        self.sw_trusted_network = self._switch(
+            card, tx("sw_trusted_network"), "trusted_network_pause")
+        # What is saved lives in a label of its own, not in the menu items.
+        # A Tk OptionMenu is built from a fixed list, so a menu that named the
+        # saved networks would have to be rebuilt after every change; a label
+        # is simply rewritten. And it is the label that answers the question
+        # the user actually has - am I on a trusted network right now?
+        self.network_label = tk.Label(
+            card, text=self._network_summary(), bg=card["bg"], fg="#9aa4b2",
+            justify="left", wraplength=self.SETTINGS_WIDTH - 40,
+            font=("Segoe UI", 9))
+        self.network_label.pack(anchor="w", pady=(6, 0))
+        self.network_var = tk.StringVar(value=tx("opt_trusted_keep"))
+        self._select(card, None, None,
+                     [(tx("opt_trusted_keep"), None),
+                      (tx("opt_trusted_add"), "add"),
+                      (tx("opt_trusted_forget"), "forget")],
+                     var=self.network_var, action=self._set_network)
+
+        # --- 5. pause --------------------------------------------------
         card = self._card(column, tx("card_pause"),
                           tx("card_pause_desc"))
         self.pause_var = tk.StringVar()
@@ -1682,7 +1917,7 @@ class Chart:
                       (tx("opt_1_day"), 1440), (tx("opt_2_days"), 2880)],
                      var=self.pause_var, action=self._pause)
 
-        # --- 5. links --------------------------------------------------
+        # --- 6. links --------------------------------------------------
         self.links_frame = tk.Frame(self.grid_frame, bg="#1b1f26")
         links = self.links_frame
 
@@ -1957,6 +2192,57 @@ class Chart:
         CFG["countdown_vertical"] = round(percent / 100, 2)
         save_cfg(CFG)
         log(f"Countdown position: {percent} % from the top")
+
+    def _network_summary(self):
+        """One line: what is saved, and whether this is one of them.
+
+        Read from the live network every time it is drawn rather than kept in
+        a variable - a remembered "you are home" would go stale the moment the
+        laptop moved, and it would say so with complete confidence.
+        """
+        saved = CFG.get("trusted_networks") or []
+        if not saved:
+            return tx("lbl_trusted_empty")
+        now = current_network()
+        if now and any(n.get("ssid") == now[0] and n.get("bssid") == now[1]
+                       for n in saved):
+            return tx("lbl_trusted_here", ssid=now[0], n=len(saved))
+        return tx("lbl_trusted_away", n=len(saved))
+
+    def _set_network(self, what):
+        """Save the network in use, or forget the lot.
+
+        The menu returns to its first item afterwards: these are actions, not
+        a setting that holds a value, and leaving "Forget them" on display
+        would read as the current state.
+
+        Neither the name nor the MAC address goes into the log - logs get
+        shared when reporting a problem, and the MAC of somebody's router is
+        not ours to hand out. The counts are enough to follow what happened.
+        """
+        if what == "add":
+            now = current_network()
+            if now is None:
+                log("Trusted network not saved - the laptop is not on a "
+                    "wireless network, or the network could not be read.")
+            else:
+                ssid, bssid = now
+                saved = list(CFG.get("trusted_networks") or [])
+                if any(n.get("ssid") == ssid and n.get("bssid") == bssid
+                       for n in saved):
+                    log("Trusted network not saved - already on the list.")
+                else:
+                    saved.append({"ssid": ssid, "bssid": bssid})
+                    CFG["trusted_networks"] = saved
+                    save_cfg(CFG)
+                    log(f"Trusted network saved ({len(saved)} in total).")
+        elif what == "forget":
+            log(f"Trusted networks forgotten "
+                f"({len(CFG.get('trusted_networks') or [])} removed).")
+            CFG["trusted_networks"] = []
+            save_cfg(CFG)
+        self.network_var.set(tx("opt_trusted_keep"))
+        self.network_label.config(text=self._network_summary())
 
     def _change_language(self, code):
         """Switch the language and build the window again.
@@ -2619,7 +2905,8 @@ class TrayIcon:
 
 # ---------------------------------------------------------------- main loop
 
-def decide(cfg, silence, armed, pause_left, idle, screen_locked=False):
+def decide(cfg, silence, armed, pause_left, idle, screen_locked=False,
+           trusted_network=False):
     """Pure decision function - no GUI, no locking.
 
     Returns (action, label, remaining_s, reason), where action is one of:
@@ -2631,9 +2918,13 @@ def decide(cfg, silence, armed, pause_left, idle, screen_locked=False):
     `reason` is a KEY (e.g. "idle_guard", "at_desk") - callers decide by it.
     Never by `label`, that one gets translated.
 
-    `screen_locked` defaults to False so the many tests that predate it still
-    read straightforwardly; main_loop, the only caller in the running app,
-    always passes it - both times it asks.
+    `screen_locked` and `trusted_network` default to False so the many tests
+    that predate them still read straightforwardly; main_loop, the only caller
+    in the running app, always passes both - both times it asks.
+
+    Neither is worked out here: this function stays pure and testable, and
+    both facts come from Windows. The loop asks and passes the answer in, the
+    same way it does for the lock screen.
 
     Kept apart from the loop on purpose, so it can be tested without locking
     the screen (see tests/test_logic.py).
@@ -2647,6 +2938,11 @@ def decide(cfg, silence, armed, pause_left, idle, screen_locked=False):
         return "stop", tx("st_screen_locked"), 0, "screen_locked"
     if pause_left > 0:
         return "stop", tx("st_paused", minutes=int(pause_left) // 60 + 1), 0, "paused"
+    # After the manual pause, which is the more specific of the two and can
+    # say when it runs out; before the phone is considered at all, because on
+    # a trusted network it does not matter whether the phone can be heard.
+    if trusted_network:
+        return "stop", tx("st_trusted_network"), 0, "trusted_network"
     if silence is None:
         return "stop", tx("st_waiting"), 0, "waiting"
     if not armed:
@@ -2775,7 +3071,8 @@ def main_loop(root, countdown, tray):
 
         pause = max(0.0, STATE.paused_until - time.monotonic())
         action, label, remaining, reason = decide(
-            CFG, STATE.silence(), STATE.armed, pause, idle_seconds(), locked)
+            CFG, STATE.silence(), STATE.armed, pause, idle_seconds(), locked,
+            on_trusted_network())
 
         # The start and the cancellation of a countdown are logged, so it can
         # be verified afterwards that a lock really was preceded by a warning.
@@ -2815,7 +3112,7 @@ def main_loop(root, countdown, tray):
             action, label, remaining, reason = decide(
                 CFG, STATE.silence(), STATE.armed,
                 max(0.0, STATE.paused_until - time.monotonic()), idle_seconds(),
-                session_locked())
+                session_locked(), on_trusted_network())
             if action != "lock":
                 log("Locking called off - the phone came back while the "
                     "decision was being carried out.")
