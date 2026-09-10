@@ -208,7 +208,7 @@ if _ok:
 check("...and the real check answers on a live desktop", False,
       _D.session_locked())
 
-print("\nOn a trusted network (home Wi-Fi):")
+print("\nOn a saved network (one that needs no locking):")
 # This setting exists to STOP locking, so every case here has a twin that must
 # still lock. A check that only ever sees the safe answer would pass just as
 # happily on an app that never locks at all.
@@ -227,9 +227,9 @@ check("a locked screen still wins", "screen_locked",
 check("switched off still wins", "off",
       decide({**CFG, "active": False}, 300, True, 0, 99, False, True)[3])
 
-print("\nWhich network counts as home:")
-# The forged hotspot is the whole reason the router's MAC is stored too:
-# anyone can name a hotspot after somebody's home network, and being fooled
+print("\nWhich network counts as saved:")
+# The forged hotspot is the whole reason the access point's MAC is stored too:
+# anyone can name a hotspot after a network somebody trusts, and being fooled
 # here switches the guarding off.
 _original_network = _D.current_network
 _saved_networks = _D.CFG.get("trusted_networks")

@@ -86,17 +86,25 @@ CS = {
     "opt_no_warning": "Neupozorňovat",
     "opt_after_minutes": "po {m} minutách bez signálu",
 
-    # --- settings: home network ---------------------------------------
-    "card_home": "Domácí síť",
-    "card_home_desc": "Když je notebook připojený k vaší vlastní Wi-Fi, "
-                      "hlídání se pozastaví a obrazovka se nezamyká. Síť se "
-                      "pozná podle názvu i podle adresy routeru, takže cizí "
-                      "Wi-Fi se stejným názvem hlídání nevypne.",
-    "sw_trusted_network": "Nezamykat, když jsem na domácí Wi-Fi",
-    "lbl_trusted_empty": "Zatím není uložená žádná síť. Připojte se k domácí "
-                         "Wi-Fi a zvolte „Uložit síť, na které právě jsem“.",
+    # --- settings: networks without locking ---------------------------
+    "card_trusted": "Sítě bez zamykání",
+    "card_trusted_desc": "Na uložených Wi-Fi se hlídání pozastaví a obrazovka "
+                         "se nezamyká — hodí se tam, kde zamykat nepotřebujete. "
+                         "Síť se pozná podle názvu i podle adresy přístupového "
+                         "bodu, takže cizí Wi-Fi se stejným názvem hlídání "
+                         "nevypne. Máte-li víc přístupových bodů (mesh, "
+                         "opakovač), uložte si každý zvlášť.",
+    "sw_trusted_network": "Nezamykat, když jsem na uložené Wi-Fi",
+    "lbl_trusted_empty": "Zatím není uložená žádná síť. Připojte se k té, na "
+                         "které nechcete zamykat, a zvolte „Uložit síť, na "
+                         "které právě jsem“.",
     "lbl_trusted_here": "Právě jste na uložené síti „{ssid}“. "
                         "Uložených sítí: {n}.",
+    "lbl_trusted_same_name": "Tahle Wi-Fi se jmenuje „{ssid}“ stejně jako "
+                             "uložená, ale je to jiný přístupový bod — bývá "
+                             "to u meshe a opakovačů. Zvolte „Uložit síť, na "
+                             "které právě jsem“ a bude se počítat taky. "
+                             "Uložených sítí: {n}.",
     "lbl_trusted_away": "Tohle není uložená síť. Uložených sítí: {n}.",
     "opt_trusted_keep": "Ponechat uložené sítě",
     "opt_trusted_add": "Uložit síť, na které právě jsem",
@@ -175,7 +183,7 @@ CS = {
     "st_at_desk": "telefon u stolu",
     "st_off": "vypnuto",
     "st_paused": "pozastaveno ({minutes} min)",
-    "st_trusted_network": "domácí síť — nezamykám",
+    "st_trusted_network": "uložená síť — nezamykám",
     "st_locked": "zamčeno",
     "st_screen_locked": "obrazovka zamčená — hlídám až po odemčení",
     "st_lock_failed": "zamknout se NEPODAŘILO — obrazovka je odemčená",
@@ -307,18 +315,26 @@ EN = {
     "opt_no_warning": "Do not warn",
     "opt_after_minutes": "after {m} minutes without a signal",
 
-    # --- settings: home network ---------------------------------------
-    "card_home": "Home network",
-    "card_home_desc": "While the laptop is on your own Wi-Fi, watching pauses "
-                      "and the screen is not locked. A network is recognised "
-                      "by its name AND by the router's address, so somebody "
-                      "else's Wi-Fi with the same name cannot switch the "
-                      "guarding off.",
-    "sw_trusted_network": "Do not lock while on my home Wi-Fi",
-    "lbl_trusted_empty": "No network saved yet. Connect to your home Wi-Fi "
-                         "and choose \"Save the network I am on\".",
+    # --- settings: networks without locking ---------------------------
+    "card_trusted": "Networks without locking",
+    "card_trusted_desc": "On a saved Wi-Fi, watching pauses and the screen is "
+                         "not locked - useful wherever you do not need it to. "
+                         "A network is recognised by its name AND by the "
+                         "access point's address, so somebody else's Wi-Fi "
+                         "with the same name cannot switch the guarding off. "
+                         "With several access points (mesh, repeater), save "
+                         "each of them.",
+    "sw_trusted_network": "Do not lock while on a saved Wi-Fi",
+    "lbl_trusted_empty": "No network saved yet. Connect to the one you do not "
+                         "want locking on and choose \"Save the network I am "
+                         "on\".",
     "lbl_trusted_here": "You are on the saved network \"{ssid}\". "
                         "Networks saved: {n}.",
+    "lbl_trusted_same_name": "This Wi-Fi is called \"{ssid}\" just like a "
+                             "saved one, but it is a different access point - "
+                             "usual with a mesh or a repeater. Choose \"Save "
+                             "the network I am on\" and it will count too. "
+                             "Networks saved: {n}.",
     "lbl_trusted_away": "This is not a saved network. Networks saved: {n}.",
     "opt_trusted_keep": "Keep the saved networks",
     "opt_trusted_add": "Save the network I am on",
@@ -397,7 +413,7 @@ EN = {
     "st_at_desk": "phone at the desk",
     "st_off": "off",
     "st_paused": "paused ({minutes} min)",
-    "st_trusted_network": "home network — not locking",
+    "st_trusted_network": "saved network — not locking",
     "st_locked": "locked",
     "st_screen_locked": "screen locked — watching resumes after unlock",
     "st_lock_failed": "locking FAILED — the screen is not locked",

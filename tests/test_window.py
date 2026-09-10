@@ -61,6 +61,38 @@ def run():
         if not ok:
             failures.append(what)
 
+    # --- the line about saved networks in the settings -------------------
+    # Five situations, and the third one is the reason this is tested at all:
+    # with a mesh the name stays while the access point changes, so watching
+    # switches itself back on halfway across the flat. Nothing else would tell
+    # the user why, so if that line ever stopped appearing it would look like
+    # a bug in the locking.
+    _saved_networks = D.CFG.get("trusted_networks")
+    _live_network = D.current_network
+    try:
+        D.CFG["trusted_networks"] = []
+        report("nothing saved: the line says so",
+               chart._network_summary() == D.tx("lbl_trusted_empty"))
+        D.CFG["trusted_networks"] = [{"ssid": "Kancelar",
+                                      "bssid": "AA:BB:CC:DD:EE:FF"}]
+        D.current_network = lambda: ("Kancelar", "AA:BB:CC:DD:EE:FF")
+        report("on a saved network: the line names it",
+               chart._network_summary()
+               == D.tx("lbl_trusted_here", ssid="Kancelar", n=1))
+        D.current_network = lambda: ("Kancelar", "11:22:33:44:55:66")
+        report("same name, different access point: the mesh is explained",
+               chart._network_summary()
+               == D.tx("lbl_trusted_same_name", ssid="Kancelar", n=1))
+        D.current_network = lambda: ("Cizi", "11:22:33:44:55:66")
+        report("an unrelated network: the line says it is not saved",
+               chart._network_summary() == D.tx("lbl_trusted_away", n=1))
+        D.current_network = lambda: None
+        report("no wireless at all: the line says it is not saved",
+               chart._network_summary() == D.tx("lbl_trusted_away", n=1))
+    finally:
+        D.current_network = _live_network
+        D.CFG["trusted_networks"] = _saved_networks
+
     def round_trip(number, then):
         chart.toggle()                      # open (as if from the tray)
         chart._tab(1)

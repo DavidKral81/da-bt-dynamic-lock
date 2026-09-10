@@ -112,9 +112,10 @@ signal chart and all the settings:
   the desk could otherwise postpone locking)
 - **warning when the phone disappears** for good, so a silent failure does not
   go unnoticed
-- **do not lock on a home network** (off by default) — a network counts only
-  when both its name and the access point's MAC address match, so a hotspot
-  named after yours cannot switch the guarding off
+- **do not lock on saved networks** (off by default) — for wherever locking is
+  not needed. A network counts only when both its name and the access point's
+  MAC address match, so a hotspot named after one of yours cannot switch the
+  guarding off; a mesh needs each access point saved
 - **pause** for a chosen period, then resume by itself
 - **Czech / English** interface
 

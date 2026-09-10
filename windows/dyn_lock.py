@@ -120,7 +120,7 @@ DEFAULTS = {
     "threshold_window_s": 6,
     "idle_guard": False,
     "idle_guard_s": 15,
-    "trusted_network_pause": False,       # do not lock on a home network
+    "trusted_network_pause": False,       # do not lock on a saved network
     "trusted_networks": [],               # [{"ssid": ..., "bssid": ...}]
     "scanner_restart_s": 120,
     "silence_watchdog_s": 45,
@@ -1884,8 +1884,8 @@ class Chart:
                      + [(tx("opt_after_minutes", m=m), m) for m in
                         (1, 2, 5, 10, 20, 30, 60)])
 
-        # --- 4. home network -------------------------------------------
-        card = self._card(column, tx("card_home"), tx("card_home_desc"))
+        # --- 4. networks without locking -------------------------------
+        card = self._card(column, tx("card_trusted"), tx("card_trusted_desc"))
         self.sw_trusted_network = self._switch(
             card, tx("sw_trusted_network"), "trusted_network_pause")
         # What is saved lives in a label of its own, not in the menu items.
@@ -2194,19 +2194,29 @@ class Chart:
         log(f"Countdown position: {percent} % from the top")
 
     def _network_summary(self):
-        """One line: what is saved, and whether this is one of them.
+        """One line: what is saved, and how this network relates to it.
 
-        Read from the live network every time it is drawn rather than kept in
-        a variable - a remembered "you are home" would go stale the moment the
-        laptop moved, and it would say so with complete confidence.
+        Read from the live adapter every time it is drawn rather than kept in
+        a variable - a remembered "you are on a saved network" would go stale
+        the moment the laptop moved, and it would say so with confidence.
+
+        The middle case earns a sentence of its own. With a mesh or a repeater
+        the name stays while the access point changes, so watching switches
+        itself back on halfway across the flat with nothing to explain it. A
+        line saying so where it happens beats a paragraph nobody reads.
         """
         saved = CFG.get("trusted_networks") or []
         if not saved:
             return tx("lbl_trusted_empty")
         now = current_network()
-        if now and any(n.get("ssid") == now[0] and n.get("bssid") == now[1]
-                       for n in saved):
-            return tx("lbl_trusted_here", ssid=now[0], n=len(saved))
+        if now is None:
+            return tx("lbl_trusted_away", n=len(saved))
+        ssid, bssid = now
+        if any(n.get("ssid") == ssid and n.get("bssid") == bssid
+               for n in saved):
+            return tx("lbl_trusted_here", ssid=ssid, n=len(saved))
+        if any(n.get("ssid") == ssid for n in saved):
+            return tx("lbl_trusted_same_name", ssid=ssid, n=len(saved))
         return tx("lbl_trusted_away", n=len(saved))
 
     def _set_network(self, what):

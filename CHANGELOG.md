@@ -12,17 +12,20 @@ nowhere else.
 
 ### Added
 
-- **Watching pauses on a home wireless network.** While the laptop is on a
-  network saved as trusted, the screen is not locked and the tray icon says
-  why. Off by default; networks are stored in the settings under *Home
-  network*, which reads whichever one the laptop is on. A network has to match
-  by its name **and** by the access point's MAC address: a name on its own is
-  trivially forged, and what this setting does is stop the screen locking, so
-  being fooled here costs security rather than convenience. A mesh needs each
-  access point saved separately. The network is read through `wlanapi` rather
-  than by parsing `netsh wlan show interfaces`, whose output is localised and
-  would stop being recognised after a language change (`trusted_network_pause`
-  and `trusted_networks` in `config.json`).
+- **Watching pauses on saved wireless networks.** Wherever locking is not
+  needed, save the network and the screen stays unlocked while the laptop is
+  on it; the tray icon says why. Off by default; networks are stored in the
+  settings under *Networks without locking*, which reads whichever one the
+  laptop is on. A network has to match by its name **and** by the access
+  point's MAC address: a name on its own is trivially forged, and what this
+  setting does is stop the screen locking, so being fooled here costs security
+  rather than convenience. A mesh or a repeater therefore needs each access
+  point saved — and because that is not obvious, the settings say so on the
+  spot when the laptop reaches an access point it does not know under a name
+  it does. The network is read through `wlanapi` rather than by parsing
+  `netsh wlan show interfaces`, whose output is localised and would stop being
+  recognised after a language change (`trusted_network_pause` and
+  `trusted_networks` in `config.json`).
 
 ### Fixed
 
