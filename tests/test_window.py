@@ -94,16 +94,19 @@ def run():
         report("mesh: the new access point is a row of its own, unticked",
                rows == [("Kancelar", "11:22:33:44:55:66", False, True),
                         ("Kancelar", "AA:BB:CC:DD:EE:FF", True, False)])
-        labels = [chart._network_label(s, b, c, rows) for s, b, _, c in rows]
+        labels = [chart._network_label(s, b, c) for s, b, _, c in rows]
         report("mesh: the two rows do not read the same",
-               labels[0] != labels[1] and "55:66" in labels[0])
-        # A name nothing else shares must not carry technical noise.
+               labels[0] != labels[1])
+        report("...and each row names its own access point",
+               "11:22:33:44:55:66" in labels[0]
+               and "AA:BB:CC:DD:EE:FF" in labels[1])
+        # The address is half of what a network is recognised by, so every row
+        # shows it - not only the rows that would otherwise look alike.
         D.CFG["trusted_networks"] = []
         D.current_network = lambda: ("Hotel", "11:22:33:44:55:66")
-        single = chart._network_rows()
-        report("a unique name carries no MAC address",
-               "55:66" not in chart._network_label(
-                   "Hotel", "11:22:33:44:55:66", True, single))
+        report("every row carries the access point address",
+               "11:22:33:44:55:66" in chart._network_label(
+                   "Hotel", "11:22:33:44:55:66", True))
         # Ticking and unticking a row.
         chart._toggle_network("Hotel", "11:22:33:44:55:66")
         report("ticking a row puts the network on the list",

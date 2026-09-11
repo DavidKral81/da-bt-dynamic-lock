@@ -12,22 +12,29 @@ nowhere else.
 
 ### Added
 
-- **Networks where the screen is not locked.** For wherever locking is not
-  wanted — an office, a workshop — the settings now carry a list of Wi-Fi
-  networks under *Networks without locking*: tick one to add it, untick to
-  remove it, and the network in use is marked in the list. While the laptop is
-  on a ticked network the screen stays unlocked and the tray icon says why.
-  Off by default.
+- **Wi-Fi networks where the screen is not locked.** For wherever locking is
+  not wanted — an office, a workshop — the settings carry a list under *Wi-Fi
+  networks*: tick one to add it, untick to remove it, and the network in use
+  is marked. While the laptop is connected to a ticked network the screen
+  stays unlocked and the tray icon says why. Off by default.
 
   A network has to match by its name **and** by the access point's MAC
-  address: a name on its own is trivially forged, and what this setting does
-  is stop the screen locking, so being fooled here costs security rather than
-  convenience. A mesh or a repeater therefore appears as one row per access
-  point, each ticked separately — visible in the list rather than needing an
-  explanation. The network is read through `wlanapi` rather than by parsing
-  `netsh wlan show interfaces`, whose output is localised and would stop being
-  recognised after a language change (`trusted_network_pause` and
-  `trusted_networks` in `config.json`).
+  address, and **both are shown on every row** — a name on its own is
+  trivially forged, and what this setting does is stop the screen locking, so
+  being fooled here costs security rather than convenience. A mesh or a
+  repeater therefore appears as one row per access point, each ticked
+  separately, which needs no explaining because it is visible in the list.
+  Being merely in range of a network is not enough: only an actual connection
+  counts, because that one cannot be faked without the network's password.
+  The network is read through `wlanapi` rather than by parsing `netsh wlan
+  show interfaces`, whose output is localised and would stop being recognised
+  after a language change (`trusted_network_pause` and `trusted_networks` in
+  `config.json`).
+
+- **The pause says how much of it is left.** The menu only ever showed what
+  had been chosen, which is a different question — a pause runs down on its
+  own and can be started from the tray as well, so the settings card now
+  carries the remaining time under the menu.
 
 ### Fixed
 

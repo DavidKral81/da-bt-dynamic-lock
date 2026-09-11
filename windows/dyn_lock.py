@@ -1885,7 +1885,10 @@ class Chart:
                         (1, 2, 5, 10, 20, 30, 60)])
 
         # --- 4. networks without locking -------------------------------
-        card = self._card(column, tx("card_trusted"), tx("card_trusted_desc"))
+        # No description under the heading: the switch and the rows say what
+        # this does, and the detail (name AND access point) belongs in the
+        # manual, not in the window.
+        card = self._card(column, tx("card_trusted"), None)
         self.sw_trusted_network = self._switch(
             card, tx("sw_trusted_network"), "trusted_network_pause")
         # Built like the phone card above: one row per network, ticked when it
@@ -1908,6 +1911,13 @@ class Chart:
                       (tx("opt_4_hours"), 240), (tx("opt_12_hours"), 720),
                       (tx("opt_1_day"), 1440), (tx("opt_2_days"), 2880)],
                      var=self.pause_var, action=self._pause)
+        # How much of the pause is left. The menu says what was CHOSEN, which
+        # is a different question - the pause runs down on its own and can also
+        # be started from the tray, so without this the card cannot answer
+        # "how long still?". Filled in by _refresh_content every two seconds.
+        self.pause_label = tk.Label(card, text="", bg=card["bg"], fg="#9aa4b2",
+                                    font=("Segoe UI", 9))
+        self.pause_label.pack(anchor="w", pady=(2, 0))
 
         # --- 6. links --------------------------------------------------
         self.links_frame = tk.Frame(self.grid_frame, bg="#1b1f26")
@@ -2213,18 +2223,16 @@ class Chart:
             rows.append((ssid, bssid, True, False))
         return rows
 
-    def _network_label(self, ssid, bssid, connected, rows):
-        """The text of one row.
+    def _network_label(self, ssid, bssid, connected):
+        """The text of one row: the name and the access point it stands for.
 
-        The tail of the MAC address is shown ONLY when another row would read
-        exactly the same, which is what a mesh looks like: one name, several
-        access points. Showing it always would put technical noise in front of
-        everyone; never showing it would leave two identical rows and no way
-        to tell which is which.
+        The MAC address is always on show. The network is recognised by BOTH
+        the name and the access point, so hiding half of that would leave the
+        user guessing why an identically named Wi-Fi does not count - and with
+        a mesh, which of two identical rows is which.
         """
-        if sum(1 for s, _, _, _ in rows if s == ssid) > 1:
-            ssid = tx("net_same_name", name=ssid, mac=bssid[-5:])
-        return tx("net_here", name=ssid) if connected else ssid
+        return tx("net_here" if connected else "net_row",
+                  name=ssid, mac=bssid)
 
     def _toggle_network(self, ssid, bssid):
         """Put a network on the no-locking list, or take it off.
@@ -2346,6 +2354,17 @@ class Chart:
         not_paused = tx("opt_not_paused")
         if remaining <= 0 and self.pause_var.get() != not_paused:
             self.pause_var.set(not_paused)     # the pause ran out on its own
+        # How much is left. Whole minutes and never rounded up: "1 min left"
+        # with 40 seconds to go would be a promise the app cannot keep, so
+        # anything under a minute says so in words instead.
+        if remaining > 60:
+            left = tx("lbl_pause_left", m=int(remaining // 60))
+        elif remaining > 0:
+            left = tx("lbl_pause_last")
+        else:
+            left = ""
+        if self.pause_label.cget("text") != left:
+            self.pause_label.config(text=left)
 
         # The device list is only redrawn when it has changed. The signature
         # of what is drawn is kept DIRECTLY ON THE FRAME holding the list -
@@ -2406,7 +2425,7 @@ class Chart:
             for ssid, bssid, ticked, connected in rows:
                 self._option(
                     self.networks_frame,
-                    self._network_label(ssid, bssid, connected, rows),
+                    self._network_label(ssid, bssid, connected),
                     ticked,
                     lambda s=ssid, b=bssid: self._toggle_network(s, b),
                     color="#d7dde5" if connected else "#a9b4c2")

@@ -154,20 +154,24 @@ SETTINGS
         Start after signing in to Windows   see section 8
 
     When the phone disappears   see section 7
-    Networks without locking    a list of the Wi-Fi networks where the
+    Wi-Fi networks              a list of the Wi-Fi networks where the
                                 screen is not locked - for wherever you
                                 do not need it to be. Tick a network to
                                 add it, untick to remove it; the one
                                 you are connected to is marked in the
                                 list. The whole option is off by
-                                default. A network is recognised by its
-                                name AND by the access point's address,
+                                default. Every row also shows the access
+                                point's address (MAC), because a network
+                                is recognised by its name AND by that -
                                 so somebody else's Wi-Fi with the same
-                                name cannot switch the guarding off -
-                                which is why a mesh or a repeater gets
-                                one row per access point
+                                name cannot switch the guarding off, and
+                                a mesh or a repeater gets one row per
+                                access point. A network only counts while
+                                you are actually connected to it
     Pause for a while           watching turns off for the chosen
-                                time and then turns itself back on
+                                time and then turns itself back on;
+                                below the menu you can see how much
+                                of it is left
 
     At the bottom there are links to the phone app, to this manual
     and to the project, below them the version number with a

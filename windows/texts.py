@@ -86,20 +86,21 @@ CS = {
     "opt_no_warning": "Neupozorňovat",
     "opt_after_minutes": "po {m} minutách bez signálu",
 
-    # --- settings: networks without locking ---------------------------
-    "card_trusted": "Sítě bez zamykání",
-    "card_trusted_desc": "Na vybraných Wi-Fi se obrazovka nezamyká.",
-    "sw_trusted_network": "Nezamykat na vybraných sítích",
+    # --- settings: Wi-Fi networks -------------------------------------
+    "card_trusted": "Wi-Fi sítě",
+    "sw_trusted_network": "Nezamykat na vybraných Wi-Fi sítích",
     "net_none": "Nejste připojen k Wi-Fi.",
-    "net_here": "{name} — právě připojeno",
-    # Only shown when two rows would otherwise read the same, which happens
-    # with a mesh: same name, different access point.
-    "net_same_name": "{name} · {mac}",
+    # The MAC address is part of what the network is recognised by, so it is
+    # always on show - a mesh then reads as several rows of one name.
+    "net_row": "{name} · {mac}",
+    "net_here": "{name} · {mac} — právě připojeno",
 
     # --- settings: pause ----------------------------------------------
     "card_pause": "Dočasně pozastavit",
     "card_pause_desc": "Hlídání se na zvolenou dobu vypne a pak se samo "
                      "zase zapne.",
+    "lbl_pause_left": "Zbývá {m} min",
+    "lbl_pause_last": "Zbývá necelá minuta",
     "opt_not_paused": "Nepozastaveno",
     "opt_5_min": "5 minut",
     "opt_15_min": "15 minut",
@@ -301,21 +302,21 @@ EN = {
     "opt_no_warning": "Do not warn",
     "opt_after_minutes": "after {m} minutes without a signal",
 
-    # --- settings: networks without locking ---------------------------
-    "card_trusted": "Networks without locking",
-    "card_trusted_desc": "The screen is not locked on the selected Wi-Fi "
-                         "networks.",
-    "sw_trusted_network": "Do not lock on the selected networks",
+    # --- settings: Wi-Fi networks -------------------------------------
+    "card_trusted": "Wi-Fi networks",
+    "sw_trusted_network": "Do not lock on the selected Wi-Fi networks",
     "net_none": "Not connected to Wi-Fi.",
-    "net_here": "{name} - connected now",
-    # Only shown when two rows would otherwise read the same, which happens
-    # with a mesh: same name, different access point.
-    "net_same_name": "{name} · {mac}",
+    # The MAC address is part of what the network is recognised by, so it is
+    # always on show - a mesh then reads as several rows of one name.
+    "net_row": "{name} · {mac}",
+    "net_here": "{name} · {mac} - connected now",
 
     # --- settings: pause ----------------------------------------------
     "card_pause": "Pause for a while",
     "card_pause_desc": "Watching turns off for the chosen time and then "
                      "turns itself back on.",
+    "lbl_pause_left": "{m} min left",
+    "lbl_pause_last": "Less than a minute left",
     "opt_not_paused": "Not paused",
     "opt_5_min": "5 minutes",
     "opt_15_min": "15 minutes",
