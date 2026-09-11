@@ -3003,6 +3003,11 @@ _saved_at = 0.0
 _alerted = False         # we have already reported a long silence
 _last_tick = None        # when the main loop last ran, to notice it stopped
 _screen_locked = False   # what the previous tick found the lock screen doing
+_not_watching = None     # why the previous tick watched nothing, or None
+
+# Reasons from decide() under which nothing is being watched at all. Coming
+# back from any of them restarts the measurement - see main_loop.
+NOT_WATCHING = ("off", "paused", "trusted_network")
 
 # The loop ticks every 500 ms. Anything above this means it was not running at
 # all - the machine slept, hibernated or was stuck. Deliberately generous: a
@@ -3060,7 +3065,7 @@ def watch_signal_loss(tray):
 
 
 def main_loop(root, countdown, tray):
-    global _previous_action, _alerted, _screen_locked
+    global _previous_action, _alerted, _screen_locked, _not_watching
     try:
         gap = tick_gap(time.monotonic())
         if gap > STALL_S:
@@ -3097,9 +3102,28 @@ def main_loop(root, countdown, tray):
                 log("Screen unlocked - the silence is measured again from now.")
 
         pause = max(0.0, STATE.paused_until - time.monotonic())
+        trusted = on_trusted_network()
         action, label, remaining, reason = decide(
             CFG, STATE.silence(), STATE.armed, pause, idle_seconds(), locked,
-            on_trusted_network())
+            trusted)
+
+        # Back from a state in which nothing was watched: the switch was off,
+        # a pause ran out, or the laptop left a network without locking (or
+        # that network was unticked). The silence kept counting meanwhile and
+        # says nothing about where the phone is now - deciding on it would
+        # lock at once and skip the countdown. The same remedy as waking from
+        # sleep and unlocking the screen: measure again from now.
+        if _not_watching and reason not in NOT_WATCHING:
+            STATE.restart_measurement()
+            countdown.hide()
+            _previous_action = None
+            _alerted = False             # quietly - see the gap branch above
+            log(f"Watching resumed after '{_not_watching}' - the silence is "
+                f"measured again from now.")
+            action, label, remaining, reason = decide(
+                CFG, STATE.silence(), STATE.armed, pause, idle_seconds(),
+                locked, trusted)
+        _not_watching = reason if reason in NOT_WATCHING else None
 
         # The start and the cancellation of a countdown are logged, so it can
         # be verified afterwards that a lock really was preceded by a warning.
@@ -3136,10 +3160,13 @@ def main_loop(root, countdown, tray):
             # six seconds, and the phone was back before the screen locked. The
             # log then read "Locking (silence 0 s)", which is a lock nobody
             # deserved.
+            # The network is not asked again here. A change there is handled
+            # as a transition on the next tick; caught at this point it would
+            # call the lock off with "the phone came back", which is not true.
             action, label, remaining, reason = decide(
                 CFG, STATE.silence(), STATE.armed,
                 max(0.0, STATE.paused_until - time.monotonic()), idle_seconds(),
-                session_locked(), on_trusted_network())
+                session_locked(), trusted)
             if action != "lock":
                 log("Locking called off - the phone came back while the "
                     "decision was being carried out.")

@@ -31,6 +31,13 @@ nowhere else.
 
 ### Fixed
 
+- **Ending a pause, switching watching back on, or leaving a network without
+  locking no longer locks the screen at once.** The silence kept counting while
+  nothing was being watched, so the first moment afterwards could find it far
+  past the limit and lock immediately, skipping the countdown altogether.
+  Coming back from any of these now measures the silence again from that
+  moment — the remedy the app already used after sleep and after unlocking.
+
 - **The app now knows the screen is locked for as long as it is locked.** The
   check asked whether the secure desktop was in front, which is true only while
   the lock screen is being drawn — cross-checked against the Winlogon log on

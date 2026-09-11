@@ -552,6 +552,57 @@ def run():
         report("...but a quiet room cannot switch the guard off for good",
                len(D.STATE.locks) > held)
 
+        # --- D: coming back from a state that watched nothing. Silence that
+        # piled up meanwhile must not lock at once - it is measured again, so
+        # the countdown gets its turn. Three ways in, one remedy: leaving (or
+        # unticking) a network without locking, a pause running out, and the
+        # switch turned back on.
+        _real_trusted = D.on_trusted_network
+
+        def comes_back(what, enter, leave):
+            _radio_hears_the_room()
+            D._not_watching = None
+            D.STATE.was_near, D.STATE.armed = True, True
+            enter()
+            D.STATE.near_at = time.monotonic() - 700
+            D._last_tick = time.monotonic()
+            start = len(D.STATE.locks)
+            D.main_loop(root, box, tray)             # watching nothing
+            leave()
+            D._last_tick = time.monotonic()
+            D.main_loop(root, box, tray)             # back to watching
+            silence = D.STATE.silence()
+            report(f"{what}: no lock straight away",
+                   len(D.STATE.locks) == start)
+            report("...and the silence is measured again from now",
+                   silence is not None and silence < 5)
+            # The twin: real silence afterwards DOES lock. Without it the two
+            # checks above would pass on an app that never locks anything.
+            _radio_hears_the_room()
+            D.STATE.near_at = time.monotonic() - 700
+            D._last_tick = time.monotonic()
+            D.main_loop(root, box, tray)
+            report("...but real silence afterwards still locks",
+                   len(D.STATE.locks) == start + 1)
+
+        try:
+            comes_back("leaving a network without locking",
+                       enter=lambda: setattr(D, "on_trusted_network",
+                                             lambda: True),
+                       leave=lambda: setattr(D, "on_trusted_network",
+                                             lambda: False))
+            comes_back("a pause running out",
+                       enter=lambda: setattr(D.STATE, "paused_until",
+                                             time.monotonic() + 600),
+                       leave=lambda: setattr(D.STATE, "paused_until", 0.0))
+            comes_back("switching watching back on",
+                       enter=lambda: D.CFG.__setitem__("active", False),
+                       leave=lambda: D.CFG.__setitem__("active", True))
+        finally:
+            D.on_trusted_network = _real_trusted
+            D.STATE.paused_until = 0.0
+            D._not_watching = None
+
         D.session_locked = _screen_state     # the next case asks for itself
         D.CFG["active"] = False          # stop the ticks main_loop scheduled
         box.hide()
