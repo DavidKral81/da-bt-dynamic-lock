@@ -38,6 +38,13 @@ nowhere else.
 
 ### Fixed
 
+- **The settings no longer open a hole between two cards.** On a wide window
+  the cards were laid into one shared grid, so a card on the left and a card
+  on the right took the same row, the row was as tall as the taller of the
+  two, and under the shorter one a gap appeared — most recently above *Pause
+  for a while*. Each column is now its own frame, which nothing outside it can
+  stretch, and the spacing is measured by a test rather than looked for by eye.
+
 - **Ending a pause, switching watching back on, or leaving a network without
   locking no longer locks the screen at once.** The silence kept counting while
   nothing was being watched, so the first moment afterwards could find it far

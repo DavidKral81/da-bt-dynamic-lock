@@ -1602,6 +1602,9 @@ class Chart:
     the app does not need matplotlib (a few MB more for a single window)."""
 
     SETTINGS_WIDTH = 620  # width of the settings column; wider reads badly
+    # The gap below every settings card. One constant, because the test that
+    # guards the layout measures exactly this number - see _relayout.
+    CARD_GAP = 14
     # labels are built at runtime - they change with the language
     TIME_RANGES = [("range_2min", 120), ("range_5min", 300), ("range_15min", 900),
                    ("range_1h", 3600), ("range_8h", 28800), ("range_1day", 86400)]
@@ -1819,9 +1822,15 @@ class Chart:
                                                             self._relayout()))
         # the mouse wheel only works while the cursor is over the settings
         self.settings_canvas.bind_all("<MouseWheel>", self._wheel, add="+")
-        self.cards = []
-        column = self.grid_frame
         self.columns = 0
+        # TWO INDEPENDENT COLUMN FRAMES, each packing its own cards. Which
+        # card goes into which one is decided here, once - the first half
+        # left, the second half right. In a narrow window the two frames
+        # stack on top of each other, so the order stays exactly 1..N.
+        # Why it is built this way and not as one shared grid: see _relayout.
+        self.column_frames = (tk.Frame(self.grid_frame, bg="#1b1f26"),
+                              tk.Frame(self.grid_frame, bg="#1b1f26"))
+        column = self.column_frames[0]
         parent.bind("<Configure>", self._relayout)
 
         # --- 1. phone --------------------------------------------------
@@ -1876,6 +1885,8 @@ class Chart:
         # the one place it is switched. Two controls for one setting is two
         # truths waiting to disagree.
 
+        # From here on the cards belong to the RIGHT column (see above).
+        column = self.column_frames[1]
         card = self._card(
             column, tx("card_gone"), tx("card_gone_desc"))
         self._select(card, tx("lbl_warn"),
@@ -1985,11 +1996,12 @@ class Chart:
     def _card(self, parent, title, description):
         """One settings section - heading, short explanation, content.
 
-        The card is not packed - _relayout places it according to the window
-        width.
+        `parent` is one of the two column frames and the card packs straight
+        into it. The gap below the card is part of the card, so the spacing
+        stays the same whether the frames sit side by side or stacked.
         """
-        outer = tk.Frame(self.grid_frame, bg="#1b1f26")
-        self.cards.append(outer)
+        outer = tk.Frame(parent, bg="#1b1f26")
+        outer.pack(fill="x", pady=(0, self.CARD_GAP))
         tk.Label(outer, text=title, bg="#1b1f26", fg="#e6ebf2",
                  font=("Segoe UI", 12, "bold")).pack(anchor="w", pady=(0, 1))
         if description:
@@ -2001,10 +2013,25 @@ class Chart:
         return inner
 
     def _relayout(self, event=None):
-        """Lay the cards out into one or two columns by the window width.
+        """Lay the two column frames side by side, or stack them.
 
         On a wide monitor a single narrow column wastes space, in a narrow
         window two columns do not fit - so let it sort itself out.
+
+        Only the FRAMES move here, never the cards: each card is packed in
+        its own column frame for good (see _create_settings).
+
+        This used to place every card into one shared grid, and that is the
+        defect that came back three times - last on 10.09.2026, right above
+        "Pause for a while". Two cards side by side shared a grid row, the
+        row was as tall as the TALLER of them, and under the shorter one a
+        gap opened up. Every card that was added or grew re-paired the cards,
+        so the hole moved somewhere else and looked like a new bug. With two
+        independent frames it cannot happen at all: a card's height only ever
+        moves the cards below it in the SAME frame. The gap between two cards
+        in one column is therefore always CARD_GAP - which is what the test
+        in test_window.py measures, so a third comeback fails the tests
+        instead of waiting for someone to spot it on a preview.
         """
         width = self.settings_canvas.winfo_width()
         wanted = 2 if width >= 2 * self.SETTINGS_WIDTH + 100 else 1
@@ -2012,7 +2039,7 @@ class Chart:
             return
         self.columns = wanted
 
-        # All columns equally wide and fixed - otherwise every card sets its
+        # Both columns equally wide and fixed - otherwise each one sets its
         # width by its own content and the blocks come out uneven
         for i in range(2):
             self.grid_frame.grid_columnconfigure(
@@ -2020,20 +2047,19 @@ class Chart:
                 weight=1 if i < wanted else 0,
                 uniform="cards" if i < wanted else "")
 
-        per_column = -(-len(self.cards) // wanted)     # round up
-        for index, card in enumerate(self.cards):
-            column = index // per_column
-            row = index % per_column
-            # the padding has to be the same on BOTH columns, otherwise one
-            # column is narrower by that gap (it was 600 vs 620 px)
-            gap = 10 if wanted == 2 else 0
-            card.grid(row=row, column=column, sticky="new",
-                      padx=(0, gap) if column == 0 else (gap, 0),
-                      pady=(0, 14))
+        # the padding has to be the same on BOTH columns, otherwise one
+        # column is narrower by that gap (it was 600 vs 620 px)
+        gap = 10 if wanted == 2 else 0
+        left, right = self.column_frames
+        left.grid(row=0, column=0, sticky="new", padx=(0, gap))
+        if wanted == 2:
+            right.grid(row=0, column=1, sticky="new", padx=(gap, 0))
+        else:
+            right.grid(row=1, column=0, sticky="new", padx=0)
         # a gap has to remain at the bottom, otherwise the buttons are glued
         # to the edge of the window
-        self.links_frame.grid(row=per_column, column=0, columnspan=wanted,
-                              sticky="ew", pady=(2, 22))
+        self.links_frame.grid(row=2 if wanted == 1 else 1, column=0,
+                              columnspan=wanted, sticky="ew", pady=(2, 22))
         self._set_minimum(self.win) if self.win else None
 
     def _quit(self):

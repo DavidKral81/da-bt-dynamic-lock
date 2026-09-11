@@ -193,6 +193,80 @@ def run():
                all(age > 10 for _, _, age in D.STATE.nearby_list()))
 
         chart.toggle()
+        root.after(400, settings_columns)
+
+    def settings_columns():
+        """Cards in one column have to be a FIXED gap apart - no holes.
+
+        This is the layout defect that came back three times, last on
+        10.09.2026 right above "Pause for a while". The cards used to sit in
+        one shared grid, so a card on the left and a card on the right took
+        the same row, the row was as tall as the TALLER of them, and under
+        the shorter one a hole opened up. Every card that was added or grew
+        re-paired the cards and moved the hole somewhere else, which is why
+        it kept looking like a brand new bug.
+
+        It was always found by eye on a preview - and by eye it was always
+        found late. So it is measured instead, in BOTH widths: the pairing
+        (and with it the hole) changed with the window.
+
+        Measured relative to grid_frame, not on the screen: the lower cards
+        can be scrolled out of view and their screen coordinates would then
+        say nothing about the spacing.
+        """
+        chart.toggle()
+        chart._tab(1)
+        chart.win.update()
+        left, right = chart.column_frames
+
+        def cards_of(frame):
+            """Top edge and height of each card, in the order they appear."""
+            chart.win.update_idletasks()
+            return [(frame.winfo_y() + c.winfo_y(), c.winfo_height())
+                    for c in frame.winfo_children()]
+
+        def holes(cards):
+            """The gap between each card and the next one below it."""
+            return [below - (top + height)
+                    for (top, height), (below, _) in zip(cards, cards[1:])]
+
+        gap = D.Chart.CARD_GAP
+        # --- wide window: two columns next to each other -------------------
+        needed = 2 * D.Chart.SETTINGS_WIDTH + 140
+        if root.winfo_screenwidth() < needed + 80:
+            print(f"  SKIP  two columns: the screen is only "
+                  f"{root.winfo_screenwidth()} px wide, {needed + 80} needed")
+        else:
+            chart.win.geometry(f"{needed}x760")
+            chart.win.update()
+            report(f"a wide window uses two columns ({chart.columns})",
+                   chart.columns == 2)
+            report("...and the columns really stand side by side",
+                   right.winfo_x() > left.winfo_x()
+                   and right.winfo_y() == left.winfo_y())
+            for name, frame in (("left", left), ("right", right)):
+                found = holes(cards_of(frame))
+                report(f"the {name} column has no hole in it "
+                       f"(gaps {found}, all should be {gap})",
+                       bool(found) and all(g == gap for g in found))
+
+        # --- narrow window: the two frames stack ---------------------------
+        # The gap ACROSS the seam is the interesting one: that is where a
+        # column of cards is handed over from one frame to the other, and a
+        # reader must not be able to tell there is a seam at all.
+        chart.win.geometry("960x760")
+        chart.win.update()
+        report(f"a narrow window uses one column ({chart.columns})",
+               chart.columns == 1)
+        report("...and the second frame sits under the first, not beside it",
+               right.winfo_x() == left.winfo_x()
+               and right.winfo_y() > left.winfo_y())
+        found = holes(cards_of(left) + cards_of(right))
+        report(f"one column: every card the same gap apart "
+               f"(gaps {found}, all should be {gap})",
+               bool(found) and all(g == gap for g in found))
+
+        chart.toggle()
         root.after(400, language)
 
     def language():
