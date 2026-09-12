@@ -14,8 +14,9 @@ public enum LockAction
 }
 
 /// <summary>
-/// The settings <see cref="Decision.Decide"/> reads. Only the watching ones -
-/// the window, the tray and the chart have their own.
+/// The settings that decide whether to lock - the ones
+/// <see cref="DecisionMaker.Decide"/> and <see cref="PhoneWatch"/> read. The
+/// window, the tray and the chart have their own.
 /// </summary>
 public sealed record WatchSettings
 {
@@ -25,6 +26,19 @@ public sealed record WatchSettings
     public int CountdownFromSeconds { get; init; } = 10;
     public bool IdleGuard { get; init; }
     public double IdleGuardSeconds { get; init; } = 15;
+
+    /// <summary>
+    /// How strong the signal has to be to count as "at the desk", in dBm. Null
+    /// means hearing it at all is enough.
+    /// </summary>
+    public double? RssiThreshold { get; init; }
+
+    /// <summary>
+    /// How long a window the signal strength is smoothed over. Raw RSSI jumps
+    /// by 8 dB with the phone lying still, so the threshold is compared against
+    /// the median of this window, never against one reading.
+    /// </summary>
+    public double ThresholdWindowSeconds { get; init; } = 6;
 }
 
 /// <summary>
