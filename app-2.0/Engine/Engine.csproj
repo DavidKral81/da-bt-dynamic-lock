@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The application without a window: settings, the log, and the loop that
+       joins the decision logic to what Windows says. Kept separate from the UI
+       so the loop can be run and checked with nothing on screen. -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <AssemblyName>DaBtDynamicLock.Engine</AssemblyName>
+    <RootNamespace>DaBtDynamicLock.Engine</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\Core.csproj" />
+    <ProjectReference Include="..\Platform\Platform.csproj" />
+  </ItemGroup>
+
+</Project>
