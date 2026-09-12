@@ -141,6 +141,12 @@ def main():
     # put something in the device list so it is not empty
     for name, rssi in (("Test Phone", -65), ("Living room TV", -90)):
         D.STATE.record_nearby(None, _Advertisement(name, rssi))
+    # ...and a made-up network, for the same reason plus one more: without it
+    # the list asks the real adapter, so the picture would carry the name AND
+    # the access point address of whatever Wi-Fi the machine is on. The app
+    # deliberately keeps both out of the log because logs get shared when
+    # reporting a problem - a screenshot gets shared just as readily.
+    D.current_network = lambda: ("Test Wifi", "AA:BB:CC:DD:EE:FF")
     # a stretch of signal for the chart - written straight into the history so
     # the shot does not depend on how record() evaluates the sensitivity
     now = time.monotonic()

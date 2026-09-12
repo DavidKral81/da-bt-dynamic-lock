@@ -114,14 +114,40 @@ for the phone, and a single advertisement used to re-arm it — so behind the
 lock screen the full cycle ran again: a countdown box drawn where nobody could
 see it, then a second "lock" that does nothing. Cross-checking the app's log
 against the Windows Winlogon events for 19–22 Aug 2026 put 41 of 68 recorded
-locks in that category. The lock screen is recognised through
-`OpenInputDesktop`, which an ordinary process is refused while the secure
-desktop is in front — the refusal is the answer. Any other error counts as
-"not locked", because guessing "locked" when the check itself broke would
-switch the guarding off for good. On unlocking, the measurement restarts from
+locks in that category. Which state the session is in is answered as described
+above — the session flag first, the desktop test only as a fallback. Any error
+counts as "not locked", because guessing "locked" when the check itself broke
+would switch the guarding off for good. On unlocking, the measurement restarts from
 zero exactly as it does after a wake: the silence collected behind the lock
 screen says nothing about where the phone is now, and without the restart the
 screen would lock again as soon as the password was typed.
+
+**A saved Wi-Fi network can pause the watching — and it is matched by name AND
+by access point.** Wherever locking is not wanted (an office, a workshop), the
+laptop being connected to a chosen network suspends the guard. A network is
+recognised by its name together with the MAC address of the access point,
+because a name on its own is forged by naming a hotspot after it — and this
+setting *switches the protection off*, so being fooled costs security rather
+than convenience. Being merely in range does not count; only an actual
+connection does, and that cannot be faked without the network's password. A
+mesh therefore appears as one row per access point, each ticked separately,
+which needs no explaining because the list shows it. The network is read
+through `wlanapi` rather than by parsing `netsh wlan show interfaces`, whose
+output is localised — a guard that quietly stops recognising the place after
+the system language changes is worse than no guard. A failed read counts as
+"not on a saved network", so a broken check can only ever lead to more
+locking, never less. Neither the name nor the address is written to the log:
+logs get shared when reporting a problem, and somebody else's access point is
+not ours to hand out.
+
+**The countdown appears on every monitor.** One box per screen, each centred
+on its own and at the chosen height, because a warning drawn on a screen the
+user is not looking at is a warning wasted. The work areas are enumerated at
+every appearance, not cached — a monitor can be unplugged between two
+countdowns. A monitor to the left of the primary one has a negative x
+coordinate, and a bare `-646` in a Tk geometry string means "646 px from the
+RIGHT edge", so the sign has to be written explicitly. Whoever prefers a
+single box can switch the others off.
 
 **Pinning to the taskbar is not possible.** Verified by listing the shell
 verbs of both the shortcut and the executable on Windows 11 build 26200 — the

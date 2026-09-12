@@ -1403,7 +1403,14 @@ class CountdownBox:
         self.lbl.pack()
         w.update_idletasks()
 
-        hwnd = ctypes.windll.user32.GetParent(w.winfo_id()) or w.winfo_id()
+        # restype, like every other WinAPI call here that hands back a handle:
+        # without it ctypes reads the result as a 32bit int and would cut a
+        # handle in half on 64bit Windows. Today's HWNDs fit into 32 bits, so
+        # this one never actually misbehaved - but the rule has no exceptions,
+        # or the next such call gets written the same way.
+        user32.GetParent.restype = wintypes.HWND
+        user32.GetParent.argtypes = [wintypes.HWND]
+        hwnd = user32.GetParent(w.winfo_id()) or w.winfo_id()
         GWL_EXSTYLE = -20
         WS_EX_NOACTIVATE, WS_EX_TRANSPARENT, WS_EX_TOOLWINDOW = 0x08000000, 0x20, 0x80
         st = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
@@ -3189,7 +3196,16 @@ def main_loop(root, countdown, tray):
         # says nothing about where the phone is now - deciding on it would
         # lock at once and skip the countdown. The same remedy as waking from
         # sleep and unlocking the screen: measure again from now.
-        if _not_watching and reason not in NOT_WATCHING:
+        #
+        # A locked screen is NOT such a return. decide() weighs screen_locked
+        # above paused and trusted_network, so locking the screen while paused
+        # or on a saved network changes the reason to one outside NOT_WATCHING
+        # and this used to fire - logging "Watching resumed" one line under
+        # "Screen locked - watching pauses". On a saved network that happened
+        # at every single manual lock, and it is exactly the line the feature
+        # is supposed to be verified by. The unlocking branch above already
+        # does the restart, so there is nothing to do here.
+        if _not_watching and not locked and reason not in NOT_WATCHING:
             STATE.restart_measurement()
             countdown.hide()
             _previous_action = None

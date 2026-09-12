@@ -775,6 +775,39 @@ def run():
             comes_back("switching watching back on",
                        enter=lambda: D.CFG.__setitem__("active", False),
                        leave=lambda: D.CFG.__setitem__("active", True))
+
+            # --- E: locking the screen is NOT a return to watching.
+            # decide() weighs screen_locked above trusted_network, so locking
+            # the screen on a saved network changes the reason to one outside
+            # NOT_WATCHING - and the branch above then fired, logging
+            # "Watching resumed" one line under "Screen locked - watching
+            # pauses". On a saved network that happened at every manual lock,
+            # and it is the very line the feature is meant to be verified by
+            # in the log. Read off the log, because that is where the damage
+            # was: nothing else about the run looked wrong.
+            lines = []
+            _real_log = D.log
+            _was_locked = D._screen_locked
+            try:
+                D.log = lambda text: lines.append(text)
+                D.on_trusted_network = lambda: True
+                D.session_locked = lambda: False
+                D._not_watching = None
+                D._screen_locked = False
+                D.STATE.was_near, D.STATE.armed = True, True
+                D._last_tick = time.monotonic()
+                D.main_loop(root, box, tray)         # sitting on the network
+                D.session_locked = lambda: True      # ...and the screen locks
+                D._last_tick = time.monotonic()
+                D.main_loop(root, box, tray)
+            finally:
+                D.log = _real_log
+                D._screen_locked = _was_locked
+            said = " | ".join(lines)
+            report("locking the screen is logged as a pause",
+                   "Screen locked" in said)
+            report("...and NOT as watching coming back",
+                   "Watching resumed" not in said)
         finally:
             D.on_trusted_network = _real_trusted
             D.STATE.paused_until = 0.0

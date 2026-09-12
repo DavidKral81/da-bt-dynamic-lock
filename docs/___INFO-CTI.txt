@@ -189,8 +189,10 @@ Barva ikony:
 LEVÝ klik   otevře okno aplikace
 PRAVÝ klik  otevře nabídku
 
-Nabídka umí totéž co okno - je to zkratka pro rychlou změnu bez
-otevírání okna. Položky se jmenují stejně jako v nastavení:
+Nabídka je zkratka pro to, co se mění často - ne úplná náhrada
+okna. Nenajdeš v ní polohu odpočtu, volbu "jen na primárním
+monitoru" ani Wi-Fi sítě; tohle se nastavuje jednou a patří do
+okna. Položky se jmenují stejně jako v nastavení:
 
   Graf signálu
   Sledované zařízení …
@@ -326,15 +328,19 @@ vidět, kdy zmizel a proč se zamklo.
       s odpočtem, jako vždycky.
 
   V logu je spousta "Locking" za sebou, po minutě po sobě
-      Tohle dělaly verze do 1.3 včetně. Když byla obrazovka
+      Tohle dělaly verze do 1.4 včetně. Když byla obrazovka
       zamčená, stačil jeden signál z telefonu a celý cyklus se
       rozjel znovu: po nastavené době se nakreslilo okénko
       odpočtu, jenže schované za zamykací obrazovkou, a pak se
-      "zamklo" podruhé, což už nic neudělá. Od verze 1.4 se
-      hlídání po dobu zamčené obrazovky pozastaví (v logu
-      "Screen locked - watching pauses until it is unlocked.")
-      a po odemčení začne měřit od nuly - takže dopsané heslo
-      už nikdy nenásleduje okamžité zamčení.
+      "zamklo" podruhé, což už nic neudělá. Verze 1.4 to sice
+      měla řešit, ale ptala se špatnou otázkou - poznala jen tu
+      chvíli, kdy se zamykací obrazovka kreslí, takže pauza
+      vydržela vteřinu. Od verze 1.5 se aplikace ptá Windows
+      přímo na stav relace, takže se hlídání pozastaví na celou
+      dobu zamčení (v logu "Screen locked - watching pauses
+      until it is unlocked.") a po odemčení začne měřit od nuly
+      - takže dopsané heslo už nikdy nenásleduje okamžité
+      zamčení.
 
   Ikona není vidět
       Bude schovaná pod šipkou skrytých ikon vpravo dole.
