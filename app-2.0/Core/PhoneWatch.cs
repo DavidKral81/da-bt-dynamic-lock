@@ -54,7 +54,10 @@ public sealed class PhoneWatch
     private readonly Queue<(double Time, string Address)> _adverts = new();
     private readonly Dictionary<string, (int Rssi, double Time)> _nearby = new();
 
-    private double _seenAt;
+    // Null, not 0, for "nothing yet": a zero sentinel would be indistinguishable
+    // from an advertisement that arrived at time zero, which is precisely the
+    // trap the loop's tick counter already has written down.
+    private double? _seenAt;
     private double _nearAt;
     private bool _wasNear;
     private bool _armed = true;
@@ -95,6 +98,22 @@ public sealed class PhoneWatch
     {
         lock (_gate)
             return _wasNear ? _now() - _nearAt : null;
+    }
+
+    /// <summary>
+    /// Seconds since the last advertisement from the watched device, whatever
+    /// its strength. Null = none yet.
+    ///
+    /// Not the same as <see cref="Silence"/>, which counts from the last time
+    /// the device was close ENOUGH. With a sensitivity threshold set, a device
+    /// that is audible but too weak keeps this fresh while the silence grows -
+    /// which is the difference between "the radio hears nothing" and "the phone
+    /// is out of reach", so the scanner's watchdog asks this one.
+    /// </summary>
+    public double? SinceSeen()
+    {
+        lock (_gate)
+            return _seenAt is double seen ? _now() - seen : null;
     }
 
     /// <summary>
@@ -251,7 +270,7 @@ public sealed class PhoneWatch
         lock (_gate)
         {
             _samples.Clear();
-            _seenAt = 0;
+            _seenAt = null;
             _nearAt = 0;
             _wasNear = false;
             _rssi = null;

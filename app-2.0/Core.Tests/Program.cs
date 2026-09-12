@@ -216,6 +216,36 @@ w = NewWatch();
 Check("a weak one is as if absent", Sighting.Nothing, w.Record(-95, strict).What);
 Check("so there is still nothing to measure", null, w.Silence());
 
+Console.WriteLine("\n'Heard at all' is not the same as 'at the desk':");
+// The scanner's watchdog asks the first one - a device that is audible but too
+// weak means the radio works and there is nothing to restart, even though the
+// silence keeps growing.
+w = NewWatch();
+Check("nothing heard yet", null, w.SinceSeen());
+w.Record(-95, strict);
+Check("a weak signal still counts as heard", 0.0, w.SinceSeen());
+Check("...while the silence has not even started", null, w.Silence());
+clock += 8;
+Check("and the time since is measured", 8.0, w.SinceSeen());
+w.Record(-60, strict);
+Check("a strong one starts the silence too", 0.0, w.Silence());
+// One weak reading right after a strong one does NOT count as leaving: the
+// median of the window still clears the threshold. That is what the smoothing
+// is for - raw RSSI jumps by 8 dB with the phone lying still.
+clock += 5;
+w.Record(-95, strict);
+Check("one weak reading does not undo a strong one", 0.0, w.Silence());
+// Once the strong sample ages out of the 6 s window, the weak one stands alone.
+clock += 7;
+w.Record(-95, strict);
+Check("a weak one on its own keeps 'heard' fresh", 0.0, w.SinceSeen());
+// 7, not 12: the silence runs from the last moment the MEDIAN cleared the
+// threshold, which was the mixed window five seconds in - not from the last
+// strong reading itself.
+Check("...but the silence runs from when the median last cleared", 7.0, w.Silence());
+w.TargetChanged();
+Check("changing the target forgets it was ever heard", null, w.SinceSeen());
+
 Console.WriteLine("\nIs the radio hearing the room at all?");
 w = NewWatch();
 Check("nothing heard yet", (0, 0), w.HeardRecently(PhoneWatch.HeardWindowSeconds));

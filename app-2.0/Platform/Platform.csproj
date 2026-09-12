@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Everything that has to ask Windows something. Kept apart from Core so the
+       decision logic stays testable over plain data.
+
+       The Windows TFM is what turns on the WinRT projections (Bluetooth), and
+       10.0.19041.0 is what the Windows App SDK asked for - measured, not
+       guessed, when the tray prototype was built. -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <AssemblyName>DaBtDynamicLock.Platform</AssemblyName>
+    <RootNamespace>DaBtDynamicLock.Platform</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\Core.csproj" />
+  </ItemGroup>
+
+</Project>
