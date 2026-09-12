@@ -129,29 +129,52 @@ if (Test-Path $passwordFile) {
 } else {
     throw "No signing key password: expecting the file $passwordFile or the DDL_KEYSTORE_PASSWORD variable"
 }
+
+# The password reaches the tools through the environment, never on the command
+# line. A command line is readable by every process of this user - Task Manager
+# shows it - and command logging keeps it; an environment block has to be read
+# out of the process. Both tools take it that way: keytool as "-storepass:env
+# NAME", apksigner as "--ks-pass env:NAME". Verified against these binaries.
+$passwordWas = $env:DDL_KEYSTORE_PASSWORD
+$env:DDL_KEYSTORE_PASSWORD = $password
+
 $key = "$work\key.jks"             # copied into an ASCII path for signing
-if (-not (Test-Path $keyPermanent)) {
-    Write-Host "     (creating a new signing key - DO NOT DELETE, updates need it)"
-    # keytool writes an informational message to the error output and
-    # PowerShell 5.1 takes that as a failure - so stopping on errors is turned
-    # off here for a moment and success is verified by the file appearing
-    $ErrorActionPreference = "Continue"
-    & $keytool -genkeypair -keystore $key -alias ddl -keyalg RSA -keysize 2048 `
-        -validity 10000 -storepass $password -keypass $password `
-        -dname "CN=Da BT Dynamic Lock, O=David, C=CZ" | Out-Null
-    $ErrorActionPreference = "Stop"
-    if (-not (Test-Path $key)) { throw "the signing key was not created" }
-    New-Item -ItemType Directory -Path (Split-Path $keyPermanent -Parent) -Force | Out-Null
-    Copy-Item $key $keyPermanent -Force
-} else {
-    # apksigner runs on Java and a path with diacritics gives it trouble -
-    # same as the other tools. That is why the key is copied into an ASCII
-    # path for signing.
-    Copy-Item $keyPermanent $key -Force
+try {
+    if (-not (Test-Path $keyPermanent)) {
+        Write-Host "     (creating a new signing key - DO NOT DELETE, updates need it)"
+        # keytool writes an informational message to the error output and
+        # PowerShell 5.1 takes that as a failure - so stopping on errors is
+        # turned off here for a moment and success is verified by the file
+        # appearing
+        $ErrorActionPreference = "Continue"
+        & $keytool -genkeypair -keystore $key -alias ddl -keyalg RSA -keysize 2048 `
+            -validity 10000 -storepass:env DDL_KEYSTORE_PASSWORD `
+            -keypass:env DDL_KEYSTORE_PASSWORD `
+            -dname "CN=Da BT Dynamic Lock, O=David, C=CZ" | Out-Null
+        $ErrorActionPreference = "Stop"
+        if (-not (Test-Path $key)) { throw "the signing key was not created" }
+        New-Item -ItemType Directory -Path (Split-Path $keyPermanent -Parent) -Force | Out-Null
+        Copy-Item $key $keyPermanent -Force
+    } else {
+        # apksigner runs on Java and a path with diacritics gives it trouble -
+        # same as the other tools. That is why the key is copied into an ASCII
+        # path for signing.
+        Copy-Item $keyPermanent $key -Force
+    }
+    & $signer sign --ks $key --ks-pass env:DDL_KEYSTORE_PASSWORD `
+        --key-pass env:DDL_KEYSTORE_PASSWORD `
+        --out "$out\DaBTDynamicLock.apk" "$out\aligned.apk"
+    if ($LASTEXITCODE -ne 0) { throw "signing failed" }
 }
-& $signer sign --ks $key --ks-pass "pass:$password" --key-pass "pass:$password" `
-    --out "$out\DaBTDynamicLock.apk" "$out\aligned.apk"
-if ($LASTEXITCODE -ne 0) { throw "signing failed" }
+finally {
+    # The copy of the signing key must not outlive the build. It used to sit in
+    # TEMP until the NEXT build wiped the folder, so after a failed build - or
+    # simply after the last one - the key lay there for as long as nobody built
+    # again. This runs even when signing throws, which is exactly the case that
+    # used to leave it behind.
+    if (Test-Path $key) { Remove-Item $key -Force }
+    $env:DDL_KEYSTORE_PASSWORD = $passwordWas
+}
 
 Copy-Item "$out\DaBTDynamicLock.apk" "$base\DaBTDynamicLock.apk" -Force
 $size = [math]::Round((Get-Item "$base\DaBTDynamicLock.apk").Length / 1KB, 0)
