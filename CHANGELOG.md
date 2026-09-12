@@ -8,6 +8,29 @@ The version itself lives in `windows/version.py` — one constant the app, the
 installer, both `.exe` resources and the APK all read. Change it there and
 nowhere else.
 
+## Unreleased
+
+### Fixed
+
+- **The mouse wheel scrolls the settings by one step again.** The wheel was
+  bound with `bind_all`, which puts the handler on a tag belonging to the
+  whole interpreter rather than to the window — closing the settings did not
+  take it away, so every reopen added another handler and they all scrolled
+  the same view. After the window had been opened six times, one notch of the
+  wheel ran six steps. The binding now belongs to the window and goes away
+  with it.
+
+### Security
+
+- **The signing key no longer stays behind in the temporary build folder.**
+  The Android tools cannot read a path with diacritics, so the key is copied
+  to a plain one to sign the APK; that copy used to be removed only by the
+  *next* build, leaving it in `%TEMP%` indefinitely after the last one — or
+  after a failed one. It is now removed as the signing step ends, however it
+  ends. The keystore password also stopped being passed on the command line,
+  where any process of the same user can read it, and goes through the
+  environment instead.
+
 ## 1.5 — 12 Sep 2026
 
 ### Added

@@ -367,6 +367,66 @@ def run():
             chart.win.update()
 
         chart.toggle()
+        root.after(400, wheel_after_reopen)
+
+    def wheel_after_reopen():
+        """One notch of the wheel scrolls one step, however often the window
+        has been opened before.
+
+        The binding is made with bind_all, which puts the script on the "all"
+        tag - shared by every widget of the interpreter and not owned by the
+        canvas it was made from. tkinter registers it with needcleanup=0, so
+        closing the window does NOT take it away, and the next open adds a
+        second handler, then a third. They all scroll the same canvas, so the
+        settings run further with every open and close the app has seen.
+
+        The pre-release review guessed the opposite - that the command would
+        die with the canvas and the wheel would stop working. Measured, it is
+        the other way round, which is the reason this is measured in steps
+        instead of argued from reading the code.
+
+        By the time this runs the window has been opened five times.
+        """
+        chart.toggle()
+        chart._tab(1)
+        chart.win.geometry("960x760")
+        chart.win.update()
+
+        canvas = chart.settings_canvas
+
+        def offset():
+            """How far down the settings are scrolled, in pixels."""
+            chart.win.update()
+            return canvas.canvasy(0)
+
+        if not chart.scroller_shown:
+            print("  SKIP  the wheel: the settings fit in the window, so "
+                  "there is nothing to scroll")
+        else:
+            canvas.yview_moveto(0)
+            top = offset()
+            canvas.yview_scroll(1, "units")
+            one_step = offset() - top
+            report(f"one scroll step moves the settings ({one_step:.0f} px)",
+                   one_step > 0)
+
+            canvas.yview_moveto(0)
+            offset()
+            try:
+                canvas.event_generate("<MouseWheel>", delta=-120)
+                moved = offset() - top
+            except tk.TclError as exc:
+                moved = None
+                report(f"the wheel raises no Tcl error ({exc})", False)
+            if moved is not None:
+                report("the wheel still scrolls after the window was reopened",
+                       moved > 0)
+                report(f"...by one step, not by more "
+                       f"(moved {moved:.0f} px, one step is {one_step:.0f} px)",
+                       moved == one_step)
+            canvas.yview_moveto(0)
+
+        chart.toggle()
         root.after(400, language)
 
     def language():

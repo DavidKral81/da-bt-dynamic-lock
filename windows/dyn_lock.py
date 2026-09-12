@@ -1827,8 +1827,16 @@ class Chart:
         inner.bind("<Configure>", measured)
         self.settings_canvas.bind("<Configure>", lambda e: (measured(),
                                                             self._relayout()))
-        # the mouse wheel only works while the cursor is over the settings
-        self.settings_canvas.bind_all("<MouseWheel>", self._wheel, add="+")
+        # The wheel is bound to the WINDOW, never with bind_all. bind_all puts
+        # the script on the "all" tag, which belongs to the interpreter rather
+        # than to this canvas - tkinter registers it with needcleanup=0, so
+        # closing the window does not take it away and the next open adds a
+        # second handler, then a third. All of them scroll the same canvas, so
+        # after six opens one notch of the wheel ran six steps. The window
+        # carries the binding instead: every widget inside has the toplevel in
+        # its bindtags, so the wheel is caught wherever the cursor sits inside
+        # the window - and it dies together with the window it belongs to.
+        self.settings_canvas.winfo_toplevel().bind("<MouseWheel>", self._wheel)
         self.columns = 0
         # TWO INDEPENDENT COLUMN FRAMES, each packing its own cards. Which
         # card goes into which one is decided here, once - the first half
