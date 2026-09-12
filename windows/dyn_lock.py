@@ -2277,13 +2277,15 @@ class Chart:
         save_cfg(CFG)
         log(f"Network {'added to' if added else 'removed from'} the "
             f"no-locking list ({len(saved)} on it).")
-        # Ask for a redraw so the row shows its new state at once. The frame
-        # only exists while the settings tab is built, and the setting itself
-        # is valid without it - so a missing frame means "nothing to redraw",
-        # not an error.
+        # Show the new state at once: invalidate what is drawn AND ask for the
+        # redraw. Invalidating on its own only meant the next two-second tick
+        # would notice - see _redraw_now. The frame only exists while the
+        # settings tab is built, and the setting itself is valid without it -
+        # so a missing frame means "nothing to redraw", not an error.
         frame = getattr(self, "networks_frame", None)
         if frame is not None:
             frame.signature = None
+            self._redraw_now()
 
     def _change_language(self, code):
         """Switch the language and build the window again.
@@ -2360,11 +2362,37 @@ class Chart:
         """
         if self.win is None or not self.win.winfo_exists():
             return
+        self._refresh_guarded()
+        self.win.after(2000, self._refresh_settings)
+
+    def _refresh_guarded(self):
+        """_refresh_content that never lets an exception escape - see above."""
         try:
             self._refresh_content()
         except Exception as error:
             log(f"Error while refreshing the settings: {error}")
-        self.win.after(2000, self._refresh_settings)
+
+    def _redraw_now(self):
+        """Redraw the settings content without waiting for the next tick.
+
+        Clicking a row used to only invalidate the signature and leave the
+        drawing to _refresh_settings, which runs every TWO SECONDS. So the
+        mark appeared up to 2 s after the click and the window felt broken
+        (David, 12.09.2026: "it takes at least a second before it gets
+        ticked"). The comments claiming the row was redrawn "at once" were
+        simply wrong - nothing asked for a redraw, it just happened to come
+        along on the next tick.
+
+        Deliberately not a direct call. _refresh_content destroys the rows and
+        builds them again, and the row being destroyed is the very widget
+        whose click handler is running - the comment in _option describes what
+        events reaching a dying widget do. after_idle lets the handler return
+        first and redraws a moment later, which is far below what anyone can
+        notice.
+        """
+        if self.win is None or not self.win.winfo_exists():
+            return
+        self.win.after_idle(self._refresh_guarded)
 
     def _refresh_content(self):
         label = self._countdown_label()
@@ -2463,8 +2491,11 @@ class Chart:
         save_cfg(CFG)
         STATE.target_changed()
         log(f"Watched device changed to '{name}'.")
-        # so the selected row gets recoloured right away
+        # so the selected row gets recoloured right away - the same defect as
+        # in _toggle_network lived here too: invalidating the signature alone
+        # left the drawing to the next two-second tick
         self.devices_frame.signature = None
+        self._redraw_now()
 
     def _legend(self, parent):
         """The key under the chart - so the window explains itself."""

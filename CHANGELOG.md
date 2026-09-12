@@ -38,6 +38,12 @@ nowhere else.
 
 ### Fixed
 
+- **A clicked row reacts at once.** Ticking a network under *Wi-Fi networks*,
+  or picking a device in the phone card, only marked the list as out of date
+  and left the drawing to a refresh that runs every two seconds — so the mark
+  followed the click up to 2 s later and the window felt broken. Both lists
+  now redraw as soon as the click has been handled.
+
 - **The settings no longer open a hole between two cards.** On a wide window
   the cards were laid into one shared grid, so a card on the left and a card
   on the right took the same row, the row was as tall as the taller of the

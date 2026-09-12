@@ -267,6 +267,106 @@ def run():
                bool(found) and all(g == gap for g in found))
 
         chart.toggle()
+        root.after(400, row_click_is_instant)
+
+    def row_click_is_instant():
+        """A clicked row has to change NOW, not on the next refresh tick.
+
+        Reported by David 12.09.2026: "when I click the checkbox of a network
+        it takes at least a second before it gets ticked". The handlers only
+        invalidated the drawn signature and left the drawing to
+        _refresh_settings, which runs every two seconds - so the mark appeared
+        up to 2 s late. Both lists had it, the networks and the devices; only
+        the networks were reported.
+
+        The click is generated as a real event, not by calling the handler,
+        because the fix hangs on what happens AFTER the handler returns
+        (after_idle). A test that called the handler would pass either way.
+        """
+        chart.toggle()
+        chart._tab(1)
+        chart.win.update()
+
+        def rows(frame):
+            return [w for w in frame.winfo_children() if hasattr(w, "on")]
+
+        def gone(w):
+            """Was the row destroyed - i.e. did the list really get redrawn?
+
+            This is the question that has to be asked. Reading `.on` off the
+            rows is not enough: without the redraw the OLD widgets are still
+            there with their old values, and a check like "exactly one device
+            is marked" then passes on the stale list. Two checks here were
+            hollow exactly like that until the sabotage run showed it.
+            """
+            try:
+                return not w.winfo_exists()
+            except tk.TclError:
+                return True
+
+        _saved = D.CFG.get("trusted_networks")
+        _live = D.current_network
+        _target = D.CFG.get("target")
+        try:
+            # --- a network row ------------------------------------------
+            D.CFG["trusted_networks"] = []
+            D.current_network = lambda: ("Hotel", "11:22:33:44:55:66")
+            chart.networks_frame.signature = None
+            chart._refresh_content()
+            chart.win.update()
+            before = rows(chart.networks_frame)
+            report(f"the network list has a row to click ({len(before)})",
+                   len(before) == 1)
+            if before:
+                report("...and it starts unticked", before[0].on is False)
+                first = before[0]
+                first.event_generate("<Button-1>")
+                chart.win.update()          # no waiting, no sleep
+                report("one click redraws the network row, with no wait",
+                       gone(first))
+                after = rows(chart.networks_frame)
+                report("...and the row that replaced it is ticked",
+                       bool(after) and after[0].on is True)
+                # ...and clicking again unticks it just as fast
+                second = after[0] if after else first
+                second.event_generate("<Button-1>")
+                chart.win.update()
+                report("a second click redraws it again, also with no wait",
+                       gone(second))
+                again = rows(chart.networks_frame)
+                report("...and that row is unticked",
+                       bool(again) and again[0].on is False)
+
+            # --- a device row (the same defect, not reported) -----------
+            others = [r for r in rows(chart.devices_frame) if not r.on]
+            report(f"the device list has an unselected row ({len(others)})",
+                   bool(others))
+            if others:
+                clicked = others[0]
+                # the name only, without the "(-76 dBm)" that keeps changing
+                wanted = clicked.label.cget("text").split("(")[0].strip()
+                clicked.event_generate("<Button-1>")
+                chart.win.update()
+                report("clicking a device redraws the list, with no wait",
+                       gone(clicked))
+                picked = [r for r in rows(chart.devices_frame) if r.on]
+                got = (picked[0].label.cget("text").split("(")[0].strip()
+                       if picked else "-")
+                report(f"...and the marked device is the clicked one "
+                       f"(wanted '{wanted}', got '{got}')",
+                       len(picked) == 1 and got == wanted)
+        finally:
+            D.current_network = _live
+            D.CFG["trusted_networks"] = _saved
+            D.CFG["target"] = _target
+            D.STATE.target_changed()
+            D.save_cfg(D.CFG)
+            chart.networks_frame.signature = None
+            chart.devices_frame.signature = None
+            chart._refresh_content()
+            chart.win.update()
+
+        chart.toggle()
         root.after(400, language)
 
     def language():
