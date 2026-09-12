@@ -46,6 +46,16 @@ __pycache__/
 # so it does not pile up in the project root
 _output/
 
+# .NET build output (2.0). app-2.0/Directory.Build.props already sends these
+# outside the project - and outside the mirrored Google Drive folder - so
+# normally nothing matches here. It stays as a safety net: a build run without
+# those properties (a stray `dotnet build` elsewhere, an IDE with its own
+# settings) would otherwise drop a thousand files into a commit, which is
+# exactly what happened once with installer/_build/.
+# By NAME, not by path, so a rename cannot silently stop it matching.
+bin/
+obj/
+
 
 # signing key password - NEVER commit
 phone/signing-key-password.txt

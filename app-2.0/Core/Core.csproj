@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Pure logic, no UI and no Windows calls, so it can be tested over plain
+       data - the same split dyn_lock.py keeps between decide() and main_loop. -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>DaBtDynamicLock.Core</AssemblyName>
+    <RootNamespace>DaBtDynamicLock.Core</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+</Project>

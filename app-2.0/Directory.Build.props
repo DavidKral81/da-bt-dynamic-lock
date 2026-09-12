@@ -1,0 +1,21 @@
+<Project>
+
+  <!-- Build output is kept OUT of the project folder on purpose.
+       The project lives inside "Muj disk", which Google Drive mirrors, and
+       bin/obj would be tens of MB re-uploaded after every single build. The
+       sources are about 1 MB and DO belong in the backup; compiler output is
+       made again in seconds and does not.
+
+       LOCALAPPDATA rather than a hard-coded path: a literal path breaks on a
+       rename or another account, which is the trap this project already has
+       written down for phone/build.ps1.
+
+       The folder is an approved write location (additionalDirectories in
+       ~/.claude/settings.json) - without that the write guard refuses. -->
+
+  <PropertyGroup>
+    <BaseOutputPath>$(LOCALAPPDATA)\da-bt-dynamic-lock-build\$(MSBuildProjectName)\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(LOCALAPPDATA)\da-bt-dynamic-lock-build\$(MSBuildProjectName)\obj\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+
+</Project>
