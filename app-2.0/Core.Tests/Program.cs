@@ -373,6 +373,12 @@ Check("...on the local hour in a half-hour time zone, not the UTC one", 0.0,
 
 Check("a day's range is spaced three-hourly", 10800.0, ChartLayout.GridStep(86400));
 
+// The spacing the shipped version uses. A quarter of an hour carrying three
+// lines left whole minutes of the chart with nothing to read against; how many
+// of them get a label is decided by what fits while drawing.
+Check("a quarter hour gets a line every minute", 60.0, ChartLayout.GridStep(900));
+Check("an hour gets one every five minutes", 300.0, ChartLayout.GridStep(3600));
+
 // The strength axis. Anything past either end is pinned to the edge - -127
 // means "unknown" and would otherwise drag the line off the picture.
 Check("the top of the axis is the top of the plot", 0.0, ChartLayout.Y(-30, 200));

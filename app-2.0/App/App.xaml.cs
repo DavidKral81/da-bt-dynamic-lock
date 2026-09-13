@@ -229,7 +229,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                     _panel.ShowAt(rect);
                     await Task.Delay(600);                  // let it draw
                     Note(problems, Screenshot.Save(_panel.Handle,
-                        Path.Combine(folder, $"panel-{language}.bmp")));
+                        Path.Combine(folder, $"panel-{language}.png")));
                     _panel.Hide();
                 }
                 else
@@ -251,7 +251,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                         await Task.Delay(400);
                         Note(problems, Screenshot.Save(_settingsWindow.Handle,
                             Path.Combine(folder,
-                                $"settings-{page + 1}-{_settingsWindow.PageName}-{language}.bmp")));
+                                $"settings-{page + 1}-{_settingsWindow.PageName}-{language}.png")));
                     }
                     _settingsWindow.HideWindow();
                 }
@@ -263,7 +263,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                         + "to photograph");
                 for (int i = 0; i < _boxes.Count; i++)
                 {
-                    string to = Path.Combine(folder, $"countdown-{language}-{i + 1}.bmp");
+                    string to = Path.Combine(folder, $"countdown-{language}-{i + 1}.png");
                     Note(problems, Screenshot.Save(_boxes[i].Handle, to));
                     // Checked rather than assumed: a save that reports success
                     // and leaves no file is the kind of quiet failure this

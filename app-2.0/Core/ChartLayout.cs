@@ -23,13 +23,20 @@ public static class ChartLayout
     public const int RssiTop = -30;
     public const int RssiBottom = -110;
 
-    /// <summary>How far apart the grid lines are for a given range.</summary>
+    /// <summary>
+    /// How far apart the grid lines are for a given range. The same spacing the
+    /// shipped version uses: a quarter of an hour with three lines in it left
+    /// whole minutes of the chart with nothing to read a position against.
+    ///
+    /// How many of those lines get a LABEL is decided while drawing, by what
+    /// fits - a step chosen here cannot know how wide the window is.
+    /// </summary>
     public static double GridStep(double rangeSeconds) => rangeSeconds switch
     {
         <= 120 => 30,
         <= 300 => 60,
-        <= 900 => 300,
-        <= 3600 => 900,
+        <= 900 => 60,
+        <= 3600 => 300,
         <= 28800 => 3600,
         _ => 10800,
     };

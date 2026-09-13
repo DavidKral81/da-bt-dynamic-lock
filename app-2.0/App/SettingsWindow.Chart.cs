@@ -23,6 +23,9 @@ public sealed partial class SettingsWindow
     private const double AxisBottom = 26;
     private const double AxisTop = 8;
 
+    /// <summary>Clear space two time labels have to leave between them.</summary>
+    private const double LabelGap = 14;
+
     /// <summary>The range in view. 15 minutes to start with - long enough to
     /// show a walk away from the desk, short enough to show single gaps.</summary>
     private double _range = 900;
@@ -139,6 +142,12 @@ public sealed partial class SettingsWindow
         double offset = TimeZoneInfo.Local.GetUtcOffset(DateTimeOffset.Now).TotalSeconds;
         double fromWall = nowWall - _range;
 
+        // Where the last label ended, so the next one can be left out rather
+        // than printed on top of it. Which lines get a label therefore follows
+        // the WIDTH, not a second step written next to the first: a narrowed
+        // window would otherwise smear the times into each other.
+        double labelledTo = double.NegativeInfinity;
+
         foreach (double at in ChartLayout.GridLines(fromWall, nowWall, offset))
         {
             double x = AxisLeft + ChartLayout.X(at, fromWall, nowWall, plotWidth);
@@ -149,7 +158,12 @@ public sealed partial class SettingsWindow
             var when = DateTimeOffset.FromUnixTimeMilliseconds((long)(at * 1000)).ToLocalTime();
             var label = NewLabel(_range <= 300 ? when.ToString("H:mm:ss") : when.ToString("H:mm"));
             label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            Add(label, x - label.DesiredSize.Width / 2, AxisTop + plotHeight + 4);
+
+            double left = x - label.DesiredSize.Width / 2;
+            if (left < labelledTo + LabelGap)
+                continue;
+            labelledTo = left + label.DesiredSize.Width;
+            Add(label, left, AxisTop + plotHeight + 4);
         }
     }
 
