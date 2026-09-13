@@ -103,13 +103,29 @@ public sealed partial class SettingsWindow
         double nowWall = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
         double fromMono = nowMono - _range;
 
-        var inView = _host.History.Samples().Where(s => s.At >= fromMono).ToList();
+        var all = _host.History.Samples();
+        var inView = all.Where(s => s.At >= fromMono).ToList();
+        int? threshold = (int?)_host.Settings.RssiThreshold;
+
+        // Anything older than the left edge means the app really was watching
+        // before the range began. Without it, the time before the first ever
+        // reading would be shaded as lost signal.
+        bool haveOlder = all.Count > 0 && all[0].At < fromMono;
+        // Silences, not Silence: "Silence" is the name of a drop-down in this
+        // window, and a type sharing a name with a control is the same trap
+        // this project already has written down for a translation helper
+        // called t().
+        var silences = Silences.Bands(inView, fromMono, nowMono, threshold,
+            _host.History.Downtimes(), _host.Settings.SilenceSeconds, haveOlder);
 
         DrawStrengthAxis(plotWidth, plotHeight);
         DrawTimeAxis(nowMono, nowWall, plotWidth, plotHeight);
+        DrawSilences(silences, fromMono, nowMono, plotWidth, plotHeight);
         DrawDowntime(fromMono, nowMono, plotWidth, plotHeight);
-        DrawSignal(inView, fromMono, nowMono, plotWidth, plotHeight);
+        DrawThreshold(threshold, plotWidth, plotHeight);
+        DrawSignal(inView, threshold, fromMono, nowMono, plotWidth, plotHeight);
         DrawLocks(fromMono, nowMono, plotWidth, plotHeight);
+        BuildLegend(threshold);
 
         var summary = ChartLayout.Summarise(inView, fromMono, nowMono);
         ChartSummary.Text = summary.Count == 0
@@ -186,14 +202,59 @@ public sealed partial class SettingsWindow
             {
                 Width = x2 - x1,
                 Height = plotHeight,
-                Fill = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255)),
+                Fill = DowntimeBrush,
             };
             Add(band, x1, AxisTop);
         }
     }
 
-    private void DrawSignal(IReadOnlyList<Sample> inView, double fromMono, double nowMono,
-        double plotWidth, double plotHeight)
+    /// <summary>
+    /// Shades the stretches the phone was not heard for, in two strengths: one
+    /// for an ordinary gap and one for a gap the screen would have been locked
+    /// for. It is what answers "why did it lock?" at a glance.
+    /// </summary>
+    private void DrawSilences(IReadOnlyList<SilenceBand> bands, double fromMono,
+        double nowMono, double plotWidth, double plotHeight)
+    {
+        foreach (var band in bands)
+        {
+            double x1 = AxisLeft + ChartLayout.X(band.From, fromMono, nowMono, plotWidth);
+            double x2 = AxisLeft + ChartLayout.X(band.To, fromMono, nowMono, plotWidth);
+            if (x2 - x1 < 1)
+                continue;
+
+            Add(new Rectangle
+            {
+                Width = x2 - x1,
+                Height = plotHeight,
+                Fill = band.LongEnoughToLock ? SilenceLockBrush : SilenceBrush,
+            }, x1, AxisTop);
+        }
+    }
+
+    /// <summary>
+    /// The sensitivity limit, when one is set. Without it the chart cannot
+    /// answer the question it exists for: a reading can be drawn and still not
+    /// have counted as the phone being here.
+    /// </summary>
+    private void DrawThreshold(int? threshold, double plotWidth, double plotHeight)
+    {
+        if (threshold is not int dbm)
+            return;
+
+        double y = AxisTop + ChartLayout.Y(dbm, plotHeight);
+        var line = NewLine(AxisLeft, y, AxisLeft + plotWidth, y, ThresholdBrush, 1.2);
+        line.StrokeDashArray = new DoubleCollection { 5, 4 };
+        Plot.Children.Add(line);
+
+        var label = NewLabel(Texts.Get("chart_threshold", dbm));
+        label.Foreground = ThresholdBrush;
+        label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        Add(label, AxisLeft + plotWidth - label.DesiredSize.Width - 4, y - 16);
+    }
+
+    private void DrawSignal(IReadOnlyList<Sample> inView, int? threshold,
+        double fromMono, double nowMono, double plotWidth, double plotHeight)
     {
         if (inView.Count == 0)
             return;
@@ -201,9 +262,22 @@ public sealed partial class SettingsWindow
         // One point per pixel column. Where a column holds no reading the line
         // is broken rather than bridged - a bridge over a gap would draw a
         // signal that was never there, and the gaps are the whole point.
-        var runs = new List<PointCollection>();
+        //
+        // The line also changes colour where the readings stop counting: with a
+        // threshold set, a weak packet is drawn but did NOT count as the phone
+        // being here. One colour for both would show a solid line through a
+        // stretch the app itself treated as silence.
+        var runs = new List<(PointCollection Points, bool Counts)>();
         var current = new PointCollection();
+        bool currentCounts = true;
         double secondsPerPixel = _range / plotWidth;
+
+        void Finish()
+        {
+            if (current.Count > 1)
+                runs.Add((current, currentCounts));
+            current = new PointCollection();
+        }
 
         for (int column = 0; column < (int)plotWidth; column++)
         {
@@ -211,26 +285,35 @@ public sealed partial class SettingsWindow
             var merged = SignalHistory.Merge(inView, from, from + secondsPerPixel);
             if (merged is not Column cell)
             {
-                if (current.Count > 1)
-                    runs.Add(current);
-                current = new PointCollection();
+                Finish();
                 continue;
             }
+
             // The strongest reading of the column: the axis is labelled "higher
             // is better", and the strongest is what decided whether the phone
             // counted as near.
-            current.Add(new Point(AxisLeft + column,
-                AxisTop + ChartLayout.Y(cell.Strongest, plotHeight)));
-        }
-        if (current.Count > 1)
-            runs.Add(current);
+            bool counts = threshold is null || cell.Strongest >= threshold;
+            var point = new Point(AxisLeft + column,
+                AxisTop + ChartLayout.Y(cell.Strongest, plotHeight));
 
-        foreach (var run in runs)
+            if (current.Count > 0 && counts != currentCounts)
+            {
+                // The point where it changes belongs to both runs, so the line
+                // stays joined instead of showing a one-pixel hole.
+                current.Add(point);
+                Finish();
+            }
+            currentCounts = counts;
+            current.Add(point);
+        }
+        Finish();
+
+        foreach (var (points, counts) in runs)
         {
             Plot.Children.Add(new Polyline
             {
-                Points = run,
-                Stroke = new SolidColorBrush(Color.FromArgb(255, 0x57, 0xD3, 0x8C)),
+                Points = points,
+                Stroke = counts ? SignalBrush : WeakBrush,
                 StrokeThickness = 1.8,
                 StrokeLineJoin = PenLineJoin.Round,
             });
@@ -240,7 +323,7 @@ public sealed partial class SettingsWindow
     private void DrawLocks(double fromMono, double nowMono, double plotWidth,
         double plotHeight)
     {
-        var brush = new SolidColorBrush(Color.FromArgb(200, 0xE0, 0x6C, 0x75));
+        var brush = LockBrush;
         foreach (double at in _host.History.Locks())
         {
             if (at < fromMono)
@@ -249,6 +332,123 @@ public sealed partial class SettingsWindow
             Plot.Children.Add(NewLine(x, AxisTop, x, AxisTop + plotHeight, brush, 1.5));
         }
     }
+
+    // -------------------------------------------------------------- colours
+
+    // Every colour the chart uses, named once. The legend is drawn from these
+    // same brushes rather than from copies of the values: a legend that can
+    // disagree with the picture is worse than none, and two lists of colours
+    // drift apart the first time one of them is adjusted.
+    private static readonly Brush SignalBrush =
+        new SolidColorBrush(Color.FromArgb(255, 0x57, 0xD3, 0x8C));
+    private static readonly Brush WeakBrush =
+        new SolidColorBrush(Color.FromArgb(255, 0x8A, 0x93, 0xA0));
+    private static readonly Brush SilenceBrush =
+        new SolidColorBrush(Color.FromArgb(46, 0xE8, 0xA3, 0x3D));
+    private static readonly Brush SilenceLockBrush =
+        new SolidColorBrush(Color.FromArgb(54, 0xE0, 0x6C, 0x75));
+    private static readonly Brush DowntimeBrush =
+        new SolidColorBrush(Color.FromArgb(40, 0xFF, 0xFF, 0xFF));
+    private static readonly Brush LockBrush =
+        new SolidColorBrush(Color.FromArgb(200, 0xE0, 0x6C, 0x75));
+    private static readonly Brush ThresholdBrush =
+        new SolidColorBrush(Color.FromArgb(255, 0xE8, 0xA3, 0x3D));
+
+    /// <summary>
+    /// The key to the picture: what each colour means. Built in code, because
+    /// the swatches have to BE the brushes above - a legend written in XAML
+    /// would be a second set of colours to keep in step.
+    /// </summary>
+    private void BuildLegend(int? threshold)
+    {
+        ChartLegend.Children.Clear();
+        ChartLegend.ColumnDefinitions.Clear();
+        ChartLegend.RowDefinitions.Clear();
+
+        var items = new List<(string Key, Brush Brush, string Shape)>
+        {
+            ("leg_signal", SignalBrush, "line"),
+            ("leg_gap", SilenceBrush, "band"),
+            ("leg_gap_lock", SilenceLockBrush, "band"),
+            ("leg_downtime", DowntimeBrush, "band"),
+            ("leg_locked", LockBrush, "upright"),
+        };
+        // Only when there is one: without a threshold nothing is ever drawn
+        // weak, and a key to a colour that is not in the picture sends the
+        // reader looking for it.
+        if (threshold is not null)
+        {
+            items.Insert(1, ("leg_weak", WeakBrush, "line"));
+            items.Add(("leg_threshold", ThresholdBrush, "dashed"));
+        }
+
+        const int columns = 2;
+        for (int c = 0; c < columns; c++)
+            ChartLegend.ColumnDefinitions.Add(new ColumnDefinition());
+        for (int r = 0; r * columns < items.Count; r++)
+            ChartLegend.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            var (key, brush, shape) = items[i];
+            var row = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 8,
+                Margin = new Thickness(0, 2, 12, 2),
+            };
+            row.Children.Add(Swatch(shape, brush));
+            row.Children.Add(new TextBlock
+            {
+                Text = Texts.Get(key),
+                FontSize = 12,
+                Opacity = 0.95,
+                TextWrapping = TextWrapping.Wrap,
+                VerticalAlignment = VerticalAlignment.Center,
+            });
+
+            Grid.SetColumn(row, i % columns);
+            Grid.SetRow(row, i / columns);
+            ChartLegend.Children.Add(row);
+        }
+    }
+
+    private static FrameworkElement Swatch(string shape, Brush brush) => shape switch
+    {
+        "band" => new Rectangle
+        {
+            Width = 16,
+            Height = 12,
+            Fill = brush,
+            VerticalAlignment = VerticalAlignment.Center,
+        },
+        "upright" => new Rectangle
+        {
+            Width = 2,
+            Height = 14,
+            Fill = brush,
+            Margin = new Thickness(7, 0, 7, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+        },
+        "dashed" => new Line
+        {
+            X1 = 0,
+            Y1 = 6,
+            X2 = 16,
+            Y2 = 6,
+            Stroke = brush,
+            StrokeThickness = 1.6,
+            StrokeDashArray = new DoubleCollection { 3, 2 },
+            VerticalAlignment = VerticalAlignment.Center,
+        },
+        _ => new Rectangle
+        {
+            Width = 16,
+            Height = 2,
+            Fill = brush,
+            VerticalAlignment = VerticalAlignment.Center,
+        },
+    };
 
     // ------------------------------------------------------------- helpers
 

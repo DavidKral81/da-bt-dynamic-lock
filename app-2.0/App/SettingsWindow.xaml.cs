@@ -243,7 +243,9 @@ public sealed partial class SettingsWindow : Window
             TitleSignal.Text = Texts.Get("nav_signal");
             TitlePhone.Text = Texts.Get("nav_phone");
             ChartTitle.Text = Texts.Get("chart_title");
-            ChartLegend.Text = Texts.Get("chart_legend");
+            // The legend is drawn, not written: BuildLegend() puts it together
+            // from the chart's own brushes, and DrawChart() calls it. Setting
+            // the language rebuilds it there.
             BuildRangeButtons();
             TitleLocking.Text = Texts.Get("nav_locking");
             TitleNetworks.Text = Texts.Get("nav_networks");

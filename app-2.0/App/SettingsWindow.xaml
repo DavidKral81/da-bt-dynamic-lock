@@ -325,8 +325,9 @@
                         </Grid>
                     </Border>
 
-                    <TextBlock x:Name="ChartLegend" Grid.Row="2" Text=""
-                               Style="{StaticResource CardHint}"/>
+                    <!-- Built in code: the swatches have to be the very brushes
+                         the chart draws with, not a second set of colours. -->
+                    <Grid x:Name="ChartLegend" Grid.Row="2"/>
                 </Grid>
 
                 <!-- ======== phone -->

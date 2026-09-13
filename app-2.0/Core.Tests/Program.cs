@@ -400,6 +400,72 @@ Check("...and finds the longest silence, including the tail", 50.0,
 Check("an empty range is all silence", 100.0,
     ChartLayout.Summarise(Array.Empty<Sample>(), 0, 100).LongestSilenceSeconds);
 
+// ---- the silence the chart shades --------------------------------------
+Console.WriteLine("\nStretches the phone went quiet for:");
+
+const double lockAfter = 45;
+const double now = 1000;
+
+static List<Sample> Heard(double from, double to, int rssi, double skipFrom = 0,
+    double skipTo = 0)
+{
+    var samples = new List<Sample>();
+    for (double t = from; t <= to; t += 1)
+        if (!(t >= skipFrom && t <= skipTo && skipTo > skipFrom))
+            samples.Add(new Sample(t, rssi));
+    return samples;
+}
+
+var none = Array.Empty<Downtime>();
+
+var steady = Heard(now - 300, now, -65);
+Check("a phone heard the whole time leaves nothing shaded", 0,
+    Silences.Bands(steady, now - 300, now, null, none, lockAfter, true).Count);
+
+// A minute of nothing, with the phone heard on both sides of it.
+var gap = Heard(now - 300, now, -65, now - 200, now - 140);
+var shaded = Silences.Bands(gap, now - 300, now, null, none, lockAfter, true);
+Check("a minute of nothing is one stretch", 1, shaded.Count);
+Check("...and it is long enough to have locked the screen", true,
+    shaded.Count == 1 && shaded[0].LongEnoughToLock);
+
+// Twenty seconds is a gap, but not one the screen would lock for.
+var blip = Heard(now - 300, now, -65, now - 200, now - 180);
+var blips = Silences.Bands(blip, now - 300, now, null, none, lockAfter, true);
+Check("twenty seconds counts as a gap", 1, blips.Count);
+Check("...but not as one that locks", false,
+    blips.Count == 1 && blips[0].LongEnoughToLock);
+
+// The same gap, with the app not running through it. Without this a stopped
+// app masquerades as the longest loss of signal - and that is the reading
+// somebody would go hunting a fault in.
+var stopped = new[] { new Downtime(now - 201, now - 139) };
+Check("a gap the app slept through is not the phone's fault", 0,
+    Silences.Bands(gap, now - 300, now, null, stopped, lockAfter, true).Count);
+
+// With a threshold, a weak reading does not count as the phone being here -
+// the same rule the app itself decides by.
+var weak = Heard(now - 300, now, -85);
+Check("readings below the threshold leave the range silent", 1,
+    Silences.Bands(weak, now - 300, now, -70, none, lockAfter, true).Count);
+Check("...and above it they do not", 0,
+    Silences.Bands(weak, now - 300, now, -90, none, lockAfter, true).Count);
+
+// Nothing recorded before the left edge means the app was not watching yet.
+var late = Heard(now - 100, now, -65);
+Check("time before the first ever reading is not shaded", 0,
+    Silences.Bands(late, now - 300, now, null, none, lockAfter, false).Count);
+Check("...but with older records behind it, it is", 1,
+    Silences.Bands(late, now - 300, now, null, none, lockAfter, true).Count);
+
+// 62 and not 60: the silence is measured from the last reading that arrived
+// to the first one after it, so it reaches a second either side of the minute
+// with nothing in it. Written down because the first version of this check
+// expected 60 and was wrong - the numbers the chart shows are these, not the
+// ones somebody had in mind while making up the data.
+Check("the longest of them is reported", 62.0,
+    Math.Round(Silences.Longest(shaded)));
+
 Console.WriteLine();
 if (failures.Count == 0)
 {

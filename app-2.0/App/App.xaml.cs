@@ -690,6 +690,15 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         double now = PhoneWatch.MonotonicSeconds();
         var wobble = new Random(1);     // fixed seed: the same picture every time
 
+        // The settings the pictures are taken with, so what they show does not
+        // depend on what a previous run happened to leave in the file. The
+        // threshold matters most: without one the chart draws no threshold line
+        // and no weak signal at all, so half the legend would be missing from
+        // every picture.
+        _settings.Target = SampleDevices[0].Name;
+        _settings.RssiThreshold = -80;
+        _settings.SilenceSeconds = 45;
+
         // The stretch the app was not running for. Named once and used by both
         // the band and the readings: a picture that draws signal THROUGH the
         // band says the app measured while it was not running, which is exactly
@@ -706,7 +715,14 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                 continue;
             if (back <= downFrom && back >= downTo)      // nothing was running
                 continue;
-            int rssi = -65 + wobble.Next(-9, 9);
+
+            // A stretch where the phone was audible but too weak to count: it
+            // is what the grey line and the amber band in the legend mean, and
+            // a picture without it cannot show either.
+            bool faint = back is < 760 and > 660;
+            int rssi = faint
+                ? -86 + wobble.Next(-3, 3)
+                : -65 + wobble.Next(-9, 9);
             _history.Add(at, rssi);
         }
         _history.Locked(now - 600);

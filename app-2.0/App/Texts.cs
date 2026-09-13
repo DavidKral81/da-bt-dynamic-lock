@@ -160,8 +160,14 @@ public static class Texts
         ["chart_summary"] = "{0} signálů · {1:F1}/min · medián {2} dBm · "
                           + "nejdelší ticho {3:F0} s",
         ["chart_no_signal"] = "V tomhle úseku není žádný signál.",
-        ["chart_legend"] = "Výš = silnější signál. Svislá čára je uzamknutí, "
-                         + "světlý pruh je doba, kdy aplikace neběžela.",
+        ["chart_threshold"] = "práh {0} dBm",
+        ["leg_signal"] = "signál (výš = lepší)",
+        ["leg_weak"] = "slabý — pod prahem, nepočítá se",
+        ["leg_gap"] = "telefon nebyl slyšet",
+        ["leg_gap_lock"] = "ticho dost dlouhé na zamknutí",
+        ["leg_downtime"] = "aplikace neběžela",
+        ["leg_locked"] = "uzamknuto",
+        ["leg_threshold"] = "práh citlivosti",
 
         // --- settings window: phone --------------------------------------
         ["card_phone"] = "Které zařízení hlídat",
@@ -324,8 +330,14 @@ public static class Texts
         ["chart_summary"] = "{0} signals · {1:F1}/min · median {2} dBm · "
                           + "longest silence {3:F0} s",
         ["chart_no_signal"] = "No signal at all in this range.",
-        ["chart_legend"] = "Higher means stronger. A vertical line is a lock, "
-                         + "a pale band is time the app was not running.",
+        ["chart_threshold"] = "threshold {0} dBm",
+        ["leg_signal"] = "signal (higher is better)",
+        ["leg_weak"] = "weak - below the threshold, not counted",
+        ["leg_gap"] = "the phone was not heard",
+        ["leg_gap_lock"] = "silence long enough to lock",
+        ["leg_downtime"] = "the app was not running",
+        ["leg_locked"] = "locked",
+        ["leg_threshold"] = "sensitivity threshold",
 
         // --- settings window: phone --------------------------------------
         ["card_phone"] = "Which device to watch",
