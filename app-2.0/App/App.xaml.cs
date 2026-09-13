@@ -44,17 +44,11 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     {
         _options = Options.Parse(Environment.GetCommandLineArgs());
 
-        // One instance only. The installer looks for this name too, so it is a
-        // constant rather than a literal - a renamed mutex once left the
-        // installer unable to notice the app was running. A dry run uses its
-        // own name, so it can be started beside the installed copy.
-        _onlyInstance = new Mutex(true, _options.MutexName, out bool mine);
-        if (!mine)
-        {
-            Exit();
-            return;
-        }
-
+        // The settings and the log come FIRST, before the check for a second
+        // copy. That order is deliberate: the check used to run first, so a
+        // second copy left no trace at all - no window, no message, not one
+        // line in the log. Reported 13.09.2026 as "it just would not start
+        // again", and there was nothing to look at.
         var (settings, problem) = Settings.Load(_options.SettingsPath);
         _settings = settings;
         Texts.Language = _settings.Language;
@@ -65,6 +59,30 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         // being read.
         if (problem is not null)
             _log.Write(problem);
+
+        // One instance only. The installer looks for this name too, so it is a
+        // constant rather than a literal - a renamed mutex once left the
+        // installer unable to notice the app was running. A dry run uses its
+        // own name, so it can be started beside the installed copy.
+        _onlyInstance = new Mutex(true, _options.MutexName, out bool mine);
+        if (!mine)
+        {
+            _log.Write("Another copy is already running - this one is stopping.");
+            // Told to the person, not just to the file. A copy that vanishes
+            // without a word is indistinguishable from one that crashed.
+            // Not in a batch run: a modal dialog there would wait forever for
+            // a click nobody is going to make.
+            if (!_options.Batch)
+                Native.MessageBoxW(0, Texts.Get("msg_already_running"), AppInfo.Name,
+                    Native.MB_OK | Native.MB_ICONINFORMATION | Native.MB_SETFOREGROUND);
+            Exit();
+            // Application.Exit() ends the message loop but leaves the process
+            // running - measured here on 13.09.2026. A copy that stays alive
+            // would hold the very mutex it just complained about.
+            Environment.Exit(0);
+            return;
+        }
+
         _log.Write($"{AppInfo.Name} {AppInfo.Version} starting.");
 
         _watch = new PhoneWatch();

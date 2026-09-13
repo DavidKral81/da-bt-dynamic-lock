@@ -89,6 +89,9 @@ public static class Texts
         ["foot_log"] = "Záznam",
 
         ["msg_no_signal"] = "Telefon se {0} min neozval – hlídání nefunguje.",
+        ["msg_already_running"] = "Da BT Dynamic Lock už běží.\n\nNajdeš ho jako "
+                                + "ikonu v oznamovací oblasti vpravo dole u hodin "
+                                + "(případně pod šipkou skrytých ikon).",
 
         // --- settings window: navigation ---------------------------------
         ["app_version"] = "verze {0}",
@@ -230,6 +233,9 @@ public static class Texts
         ["foot_log"] = "Log",
 
         ["msg_no_signal"] = "The phone has not been heard for {0} min - watching is not working.",
+        ["msg_already_running"] = "Da BT Dynamic Lock is already running.\n\nLook "
+                                + "for its icon in the notification area next to the "
+                                + "clock (it may be hidden under the arrow).",
 
         // --- settings window: navigation ---------------------------------
         ["app_version"] = "version {0}",

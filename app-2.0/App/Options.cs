@@ -65,6 +65,13 @@ public sealed record Options
     /// </summary>
     public string MutexName => DryRun ? AppInfo.MutexName + ".DryRun" : AppInfo.MutexName;
 
+    /// <summary>
+    /// A run with nobody at the keyboard: pictures, the self-check, or one that
+    /// quits on a timer. Such a run must never put up a modal dialog - it would
+    /// sit there waiting for a click that is never coming.
+    /// </summary>
+    public bool Batch => SelfCheck || ScreenshotFolder is not null || QuitAfterSeconds > 0;
+
     public string SettingsPath => Path.Combine(DataFolder, "config.json");
     public string LogPath => Path.Combine(DataFolder, "dyn_lock.log");
 

@@ -114,6 +114,18 @@ internal static class Native
     [DllImport("shell32.dll")]
     public static extern int Shell_NotifyIconGetRect(ref NOTIFYICONIDENTIFIER identifier, out RECT iconLocation);
 
+    // ---- message box ------------------------------------------------------
+    //
+    // The one place this app shows a modal dialog: when a second copy will not
+    // start. There is no tray icon to notify from yet at that point.
+
+    public const uint MB_OK = 0x00000000;
+    public const uint MB_ICONINFORMATION = 0x00000040;
+    public const uint MB_SETFOREGROUND = 0x00010000;
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern int MessageBoxW(nint hWnd, string text, string caption, uint type);
+
     // ---- balloon / notification ------------------------------------------
 
     public const uint NIF_INFO = 0x00000010;
