@@ -46,7 +46,41 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        _options = Options.Parse(Environment.GetCommandLineArgs());
+        // Anything that goes wrong while starting up is written down before the
+        // process dies. Without this a start that fails leaves NOTHING: WinUI
+        // turns an unhandled exception here into a silent stowed-exception exit
+        // code, with no window, no message and not one line in the log. That is
+        // indistinguishable from "it just would not start" - which this project
+        // has already been told once, and had nothing to look at.
+        try
+        {
+            Start();
+        }
+        catch (Exception e)
+        {
+            // _log may not exist yet if it was the settings that failed, so the
+            // fallback writes beside the executable.
+            try { _log?.Write($"Starting failed: {e}"); }
+            catch (Exception) { /* the log is not worth dying for */ }
+
+            try
+            {
+                File.AppendAllText(
+                    Path.Combine(AppInfo.ProgramFolder, "startup-error.txt"),
+                    $"{DateTime.Now:dd.MM.yyyy HH:mm:ss}  {e}\n\n");
+            }
+            catch (Exception) { /* nowhere to write - nothing more to try */ }
+
+            throw;
+        }
+    }
+
+    private void Start()
+    {
+        // Where an installation puts the program is handed in, because that is
+        // what tells a downloaded copy apart from an installed one.
+        _options = Options.Parse(Environment.GetCommandLineArgs(),
+            installedDir: InstallerWindow.Where().TargetDir);
 
         // The settings and the log come FIRST, before the check for a second
         // copy. That order is deliberate: the check used to run first, so a

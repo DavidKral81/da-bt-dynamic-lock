@@ -56,11 +56,22 @@ public sealed record Options
     /// </summary>
     public bool? Autostart { get; init; }
 
-    public static Options Parse(string[] argv)
+    /// <param name="processPath">The file this is running from. Handed in
+    /// rather than read here, so the rule that decides the role can be checked
+    /// without moving or renaming an executable.</param>
+    /// <param name="installedDir">Where an installation puts the program.
+    /// Running from anywhere else means this copy was downloaded, not
+    /// installed.</param>
+    public static Options Parse(string[] argv, string? processPath = null,
+        string? installedDir = null)
     {
+        processPath ??= Environment.ProcessPath;
+
         bool dryRun = argv.Contains("--dry-run");
         bool selfCheck = argv.Contains("--self-check");
         string? shots = ValueAfter(argv, "--screenshot");
+        double quitAfter = double.TryParse(ValueAfter(argv, "--quit-after"),
+            System.Globalization.CultureInfo.InvariantCulture, out double s) ? s : 0;
 
         bool? autostart = argv.Contains("--autostart-on") ? true
             : argv.Contains("--autostart-off") ? false
@@ -69,19 +80,24 @@ public sealed record Options
         // Setup, but never instead of a run that was asked for explicitly: a
         // picture or self-check run of a file that happens to be named setup
         // still has to take pictures.
-        bool otherJob = selfCheck || shots is not null || autostart is not null;
+        //
+        // A dry run and a timed run count as "asked for" too. Without that,
+        // "setup.exe --dry-run" would ask for administrator rights and offer to
+        // install - the opposite of what a dry run is for.
+        bool otherJob = dryRun || selfCheck || shots is not null
+            || autostart is not null || quitAfter > 0;
         SetupRole? role = otherJob ? null
             : argv.Contains("--uninstall") ? SetupRole.Uninstall
-            : argv.Contains("--install") || NameSaysSetup() ? SetupRole.Install
-            : null;
+            : argv.Contains("--install") || NotInstalledYet(processPath, installedDir)
+                ? SetupRole.Install
+                : null;
 
         return new Options
         {
             Setup = role,
             Autostart = autostart,
             DryRun = dryRun || selfCheck || shots is not null,
-            QuitAfterSeconds = double.TryParse(ValueAfter(argv, "--quit-after"),
-                System.Globalization.CultureInfo.InvariantCulture, out double s) ? s : 0,
+            QuitAfterSeconds = quitAfter,
             ScreenshotFolder = shots,
             SelfCheck = selfCheck,
             // A test run must never write into the installed app's settings or
@@ -123,17 +139,47 @@ public sealed record Options
     }
 
     /// <summary>
-    /// Whether the file this is running from is the setup copy.
+    /// Whether this copy is running from somewhere other than where an
+    /// installation puts it - which means it was downloaded, and a double-click
+    /// on it means "install me".
     ///
-    /// The role has to be readable from the NAME as well as from a switch:
-    /// what a person downloads is DaBTDynamicLock-setup.exe and what they do
-    /// with it is double-click it, with no switch at all. The shipped version
-    /// learned this the other way round, when an uninstaller opened by
-    /// double-click behaved as an installer.
+    /// It has to be decided WITHOUT a switch, because what a person does with a
+    /// downloaded file is double-click it.
+    ///
+    /// 🔴 And it is decided by LOCATION rather than by the file's name, which
+    /// was the first attempt. A WinUI 3 executable CANNOT BE RENAMED: it finds
+    /// its own XAML through resources keyed to the executable's name, so a
+    /// renamed copy dies on a XamlParseException before it draws anything.
+    /// Measured 13.09.2026 - a copy called DaBtDynamicLock-kopie.exe failed the
+    /// same way a copy called ...-setup.exe did, in both a single-file and a
+    /// multi-file publish, and copying the .deps.json and .runtimeconfig.json
+    /// across under the new name changed nothing.
+    ///
+    /// That matters far beyond the name on the download: installing means
+    /// putting THIS FILE in Program Files, so if it had to be renamed on the
+    /// way, the installed application would not start either.
     /// </summary>
-    private static bool NameSaysSetup() =>
-        Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "")
-            .Contains("setup", StringComparison.OrdinalIgnoreCase);
+    private static bool NotInstalledYet(string? processPath, string? installedDir)
+    {
+        if (processPath is null || installedDir is null)
+            return false;       // nothing to compare - assume the app, not setup
+
+        try
+        {
+            string here = Path.GetFullPath(Path.GetDirectoryName(processPath) ?? "")
+                .TrimEnd(Path.DirectorySeparatorChar);
+            string installed = Path.GetFullPath(installedDir)
+                .TrimEnd(Path.DirectorySeparatorChar);
+            return !string.Equals(here, installed, StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception e) when (e is ArgumentException or NotSupportedException
+            or PathTooLongException)
+        {
+            // An unreadable path is no reason to offer to install over
+            // somebody's working copy.
+            return false;
+        }
+    }
 
     /// <summary>
     /// Why the screenshot folder cannot be used, or null when it can.

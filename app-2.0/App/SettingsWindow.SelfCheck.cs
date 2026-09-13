@@ -177,6 +177,50 @@ public sealed partial class SettingsWindow
         Check("the chosen language is saved", "en", s => s.Language);
 
         LanguageChoice.SelectedItem = Texts.Languages.First(l => l.Code == "cs");
+
+        // ---- which role this copy is in -------------------------------------
+        //
+        // What a person does with a downloaded file is double-click it, with no
+        // switch at all, so a copy running from anywhere but its installed home
+        // offers to install itself. If this breaks, that double-click starts
+        // the application instead of the installer and nothing looks wrong.
+        //
+        // Checked here because it cannot be checked by running: starting the
+        // real setup asks for administrator rights and offers to install.
+        const string installed = @"C:\Program Files\Da BT Dynamic Lock";
+
+        void Role(string what, string from, string[] argv, SetupRole? wanted)
+        {
+            var got = Options.Parse(argv, from, installed).Setup;
+            lines.Add(got == wanted
+                ? $"  OK    {what}"
+                : $"  FAIL  {what}: wanted {Show(wanted)}, got {Show(got)}");
+        }
+
+        Role("a downloaded copy offers to install, with no switch",
+            @"C:\Users\Someone\Downloads\DaBtDynamicLock.exe",
+            Array.Empty<string>(), SetupRole.Install);
+        Role("the installed copy is the application, not an installer",
+            installed + @"\DaBtDynamicLock.exe", Array.Empty<string>(), null);
+        // A trailing slash and a different case must not turn the installed
+        // copy into an installer that overwrites itself.
+        Role("...and its folder is matched whatever the case or slash",
+            @"c:\program files\da bt dynamic lock\DaBtDynamicLock.exe",
+            Array.Empty<string>(), null);
+        Role("--uninstall removes, wherever it runs from",
+            installed + @"\DaBtDynamicLock.exe", new[] { "--uninstall" },
+            SetupRole.Uninstall);
+        Role("--install installs, wherever it runs from",
+            installed + @"\DaBtDynamicLock.exe", new[] { "--install" },
+            SetupRole.Install);
+        // A run asked for explicitly wins over the location. Without this,
+        // photographing or dry-running a fresh build would install it.
+        Role("a picture run of a downloaded copy takes pictures",
+            @"C:\Users\Someone\Downloads\DaBtDynamicLock.exe",
+            new[] { "--screenshot", @"C:\x" }, null);
+        Role("a dry run of a downloaded copy stays a dry run",
+            @"C:\Users\Someone\Downloads\DaBtDynamicLock.exe",
+            new[] { "--dry-run" }, null);
         lines.Add(NavOverview.Text == before
             ? "  OK    switching back restores the first language"
             : $"  FAIL  switching back left \"{NavOverview.Text}\"");
