@@ -83,7 +83,10 @@ public sealed partial class SettingsWindow
         Plot.Children.Clear();
 
         double width = Plot.ActualWidth;
-        double height = Plot.Height;
+        // Both measured, neither set in advance: the canvas takes the height
+        // left over on its page, so a number written here would either leave a
+        // gap below the chart or draw past the bottom of the card.
+        double height = Plot.ActualHeight;
         if (width < AxisLeft + 40 || height < AxisBottom + 40)
             return;
 
@@ -108,13 +111,21 @@ public sealed partial class SettingsWindow
         var summary = ChartLayout.Summarise(inView, fromMono, nowMono);
         ChartSummary.Text = summary.Count == 0
             ? Texts.Get("chart_no_signal")
-            : Texts.Get("chart_summary", summary.Count, $"{summary.PerMinute:F1}",
-                summary.MedianRssi, $"{summary.LongestSilenceSeconds:F0}");
+            // The numbers go over as numbers: rounding them into strings here
+            // would format them with the machine's culture, and the English
+            // summary on Czech Windows then read "27,2/min".
+            : Texts.Get("chart_summary", summary.Count, summary.PerMinute,
+                summary.MedianRssi, summary.LongestSilenceSeconds);
     }
 
     private void DrawStrengthAxis(double plotWidth, double plotHeight)
     {
-        foreach (int dbm in new[] { -50, -70, -90 })
+        // Every 10 dBm across the whole axis, as the shipped version draws it.
+        // Three lines were enough while the chart was 240 px tall; on a chart
+        // that fills the page they left the readings hanging in a third of an
+        // empty rectangle, because nothing showed that the axis carries on
+        // above -50 and below -90.
+        for (int dbm = ChartLayout.RssiTop; dbm >= ChartLayout.RssiBottom; dbm -= 10)
         {
             double y = AxisTop + ChartLayout.Y(dbm, plotHeight);
             Plot.Children.Add(NewLine(AxisLeft, y, AxisLeft + plotWidth, y, GridBrush));

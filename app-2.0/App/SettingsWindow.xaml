@@ -171,14 +171,22 @@
         </Grid>
 
         <!-- ========================================================== pages -->
-        <ScrollViewer Grid.Row="1" Grid.Column="1" Padding="24,0,24,24"
+        <ScrollViewer x:Name="PagesScroller" Grid.Row="1" Grid.Column="1"
+                      Padding="24,0,24,24"
                       VerticalScrollBarVisibility="Auto">
             <!-- Stretched up to a ceiling, not sized to fit: with Left the grid
                  shrank to whatever its content needed, so the cards came out a
                  different width on every page. Stacked blocks have to line up,
                  and the width is decided HERE, once, rather than by each card's
-                 own content. -->
-            <Grid x:Name="Pages" MaxWidth="640" HorizontalAlignment="Stretch">
+                 own content.
+
+                 MinHeight is the viewport's own height, so a page that wants to
+                 fill the window can. A scroller measures its content with
+                 unlimited height, so without this a page is only ever as tall as
+                 its content - which left the chart ending a third of the way
+                 down and the rest of the window empty. -->
+            <Grid x:Name="Pages" MaxWidth="640" HorizontalAlignment="Stretch"
+                  MinHeight="{Binding ViewportHeight, ElementName=PagesScroller}">
 
                 <!-- ======== overview -->
                 <StackPanel x:Name="PageOverview" Spacing="14">
@@ -268,11 +276,26 @@
                 </StackPanel>
 
                 <!-- ======== signal -->
-                <StackPanel x:Name="PageSignal" Spacing="14" Visibility="Collapsed">
+                <!-- A Grid, not a stack: the chart is the point of this page, so
+                     it takes the height that is left over rather than a number
+                     picked in advance. -->
+                <Grid x:Name="PageSignal" RowSpacing="14" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
                     <TextBlock x:Name="TitleSignal" Text="" FontSize="24" FontWeight="SemiBold"/>
 
-                    <Border Style="{StaticResource Card}">
-                        <StackPanel Spacing="10">
+                    <Border Grid.Row="1" Style="{StaticResource Card}" MinHeight="260">
+                        <Grid RowSpacing="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
                             <Grid ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -292,18 +315,19 @@
                                  whole picture is a polyline, a few grid lines and
                                  some rectangles, and a dependency would have to be
                                  restored before anything could be built. -->
-                            <Canvas x:Name="Plot" Height="240"
+                            <Canvas x:Name="Plot" Grid.Row="1"
                                     HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
                                     SizeChanged="OnPlotResized"/>
 
-                            <TextBlock x:Name="ChartSummary" Text=""
+                            <TextBlock x:Name="ChartSummary" Grid.Row="2" Text=""
                                        Style="{StaticResource CardHint}"/>
-                        </StackPanel>
+                        </Grid>
                     </Border>
 
-                    <TextBlock x:Name="ChartLegend" Text=""
+                    <TextBlock x:Name="ChartLegend" Grid.Row="2" Text=""
                                Style="{StaticResource CardHint}"/>
-                </StackPanel>
+                </Grid>
 
                 <!-- ======== phone -->
                 <StackPanel x:Name="PagePhone" Spacing="14" Visibility="Collapsed">

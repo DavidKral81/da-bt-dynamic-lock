@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace DaBtDynamicLock.App;
 
 /// <summary>
@@ -20,6 +22,18 @@ public static class Texts
     /// </summary>
     public static string Language { get; set; } = "cs";
 
+    /// <summary>
+    /// How numbers and dates inside a text are written. The INTERFACE language
+    /// decides it, never the machine's: on Czech Windows the English chart
+    /// summary came out as "27,2/min", because formatting fell back to whatever
+    /// culture the thread happened to carry.
+    /// </summary>
+    public static CultureInfo Culture =>
+        Language == "en" ? EnglishCulture : CzechCulture;
+
+    private static readonly CultureInfo CzechCulture = new("cs-CZ");
+    private static readonly CultureInfo EnglishCulture = new("en-GB");
+
     /// <summary>The text for a key, with {0}, {1}… filled in when values are given.</summary>
     public static string Get(string key, params object?[] values)
     {
@@ -36,7 +50,7 @@ public static class Texts
             return text;
         try
         {
-            return string.Format(text, values);
+            return string.Format(Culture, text, values);
         }
         catch (FormatException)
         {
@@ -140,11 +154,14 @@ public static class Texts
         ["range_1h"] = "1 h",
         ["range_8h"] = "8 h",
         ["range_1day"] = "1 den",
-        ["chart_summary"] = "{0} signálů · {1}/min · medián {2} dBm · "
-                          + "nejdelší ticho {3} s",
+        // The numbers are rounded HERE, in the text, not by the caller: a
+        // caller that hands over a ready-made string formats it with the
+        // machine's culture and the decimal mark stops following the language.
+        ["chart_summary"] = "{0} signálů · {1:F1}/min · medián {2} dBm · "
+                          + "nejdelší ticho {3:F0} s",
         ["chart_no_signal"] = "V tomhle úseku není žádný signál.",
         ["chart_legend"] = "Výš = silnější signál. Svislá čára je uzamknutí, "
-                         + "světlý pruh doba, kdy aplikace neběžela.",
+                         + "světlý pruh je doba, kdy aplikace neběžela.",
 
         // --- settings window: phone --------------------------------------
         ["card_phone"] = "Které zařízení hlídat",
@@ -300,8 +317,8 @@ public static class Texts
         ["range_1h"] = "1 h",
         ["range_8h"] = "8 h",
         ["range_1day"] = "1 day",
-        ["chart_summary"] = "{0} signals · {1}/min · median {2} dBm · "
-                          + "longest silence {3} s",
+        ["chart_summary"] = "{0} signals · {1:F1}/min · median {2} dBm · "
+                          + "longest silence {3:F0} s",
         ["chart_no_signal"] = "No signal at all in this range.",
         ["chart_legend"] = "Higher means stronger. A vertical line is a lock, "
                          + "a pale band is time the app was not running.",

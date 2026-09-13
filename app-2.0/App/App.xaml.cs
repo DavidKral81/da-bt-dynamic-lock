@@ -90,13 +90,22 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         _watch = new PhoneWatch();
 
         // The previous run's chart, and the gap while the app was not running.
-        var (notRunning, historyProblem) = HistoryStore.Load(_history, HistoryPath,
-            PhoneWatch.MonotonicSeconds(), Wall());
-        if (historyProblem is not null)
-            _log.Write(historyProblem);
-        if (notRunning is double minutes)
-            _log.Write($"The app was not running for {minutes:F0} min "
-                + "- marked as a gap in the chart.");
+        //
+        // A run that draws made-up data starts from an EMPTY chart: loading the
+        // stored one mixed real gaps and real readings into the pictures, so two
+        // runs an hour apart produced different charts and the picture could not
+        // be compared with the last one. Measured on 13.09.2026 - the Czech
+        // picture said 805 signals, the English one 408.
+        if (!MadeUpData)
+        {
+            var (notRunning, historyProblem) = HistoryStore.Load(_history, HistoryPath,
+                PhoneWatch.MonotonicSeconds(), Wall());
+            if (historyProblem is not null)
+                _log.Write(historyProblem);
+            if (notRunning is double minutes)
+                _log.Write($"The app was not running for {minutes:F0} min "
+                    + "- marked as a gap in the chart.");
+        }
 
         _scanner = new BleScanner(_watch, new ScannerSettings
         {
@@ -368,7 +377,6 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         Shutdown();
     }
 
-    /// <summary>Stops everything that is running, then quits.</summary>
     /// <summary>Where this run keeps the chart.</summary>
     private string HistoryPath => Path.Combine(_options.DataFolder, "history.json");
 
@@ -377,6 +385,11 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
 
     private void SaveHistory()
     {
+        // Made-up readings must not end up in the file a later run reads back:
+        // the chart would then show invented signal as if it had been measured.
+        if (MadeUpData)
+            return;
+
         string? problem = HistoryStore.Save(_history, HistoryPath,
             PhoneWatch.MonotonicSeconds(), Wall());
         if (problem is not null)
@@ -643,6 +656,13 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         double now = PhoneWatch.MonotonicSeconds();
         var wobble = new Random(1);     // fixed seed: the same picture every time
 
+        // The stretch the app was not running for. Named once and used by both
+        // the band and the readings: a picture that draws signal THROUGH the
+        // band says the app measured while it was not running, which is exactly
+        // what the band is there to deny. It looked like a drawing fault in the
+        // 13.09.2026 pictures and was made-up data contradicting itself.
+        const double downFrom = 400, downTo = 300;
+
         for (double back = 900; back > 0; back -= 2)
         {
             // A phone on the desk sits around -65 dBm and jumps by several dB
@@ -650,11 +670,13 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             double at = now - back;
             if (back is < 640 and > 560)     // a spell out of range
                 continue;
+            if (back <= downFrom && back >= downTo)      // nothing was running
+                continue;
             int rssi = -65 + wobble.Next(-9, 9);
             _history.Add(at, rssi);
         }
         _history.Locked(now - 600);
-        _history.NotRunning(now - 400, now - 300);
+        _history.NotRunning(now - downFrom, now - downTo);
     }
 
     /// <summary>Made-up data for the pictures, so nothing real ends up in one.</summary>

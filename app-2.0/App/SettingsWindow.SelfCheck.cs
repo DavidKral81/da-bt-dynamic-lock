@@ -125,12 +125,16 @@ public sealed partial class SettingsWindow
         }
 
         // ---- pages and language -----------------------------------------
-        Nav.SelectedIndex = 4;
+        // Chosen by its key, never by its position: the check used to set index
+        // 4, and adding the chart page in between moved "Application" to 5. It
+        // then failed as a change in the window, which is exactly the wrong
+        // place to look - nothing about that window was broken.
+        SelectPage("app");
         lines.Add(PageApp.Visibility == Visibility.Visible
                 && PageOverview.Visibility == Visibility.Collapsed
             ? "  OK    choosing a topic shows that page and hides the others"
             : "  FAIL  choosing a topic did not switch the page");
-        Nav.SelectedIndex = 0;
+        SelectPage("overview");
 
         // The flag is a drawing, not a button, so this is the one place a raw
         // handler call is honest: there is no property to set that would raise
@@ -149,6 +153,15 @@ public sealed partial class SettingsWindow
             : $"  FAIL  switching back left \"{NavOverview.Text}\"");
 
         return lines;
+    }
+
+    /// <summary>Shows the page with this key, the way clicking its topic would.</summary>
+    private void SelectPage(string key)
+    {
+        var item = Nav.Items.OfType<FrameworkElement>()
+            .FirstOrDefault(i => (i.Tag as string) == key);
+        if (item is not null)
+            Nav.SelectedItem = item;
     }
 
     /// <summary>Picks the entry with this value, the way a click on it would.</summary>
