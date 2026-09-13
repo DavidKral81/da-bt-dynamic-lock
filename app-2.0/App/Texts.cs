@@ -221,7 +221,6 @@ public static class Texts
         ["sw_active_hint"] = "Hlavní vypínač celé aplikace.",
         ["group_when"] = "Kdy zamknout",
         ["lbl_silence"] = "Ticho, po kterém se zamyká",
-        ["lbl_silence_hint"] = "Jak dlouho telefon nesmí být slyšet.",
         ["opt_seconds"] = "{0} sekund",
         ["lbl_range"] = "Dosah",
         ["lbl_range_hint"] = "Slabší signál, než je zvolený, se považuje "
@@ -231,7 +230,10 @@ public static class Texts
         ["opt_range_max"] = "Bez omezení",
         ["opt_range_longest"] = "{0} dBm – největší dosah",
         ["opt_range_shortest"] = "{0} dBm – nejmenší dosah",
-        ["opt_range_edge"] = "{0} dBm – obvyklá síla signálu z kapsy",
+        // Short because it has to fit the box. The longer wording came out cut
+        // off as "z kaps" - the same way the English one once read "a pocket
+        // meas". Czech is the longer language, so it sets the limit.
+        ["opt_range_edge"] = "{0} dBm – telefon v kapse",
         ["opt_range_plain"] = "{0} dBm",
         ["sw_idle_guard"] = "Nezamykat, když právě píšu nebo hýbu myší",
         ["sw_idle_guard_hint"] = "Pojistka pro případ, že telefon zmlkne "
@@ -242,7 +244,6 @@ public static class Texts
         ["opt_countdown_off"] = "Nezobrazovat",
         ["opt_countdown_from"] = "{0} sekund předem",
         ["lbl_position"] = "Kde se odpočet ukáže",
-        ["lbl_position_hint"] = "Měřeno od horního okraje obrazovky.",
         ["opt_from_top"] = "{0} % odshora",
         ["sw_primary_only"] = "Jen na hlavním monitoru",
         ["sw_primary_only_hint"] = "Jinak se odpočet ukáže na každé obrazovce.",
@@ -289,7 +290,6 @@ public static class Texts
         ["lbl_folder"] = "Kde záznam leží",
         ["act_open_folder"] = "Otevřít složku",
         ["lbl_version"] = "Verze {0}",
-        ["lbl_version_hint"] = "Nejnovější verzi uvádí stránka vydání.",
         ["link_updates"] = "Stránka vydání",
         ["link_project"] = "Projekt na GitHubu",
         ["link_phone_app"] = "Stáhnout aplikaci pro telefon",
@@ -462,7 +462,6 @@ public static class Texts
         ["sw_active_hint"] = "The main switch for the whole app.",
         ["group_when"] = "When to lock",
         ["lbl_silence"] = "Silence before locking",
-        ["lbl_silence_hint"] = "How long the phone has to go unheard.",
         ["opt_seconds"] = "{0} seconds",
         ["lbl_range"] = "Range",
         ["lbl_range_hint"] = "A signal weaker than the one chosen counts as the "
@@ -483,7 +482,6 @@ public static class Texts
         ["opt_countdown_off"] = "Do not show",
         ["opt_countdown_from"] = "{0} seconds ahead",
         ["lbl_position"] = "Where the countdown appears",
-        ["lbl_position_hint"] = "Measured from the top of the screen.",
         ["opt_from_top"] = "{0} % from the top",
         ["sw_primary_only"] = "On the main monitor only",
         ["sw_primary_only_hint"] = "Otherwise the countdown appears on every screen.",
@@ -529,7 +527,6 @@ public static class Texts
         ["lbl_folder"] = "Where the log is kept",
         ["act_open_folder"] = "Open the folder",
         ["lbl_version"] = "Version {0}",
-        ["lbl_version_hint"] = "The releases page carries the newest version.",
         ["link_updates"] = "Releases page",
         ["link_project"] = "Project on GitHub",
         ["link_phone_app"] = "Download the phone app",

@@ -346,8 +346,9 @@
                             </Grid.ColumnDefinitions>
                             <FontIcon Glyph="&#xE916;" FontSize="18" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Spacing="2">
+                                <!-- No explanation under it: the name and the
+                                     chosen value already say the whole thing. -->
                                 <TextBlock x:Name="LblSilence" Text="" Style="{StaticResource CardTitle}"/>
-                                <TextBlock x:Name="LblSilenceHint" Text="" Style="{StaticResource CardHint}"/>
                             </StackPanel>
                             <ComboBox x:Name="Silence" DisplayMemberPath="Label" Grid.Column="2" Width="280"
                                       VerticalAlignment="Center" SelectionChanged="OnSilenceChanged"/>
@@ -417,8 +418,9 @@
                             </Grid.ColumnDefinitions>
                             <FontIcon Glyph="&#xE7F4;" FontSize="18" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Spacing="2">
+                                <!-- "70 % from the top" needs no line under it
+                                     saying it is measured from the top. -->
                                 <TextBlock x:Name="LblPosition" Text="" Style="{StaticResource CardTitle}"/>
-                                <TextBlock x:Name="LblPositionHint" Text="" Style="{StaticResource CardHint}"/>
                             </StackPanel>
                             <ComboBox x:Name="Position" DisplayMemberPath="Label" Grid.Column="2" Width="280"
                                       VerticalAlignment="Center" SelectionChanged="OnPositionChanged"/>
@@ -595,8 +597,9 @@
                             </Grid.ColumnDefinitions>
                             <FontIcon Glyph="&#xE895;" FontSize="18" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Spacing="2">
+                                <!-- The link beside it is called "Releases
+                                     page", so a line pointing at it is noise. -->
                                 <TextBlock x:Name="LblVersion" Text="" Style="{StaticResource CardTitle}"/>
-                                <TextBlock x:Name="LblVersionHint" Text="" Style="{StaticResource CardHint}"/>
                             </StackPanel>
                             <HyperlinkButton x:Name="UpdatesLink" Grid.Column="2" Content=""
                                              VerticalAlignment="Center" Click="OnOpenReleases"/>

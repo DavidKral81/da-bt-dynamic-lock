@@ -225,7 +225,6 @@ public sealed partial class SettingsWindow : Window
             SwActiveHint.Text = Texts.Get("sw_active_hint");
             GroupWhen.Text = Texts.Get("group_when");
             LblSilence.Text = Texts.Get("lbl_silence");
-            LblSilenceHint.Text = Texts.Get("lbl_silence_hint");
             LblRange.Text = Texts.Get("lbl_range");
             LblRangeHint.Text = Texts.Get("lbl_range_hint");
             SwIdleGuard.Text = Texts.Get("sw_idle_guard");
@@ -234,7 +233,6 @@ public sealed partial class SettingsWindow : Window
             LblCountdown.Text = Texts.Get("lbl_countdown");
             LblCountdownHint.Text = Texts.Get("lbl_countdown_hint");
             LblPosition.Text = Texts.Get("lbl_position");
-            LblPositionHint.Text = Texts.Get("lbl_position_hint");
             SwPrimaryOnly.Text = Texts.Get("sw_primary_only");
             SwPrimaryOnlyHint.Text = Texts.Get("sw_primary_only_hint");
             CardPause.Text = Texts.Get("card_pause");
@@ -256,7 +254,6 @@ public sealed partial class SettingsWindow : Window
             FolderPath.Text = _host.DataFolder;
             OpenFolder.Content = Texts.Get("act_open_folder");
             LblVersion.Text = Texts.Get("lbl_version", AppInfo.Version);
-            LblVersionHint.Text = Texts.Get("lbl_version_hint");
             UpdatesLink.Content = Texts.Get("link_updates");
             ProjectLink.Content = Texts.Get("link_project");
             PhoneAppLink.Content = Texts.Get("link_phone_app");
