@@ -14,7 +14,7 @@ namespace DaBtDynamicLock.App;
 /// this app is a two second glance at the tray, so that is where it lives. The
 /// settings window is opened only when somebody asks for it.
 /// </summary>
-public partial class App : Application, IWatcherView, IWatcherSystem, IPanelHost
+public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
 {
     private Options _options = new();
     private Mutex? _onlyInstance;
@@ -25,6 +25,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IPanelHost
     private Watcher _loop = null!;
     private TrayIcon? _tray;
     private PanelWindow? _panel;
+    private SettingsWindow? _settingsWindow;
     private DispatcherQueueTimer? _timer;
     private CancellationTokenSource? _stopping;
 
@@ -134,6 +135,15 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IPanelHost
         var problems = new List<string>();
         try
         {
+            // A check nobody calls is worse than none - it only buys false
+            // calm. The phone app once carried exactly this check with no
+            // caller at all, so it runs here, in the pass made before a
+            // release, where its answer is actually read.
+            var missing = Texts.Missing().ToList();
+            if (missing.Count > 0)
+                problems.Add("these texts exist in one language only: "
+                    + string.Join(", ", missing));
+
             await Task.Delay(TimeSpan.FromSeconds(1));      // let the first tick run
 
             // The loop is stopped for the rest of this. It ticks twice a second
@@ -148,11 +158,19 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IPanelHost
             // above - a picture must not carry anybody's real device either.
             _watch.Record(-62, _settings.ForWatching());
             LastLockedAt = DateTime.Today.AddHours(9).AddMinutes(41);
+            // A made-up device to be watching, so the overview shows a working
+            // setup rather than "none chosen". It goes into the dry run's own
+            // settings file, never the installed app's.
+            _settings.Target = SampleDevices[0].Name;
             _loop.Tick();
 
             foreach (string language in new[] { "cs", "en" })
             {
                 Texts.Language = language;
+                // Not just the field: windows already built keep the labels
+                // they were built with. Setting the field alone produced an
+                // "English" picture of a window that was entirely in Czech.
+                LanguageChanged();
 
                 if (_tray?.TryGetRect(out Native.RECT rect) == true && _panel is not null)
                 {
@@ -166,6 +184,24 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IPanelHost
                 {
                     problems.Add("the tray icon's rectangle could not be read, "
                         + "so the panel could not be photographed");
+                }
+
+                // Every page of the settings window, not just the first: the
+                // look is checked by LOOKING, and a page nobody photographs is
+                // a page nobody checks. Czech and English both, because Czech
+                // is the longer language and sets the widths.
+                OpenSettingsWindow();
+                if (_settingsWindow is not null)
+                {
+                    for (int page = 0; page < _settingsWindow.PageCount; page++)
+                    {
+                        _settingsWindow.ShowPage(page);
+                        await Task.Delay(400);
+                        Note(problems, Screenshot.Save(_settingsWindow.Handle,
+                            Path.Combine(folder,
+                                $"settings-{page + 1}-{_settingsWindow.PageName}-{language}.bmp")));
+                    }
+                    _settingsWindow.HideWindow();
                 }
 
                 ShowCountdown(9);
@@ -221,6 +257,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IPanelHost
         _stopping?.Cancel();
         HideCountdown();
         _panel?.Hide();
+        _settingsWindow?.HideWindow();
         _tray?.Dispose();
         _log.Write("Stopped.");
         Exit();
@@ -321,6 +358,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IPanelHost
 
         if (_panel?.IsShown == true)
             _panel.Refresh();
+        _settingsWindow?.RefreshIfShown();
     }
 
     public void WarnNoSignal(int minutes)
@@ -336,6 +374,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IPanelHost
     {
         if (_panel?.IsShown == true)
             _panel.Refresh();
+        _settingsWindow?.RefreshIfShown();
     }
 
     // ---------------------------------------------------------- IWatcherSystem
@@ -350,11 +389,16 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IPanelHost
 
     public void RestartScanner() => _scanner.RequestRestart();
 
-    // --------------------------------------------------------------- IPanelHost
+    // --------------------------------------------------------------- IAppHost
 
     public void SaveSettings()
     {
-        string? problem = _settings.Save(AppInfo.SettingsPath);
+        // The path THIS RUN uses, never AppInfo's. A dry run loads its own
+        // settings but was writing back to the installed app's file, so a flip
+        // of the network switch during a screenshot run would have overwritten
+        // somebody's working config - with a made-up network, and with the
+        // trusted-network pause switched ON, which turns protection off.
+        string? problem = _settings.Save(_options.SettingsPath);
         if (problem is not null)
             _log.Write(problem);
     }
@@ -381,14 +425,41 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IPanelHost
             _watch.Disarm();
     }
 
+    public string DataFolder => _options.DataFolder;
+
     public void OpenSettingsWindow()
     {
-        // The settings window is the next piece of work. Saying so in the log
-        // beats a button that silently does nothing.
-        _log.Write("The settings window was asked for - it is not built yet.");
+        // Built on first use and kept afterwards: most runs never open it, and
+        // keeping it means reopening lands on the page last looked at.
+        _settingsWindow ??= new SettingsWindow(this);
+        _settingsWindow.ShowWindow();
     }
 
-    WifiConnection? IPanelHost.CurrentNetwork()
+    public void LanguageChanged()
+    {
+        // The tooltip is built from a key and remembered as finished text, so
+        // it has to be forced to rebuild - a service that kept rendered status
+        // text is on this project's list of repeated faults.
+        _tip = "";
+        if (Latest is not null)
+            ShowStatus(_icon, Latest, _watch.Rssi);
+        _panel?.Refresh();
+        _settingsWindow?.LanguageChanged();
+    }
+
+    public void Report(string problem) => _log.Write(problem);
+
+    public void QuitApp()
+    {
+        _log.Write("Quitting, asked for by the user.");
+        Shutdown();
+        // Shutdown() only ends the message loop for an interactive run, which
+        // is not enough when the user asked the app to go away: the process has
+        // to be gone, or the tray icon comes back on the next status.
+        Environment.Exit(0);
+    }
+
+    WifiConnection? IAppHost.CurrentNetwork()
     {
         // A picture is shared far more easily than a log, and the real network
         // name and router address have no business being in one. The log keeps
@@ -401,9 +472,24 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IPanelHost
         return reading.Ok ? reading.Value : null;
     }
 
+    IReadOnlyList<NearbyDevice> IAppHost.NearbyDevices() =>
+        _options.ScreenshotFolder is not null ? SampleDevices : _watch.NearbyList();
+
     /// <summary>Made-up data for the pictures, so nothing real ends up in one.</summary>
     private static readonly WifiConnection SampleNetwork =
         new("Wi-Fi doma", "AA:BB:CC:DD:EE:FF");
+
+    /// <summary>
+    /// Made-up devices for the pictures. Names a maker would broadcast, not
+    /// anybody's - the review on 12.09.2026 caught the preview drawing the real
+    /// network, and a device name gives away just as much.
+    /// </summary>
+    private static readonly NearbyDevice[] SampleDevices =
+    {
+        new("My Phone", -62, 0),
+        new("Headphones", -74, 0),
+        new("Living room TV", -88, 23),
+    };
 
     // ------------------------------------------------------------------ tray
 

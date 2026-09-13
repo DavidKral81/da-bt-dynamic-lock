@@ -9,13 +9,25 @@ using WinRT.Interop;
 
 namespace DaBtDynamicLock.App;
 
-/// <summary>What the panel needs from the running app, and what it asks it to do.</summary>
-public interface IPanelHost
+/// <summary>
+/// What the windows need from the running app, and what they ask it to do.
+///
+/// One interface for the panel and the settings window rather than one each:
+/// they ask for the same things, and two of them would drift apart.
+/// </summary>
+public interface IAppHost
 {
     Settings Settings { get; }
     PhoneWatch Watch { get; }
     Decision? Latest { get; }
     DateTime? LastLockedAt { get; }
+
+    /// <summary>
+    /// Where THIS run keeps its settings and log. Asked for rather than taken
+    /// from AppInfo, so a dry run opens its own folder and not the installed
+    /// app's - the same split the settings file has to make.
+    /// </summary>
+    string DataFolder { get; }
 
     void SaveSettings();
     void PauseFor(TimeSpan how);
@@ -23,8 +35,25 @@ public interface IPanelHost
     void LockNow();
     void OpenSettingsWindow();
 
+    /// <summary>Redraw everything that carries text - the tray tip, the panel.</summary>
+    void LanguageChanged();
+
+    /// <summary>Puts something in the log from a window that has no log of its own.</summary>
+    void Report(string problem);
+
+    /// <summary>Stops everything and quits.</summary>
+    void QuitApp();
+
     /// <summary>The network in use, or null when there is none or it cannot be read.</summary>
     WifiConnection? CurrentNetwork();
+
+    /// <summary>
+    /// The devices heard recently. Asked of the host rather than read straight
+    /// off PhoneWatch so that a picture run can hand over made-up ones: a
+    /// screenshot is shared far more easily than a log, and somebody's actual
+    /// phone has no business being in one.
+    /// </summary>
+    IReadOnlyList<NearbyDevice> NearbyDevices();
 }
 
 /// <summary>
@@ -49,7 +78,7 @@ public sealed partial class PanelWindow : Window
     /// <summary>How long the pause button pauses for.</summary>
     private static readonly TimeSpan PauseLength = TimeSpan.FromMinutes(15);
 
-    private readonly IPanelHost _host;
+    private readonly IAppHost _host;
 
     /// <summary>
     /// True while the panel is filling its own controls in. The network switch
@@ -61,7 +90,7 @@ public sealed partial class PanelWindow : Window
     public nint Handle { get; }
     public bool IsShown { get; private set; }
 
-    public PanelWindow(IPanelHost host)
+    public PanelWindow(IAppHost host)
     {
         _host = host;
         InitializeComponent();
@@ -250,7 +279,7 @@ public sealed partial class PanelWindow : Window
         {
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
-                FileName = AppInfo.DataFolder,
+                FileName = _host.DataFolder,
                 UseShellExecute = true,
             });
         }

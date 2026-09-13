@@ -1,0 +1,522 @@
+﻿<Window
+    x:Class="DaBtDynamicLock.App.SettingsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <!-- The settings window, laid out the way the approved mockup shows it:
+         topics down the left, ONE COLUMN OF CARDS on each page.
+
+         One column is not a style choice. The 1.5 window put the cards in a
+         shared two-column grid, so a tall card on the left stretched the row
+         and left a hole under the short one on the right - a fault that came
+         back three times, the last one found by the user. With one column per
+         page it has nowhere to come from.
+
+         No text is written in here. Every label is set in ApplyTexts(), so the
+         two languages have exactly one place to be filled in from and a label
+         that gets forgotten shows up empty rather than stuck in Czech. -->
+
+    <Grid x:Name="Root" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+        <!-- On the ROOT GRID, not on the Window: a WinUI 3 Window is not a
+             FrameworkElement and has no Resources of its own. -->
+        <Grid.Resources>
+            <Style x:Key="Card" TargetType="Border">
+                <Setter Property="Background"
+                        Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+                <Setter Property="BorderBrush"
+                        Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="Padding" Value="16,14"/>
+            </Style>
+            <Style x:Key="CardTitle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
+            <!-- 0.95, not the 0.75 that looks tasteful in a mockup: faint grey
+                 on a dark ground is the one thing this project is told never to
+                 ship. -->
+            <Style x:Key="CardHint" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Opacity" Value="0.95"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
+            <Style x:Key="GroupHead" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Margin" Value="2,8,0,-6"/>
+            </Style>
+        </Grid.Resources>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ===================================================== top strip -->
+        <!-- The flags sit top right, as they do in the app, the installer and
+             the phone. Outside the scrolling area, so they stay put. -->
+        <Grid Grid.Row="0" Grid.ColumnSpan="2" Padding="20,14,20,10" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock x:Name="AppName" Text="" FontSize="15" FontWeight="SemiBold"
+                       VerticalAlignment="Center"/>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10"
+                        VerticalAlignment="Center">
+                <!-- Drawn rather than lettered: a flag is readable to somebody
+                     who installed a language they cannot read. The size is not
+                     negotiable either - below about 30x20 the Union Jack turns
+                     into a red smudge, the same lesson the Tk checkboxes
+                     taught. The active one is marked by the bar UNDER it; Tk
+                     could not dim the other one and one way of marking it
+                     across the whole project beats two. -->
+                <StackPanel x:Name="FlagCs" Spacing="3" Tag="cs"
+                            PointerPressed="OnFlagPressed">
+                    <Canvas Width="30" Height="20">
+                        <Rectangle Width="30" Height="10" Fill="#FFFFFF"/>
+                        <Rectangle Width="30" Height="10" Canvas.Top="10" Fill="#D7141A"/>
+                        <Polygon Points="0,0 15,10 0,20" Fill="#11457E"/>
+                        <Rectangle Width="30" Height="20" Stroke="#40808080" StrokeThickness="1"/>
+                    </Canvas>
+                    <Rectangle x:Name="FlagCsMark" Height="3" RadiusX="1.5" RadiusY="1.5"
+                               Fill="{ThemeResource AccentFillColorDefaultBrush}"/>
+                </StackPanel>
+
+                <StackPanel x:Name="FlagEn" Spacing="3" Tag="en"
+                            PointerPressed="OnFlagPressed">
+                    <Canvas Width="30" Height="20">
+                        <Rectangle Width="30" Height="20" Fill="#012169"/>
+                        <!-- white diagonals, then the red ones on top, then the
+                             upright cross - the order the real flag is built in -->
+                        <Path Fill="#FFFFFF" Data="M0,0 L9,0 L30,14 L30,20 L21,20 L0,6 Z"/>
+                        <Path Fill="#FFFFFF" Data="M30,0 L30,6 L9,20 L0,20 L0,14 L21,0 Z"/>
+                        <Path Fill="#C8102E" Data="M0,0 L5,0 L30,16.5 L30,20 L25,20 L0,3.5 Z"/>
+                        <Path Fill="#C8102E" Data="M30,0 L30,3.5 L5,20 L0,20 L0,16.5 L25,0 Z"/>
+                        <Rectangle Width="30" Height="7" Canvas.Top="6.5" Fill="#FFFFFF"/>
+                        <Rectangle Width="8" Height="20" Canvas.Left="11" Fill="#FFFFFF"/>
+                        <Rectangle Width="30" Height="4" Canvas.Top="8" Fill="#C8102E"/>
+                        <Rectangle Width="5" Height="20" Canvas.Left="12.5" Fill="#C8102E"/>
+                        <Rectangle Width="30" Height="20" Stroke="#40808080" StrokeThickness="1"/>
+                    </Canvas>
+                    <Rectangle x:Name="FlagEnMark" Height="3" RadiusX="1.5" RadiusY="1.5"
+                               Fill="{ThemeResource AccentFillColorDefaultBrush}"/>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+        <!-- ===================================================== navigation -->
+        <Grid Grid.Row="1" Grid.Column="0" Width="212" Margin="12,0,0,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Selection is read from the item's Tag, never from its label:
+                 deciding anything from displayed text breaks the moment the
+                 language changes, and this project has that on its list of
+                 repeated faults. -->
+            <ListView x:Name="Nav" SelectionMode="Single"
+                      SelectionChanged="OnPageChosen">
+                <ListViewItem Tag="overview">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <FontIcon Glyph="&#xE9D9;" FontSize="16"/>
+                        <TextBlock x:Name="NavOverview" Text="" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </ListViewItem>
+                <ListViewItem Tag="phone">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <FontIcon Glyph="&#xE8EA;" FontSize="16"/>
+                        <TextBlock x:Name="NavPhone" Text="" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </ListViewItem>
+                <ListViewItem Tag="locking">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <FontIcon Glyph="&#xE72E;" FontSize="16"/>
+                        <TextBlock x:Name="NavLocking" Text="" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </ListViewItem>
+                <ListViewItem Tag="networks">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <FontIcon Glyph="&#xE701;" FontSize="16"/>
+                        <TextBlock x:Name="NavNetworks" Text="" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </ListViewItem>
+                <ListViewItem Tag="app">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <FontIcon Glyph="&#xE713;" FontSize="16"/>
+                        <TextBlock x:Name="NavApp" Text="" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </ListViewItem>
+            </ListView>
+
+            <TextBlock x:Name="NavFoot" Grid.Row="1" Text="" FontSize="12" Opacity="0.9"
+                       Margin="16,10,0,0"/>
+        </Grid>
+
+        <!-- ========================================================== pages -->
+        <ScrollViewer Grid.Row="1" Grid.Column="1" Padding="24,0,24,24"
+                      VerticalScrollBarVisibility="Auto">
+            <!-- Stretched up to a ceiling, not sized to fit: with Left the grid
+                 shrank to whatever its content needed, so the cards came out a
+                 different width on every page. Stacked blocks have to line up,
+                 and the width is decided HERE, once, rather than by each card's
+                 own content. -->
+            <Grid x:Name="Pages" MaxWidth="640" HorizontalAlignment="Stretch">
+
+                <!-- ======== overview -->
+                <StackPanel x:Name="PageOverview" Spacing="14">
+                    <TextBlock x:Name="TitleOverview" Text="" FontSize="24" FontWeight="SemiBold"/>
+
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnSpacing="18">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Grid Width="104" Height="104" VerticalAlignment="Top">
+                                <Ellipse Width="104" Height="104" StrokeThickness="8"
+                                         Stroke="{ThemeResource ControlStrongStrokeColorDisabledBrush}"/>
+                                <Ellipse x:Name="Ring" Width="104" Height="104" StrokeThickness="8"
+                                         Stroke="#22A050" StrokeDashCap="Round"
+                                         StrokeDashArray="0,999" RenderTransformOrigin="0.5,0.5">
+                                    <Ellipse.RenderTransform>
+                                        <RotateTransform Angle="-90"/>
+                                    </Ellipse.RenderTransform>
+                                </Ellipse>
+                                <StackPanel VerticalAlignment="Center" Spacing="1">
+                                    <TextBlock x:Name="RingValue" Text="" FontSize="20"
+                                               FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="RingOf" Text="" FontSize="11" Opacity="0.95"
+                                               HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel Grid.Column="1" Spacing="6">
+                                <TextBlock x:Name="StateLine" Text="" FontSize="22"
+                                           FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                <TextBlock x:Name="StateWhy" Text="" FontSize="13" Opacity="0.95"
+                                           TextWrapping="Wrap"/>
+
+                                <Grid x:Name="Readout" ColumnSpacing="20" RowSpacing="10"
+                                      Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <StackPanel Grid.Row="0" Grid.Column="0">
+                                        <TextBlock x:Name="KeyPhone" Text="" FontSize="11" Opacity="0.95"/>
+                                        <TextBlock x:Name="ValPhone" Text="" FontSize="14"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="0" Grid.Column="1">
+                                        <TextBlock x:Name="KeySignal" Text="" FontSize="11" Opacity="0.95"/>
+                                        <TextBlock x:Name="ValSignal" Text="" FontSize="14"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="1" Grid.Column="0">
+                                        <TextBlock x:Name="KeyNetwork" Text="" FontSize="11" Opacity="0.95"/>
+                                        <TextBlock x:Name="ValNetwork" Text="" FontSize="14"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="1" Grid.Column="1">
+                                        <TextBlock x:Name="KeyLastLock" Text="" FontSize="11" Opacity="0.95"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock x:Name="ValLastLock" Text="" FontSize="14"
+                                                       VerticalAlignment="Center"/>
+                                            <!-- The log link stands beside "last locked" on
+                                                 purpose: the log answers "was that lock
+                                                 deserved?", which is asked exactly here. -->
+                                            <HyperlinkButton x:Name="LogLink" Content="" FontSize="13"
+                                                             Padding="2,0" Click="OnOpenLogFolder"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="Pause15" Content="" Click="OnPause15" CornerRadius="14"
+                                Padding="14,7"/>
+                        <Button x:Name="Pause60" Content="" Click="OnPause60" CornerRadius="14"
+                                Padding="14,7"/>
+                        <Button x:Name="PauseStop" Content="" Click="OnEndPause" CornerRadius="14"
+                                Padding="14,7"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- ======== phone -->
+                <StackPanel x:Name="PagePhone" Spacing="14" Visibility="Collapsed">
+                    <TextBlock x:Name="TitlePhone" Text="" FontSize="24" FontWeight="SemiBold"/>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel Spacing="4">
+                            <TextBlock x:Name="CardPhone" Text="" Style="{StaticResource CardTitle}"/>
+                            <TextBlock x:Name="CardPhoneHint" Text="" Style="{StaticResource CardHint}"/>
+                            <!-- Filled from the live list. Redrawn only when what
+                                 it shows actually changes, and the signature of
+                                 what is drawn lives ON this panel, so it cannot
+                                 outlive the rows it describes. -->
+                            <StackPanel x:Name="DeviceList" Spacing="2" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel Spacing="4">
+                            <TextBlock x:Name="CardGone" Text="" Style="{StaticResource CardTitle}"/>
+                            <TextBlock x:Name="CardGoneHint" Text="" Style="{StaticResource CardHint}"/>
+                            <ComboBox x:Name="WarnAfter" DisplayMemberPath="Label" Margin="0,8,0,0" MinWidth="260"
+                                      SelectionChanged="OnWarnAfterChanged"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ======== locking -->
+                <StackPanel x:Name="PageLocking" Spacing="14" Visibility="Collapsed">
+                    <TextBlock x:Name="TitleLocking" Text="" FontSize="24" FontWeight="SemiBold"/>
+
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE72E;" FontSize="18" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock x:Name="SwActive" Text="" Style="{StaticResource CardTitle}"/>
+                                <TextBlock x:Name="SwActiveHint" Text="" Style="{StaticResource CardHint}"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="Active" Grid.Column="2" OnContent="" OffContent=""
+                                          MinWidth="0" VerticalAlignment="Center"
+                                          Toggled="OnActiveToggled"/>
+                        </Grid>
+                    </Border>
+
+                    <TextBlock x:Name="GroupWhen" Text="" Style="{StaticResource GroupHead}"/>
+
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE916;" FontSize="18" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock x:Name="LblSilence" Text="" Style="{StaticResource CardTitle}"/>
+                                <TextBlock x:Name="LblSilenceHint" Text="" Style="{StaticResource CardHint}"/>
+                            </StackPanel>
+                            <ComboBox x:Name="Silence" DisplayMemberPath="Label" Grid.Column="2" Width="280"
+                                      VerticalAlignment="Center" SelectionChanged="OnSilenceChanged"/>
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE704;" FontSize="18" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock x:Name="LblRange" Text="" Style="{StaticResource CardTitle}"/>
+                                <TextBlock x:Name="LblRangeHint" Text="" Style="{StaticResource CardHint}"/>
+                            </StackPanel>
+                            <ComboBox x:Name="Range" DisplayMemberPath="Label" Grid.Column="2" Width="280"
+                                      VerticalAlignment="Center" SelectionChanged="OnRangeChanged"/>
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE7C4;" FontSize="18" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock x:Name="SwIdleGuard" Text="" Style="{StaticResource CardTitle}"/>
+                                <TextBlock x:Name="SwIdleGuardHint" Text="" Style="{StaticResource CardHint}"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="IdleGuard" Grid.Column="2" OnContent="" OffContent=""
+                                          MinWidth="0" VerticalAlignment="Center"
+                                          Toggled="OnIdleGuardToggled"/>
+                        </Grid>
+                    </Border>
+
+                    <TextBlock x:Name="GroupCountdown" Text="" Style="{StaticResource GroupHead}"/>
+
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE917;" FontSize="18" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock x:Name="LblCountdown" Text="" Style="{StaticResource CardTitle}"/>
+                                <TextBlock x:Name="LblCountdownHint" Text="" Style="{StaticResource CardHint}"/>
+                            </StackPanel>
+                            <ComboBox x:Name="CountdownFrom" DisplayMemberPath="Label" Grid.Column="2" Width="280"
+                                      VerticalAlignment="Center" SelectionChanged="OnCountdownChanged"/>
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE7F4;" FontSize="18" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock x:Name="LblPosition" Text="" Style="{StaticResource CardTitle}"/>
+                                <TextBlock x:Name="LblPositionHint" Text="" Style="{StaticResource CardHint}"/>
+                            </StackPanel>
+                            <ComboBox x:Name="Position" DisplayMemberPath="Label" Grid.Column="2" Width="280"
+                                      VerticalAlignment="Center" SelectionChanged="OnPositionChanged"/>
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE7F8;" FontSize="18" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock x:Name="SwPrimaryOnly" Text="" Style="{StaticResource CardTitle}"/>
+                                <TextBlock x:Name="SwPrimaryOnlyHint" Text="" Style="{StaticResource CardHint}"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="PrimaryOnly" Grid.Column="2" OnContent="" OffContent=""
+                                          MinWidth="0" VerticalAlignment="Center"
+                                          Toggled="OnPrimaryOnlyToggled"/>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!-- ======== networks -->
+                <StackPanel x:Name="PageNetworks" Spacing="14" Visibility="Collapsed">
+                    <TextBlock x:Name="TitleNetworks" Text="" FontSize="24" FontWeight="SemiBold"/>
+
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE701;" FontSize="18" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock x:Name="SwTrusted" Text="" Style="{StaticResource CardTitle}"/>
+                                <TextBlock x:Name="SwTrustedHint" Text="" Style="{StaticResource CardHint}"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="TrustedOn" Grid.Column="2" OnContent="" OffContent=""
+                                          MinWidth="0" VerticalAlignment="Center"
+                                          Toggled="OnTrustedToggled"/>
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel Spacing="4">
+                            <TextBlock x:Name="CardNetworks" Text="" Style="{StaticResource CardTitle}"/>
+                            <TextBlock x:Name="CardNetworksHint" Text="" Style="{StaticResource CardHint}"/>
+                            <StackPanel x:Name="NetworkList" Spacing="2" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ======== app -->
+                <StackPanel x:Name="PageApp" Spacing="14" Visibility="Collapsed">
+                    <TextBlock x:Name="TitleApp" Text="" FontSize="24" FontWeight="SemiBold"/>
+
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE9D5;" FontSize="18" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock x:Name="SwLog" Text="" Style="{StaticResource CardTitle}"/>
+                                <TextBlock x:Name="SwLogHint" Text="" Style="{StaticResource CardHint}"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="LogOn" Grid.Column="2" OnContent="" OffContent=""
+                                          MinWidth="0" VerticalAlignment="Center"
+                                          Toggled="OnLogToggled"/>
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE8B7;" FontSize="18" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock x:Name="LblFolder" Text="" Style="{StaticResource CardTitle}"/>
+                                <!-- The path is shown, not just linked: it is what
+                                     somebody attaches to a fault report. -->
+                                <TextBlock x:Name="FolderPath" Text="" Style="{StaticResource CardHint}"
+                                           IsTextSelectionEnabled="True" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <Button x:Name="OpenFolder" Grid.Column="2" Content=""
+                                    VerticalAlignment="Center" Click="OnOpenLogFolder"/>
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE895;" FontSize="18" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock x:Name="LblVersion" Text="" Style="{StaticResource CardTitle}"/>
+                                <TextBlock x:Name="LblVersionHint" Text="" Style="{StaticResource CardHint}"/>
+                            </StackPanel>
+                            <HyperlinkButton x:Name="UpdatesLink" Grid.Column="2" Content=""
+                                             VerticalAlignment="Center" Click="OnOpenReleases"/>
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <HyperlinkButton x:Name="ProjectLink" Content="" Click="OnOpenProject"/>
+                        <HyperlinkButton x:Name="PhoneAppLink" Content="" Click="OnOpenReleases"/>
+                    </StackPanel>
+
+                    <Button x:Name="QuitButton" Content="" Click="OnQuit"
+                            HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Window>
