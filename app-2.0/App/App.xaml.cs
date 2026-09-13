@@ -249,9 +249,23 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                     {
                         _settingsWindow.ShowPage(page);
                         await Task.Delay(400);
+                        string name = $"settings-{page + 1}-{_settingsWindow.PageName}-{language}";
                         Note(problems, Screenshot.Save(_settingsWindow.Handle,
-                            Path.Combine(folder,
-                                $"settings-{page + 1}-{_settingsWindow.PageName}-{language}.png")));
+                            Path.Combine(folder, name + ".png")));
+
+                        // A page taller than the window gets a second picture,
+                        // scrolled down. Without it the lower half is never
+                        // looked at - which is exactly where a newly added card
+                        // ends up.
+                        if (_settingsWindow.PageScrolls)
+                        {
+                            _settingsWindow.ScrollPage(toBottom: true);
+                            await Task.Delay(400);
+                            Note(problems, Screenshot.Save(_settingsWindow.Handle,
+                                Path.Combine(folder, name + "-bottom.png")));
+                            _settingsWindow.ScrollPage(toBottom: false);
+                            await Task.Delay(200);
+                        }
                     }
                     _settingsWindow.HideWindow();
                 }

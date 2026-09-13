@@ -485,6 +485,33 @@
                                           Toggled="OnPrimaryOnlyToggled"/>
                         </Grid>
                     </Border>
+
+                    <!-- The panel and the tray menu pause for fifteen minutes,
+                         which covers most of it; the whole range from five
+                         minutes to two days lives here, as it does in 1.5. -->
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE769;" FontSize="18" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock x:Name="CardPause" Text="" Style="{StaticResource CardTitle}"/>
+                                <TextBlock x:Name="CardPauseHint" Text="" Style="{StaticResource CardHint}"/>
+                                <!-- What the drop-down says is what was CHOSEN;
+                                     this says how much is actually left, which
+                                     is a different question - the pause runs
+                                     down on its own and can be started from the
+                                     tray as well. -->
+                                <TextBlock x:Name="PauseLeft" Text="" MinHeight="16"
+                                           Style="{StaticResource CardHint}"/>
+                            </StackPanel>
+                            <ComboBox x:Name="Pause" DisplayMemberPath="Label" Grid.Column="2" Width="280"
+                                      VerticalAlignment="Center" SelectionChanged="OnPauseChosen"/>
+                        </Grid>
+                    </Border>
                 </StackPanel>
 
                 <!-- ======== networks -->

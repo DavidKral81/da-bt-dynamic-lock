@@ -136,6 +136,21 @@ public sealed partial class SettingsWindow
                     && n.Bssid == network.Bssid));
         }
 
+        // ---- the pause -----------------------------------------------------
+        // Not a setting in the file, so this looks at what the app is actually
+        // doing: a pause that only moved a drop-down would leave the screen
+        // guarded while the card says it is paused.
+        Pick(Pause, 15);
+        double left = _host.Watch.PauseLeft;
+        lines.Add(left > 14 * 60 && left <= 15 * 60
+            ? "  OK    choosing a pause really pauses watching"
+            : $"  FAIL  choosing 15 minutes left {left:F0} s of pause");
+
+        Pick(Pause, 0);
+        lines.Add(_host.Watch.PauseLeft == 0
+            ? "  OK    ...and \"not paused\" ends it"
+            : $"  FAIL  ending the pause left {_host.Watch.PauseLeft:F0} s of it");
+
         // ---- pages and language -----------------------------------------
         // Chosen by its key, never by its position: the check used to set index
         // 4, and adding the chart page in between moved "Application" to 5. It

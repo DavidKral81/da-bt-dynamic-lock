@@ -214,6 +214,22 @@ public static class Texts
         ["sw_primary_only"] = "Jen na hlavním monitoru",
         ["sw_primary_only_hint"] = "Jinak se odpočet ukáže na každé obrazovce.",
 
+        ["card_pause"] = "Dočasně pozastavit",
+        ["card_pause_hint"] = "Hlídání se na zvolenou dobu vypne a pak se samo "
+                            + "zase zapne.",
+        ["lbl_pause_left"] = "Zbývá {0} min",
+        ["lbl_pause_last"] = "Zbývá necelá minuta",
+        ["opt_not_paused"] = "Nepozastaveno",
+        ["opt_5_min"] = "5 minut",
+        ["opt_15_min"] = "15 minut",
+        ["opt_30_min"] = "30 minut",
+        ["opt_1_hour"] = "1 hodinu",
+        ["opt_2_hours"] = "2 hodiny",
+        ["opt_4_hours"] = "4 hodiny",
+        ["opt_12_hours"] = "12 hodin",
+        ["opt_1_day"] = "1 den",
+        ["opt_2_days"] = "2 dny",
+
         // --- settings window: networks -----------------------------------
         ["sw_trusted"] = "Nezamykat na vybraných Wi-Fi sítích",
         ["sw_trusted_hint"] = "Třeba doma nebo v kanceláři, kde zamykat nepotřebuješ.",
@@ -366,7 +382,9 @@ public static class Texts
         ["opt_range_max"] = "No limit",
         ["opt_range_longest"] = "{0} dBm - longest range",
         ["opt_range_shortest"] = "{0} dBm - shortest range",
-        ["opt_range_edge"] = "{0} dBm - about what a pocket measures",
+        // Kept short because it has to fit the box: the longer wording
+        // ("about what a pocket measures") came out cut off as "a pocket meas".
+        ["opt_range_edge"] = "{0} dBm - a phone in a pocket",
         ["opt_range_plain"] = "{0} dBm",
         ["sw_idle_guard"] = "Do not lock while I am typing or moving the mouse",
         ["sw_idle_guard_hint"] = "A safeguard for when the phone goes quiet while "
@@ -381,6 +399,22 @@ public static class Texts
         ["opt_from_top"] = "{0} % from the top",
         ["sw_primary_only"] = "On the main monitor only",
         ["sw_primary_only_hint"] = "Otherwise the countdown appears on every screen.",
+
+        ["card_pause"] = "Pause for a while",
+        ["card_pause_hint"] = "Watching turns off for the chosen time and then "
+                            + "turns itself back on.",
+        ["lbl_pause_left"] = "{0} min left",
+        ["lbl_pause_last"] = "Less than a minute left",
+        ["opt_not_paused"] = "Not paused",
+        ["opt_5_min"] = "5 minutes",
+        ["opt_15_min"] = "15 minutes",
+        ["opt_30_min"] = "30 minutes",
+        ["opt_1_hour"] = "1 hour",
+        ["opt_2_hours"] = "2 hours",
+        ["opt_4_hours"] = "4 hours",
+        ["opt_12_hours"] = "12 hours",
+        ["opt_1_day"] = "1 day",
+        ["opt_2_days"] = "2 days",
 
         // --- settings window: networks -----------------------------------
         ["sw_trusted"] = "Do not lock on the selected Wi-Fi networks",

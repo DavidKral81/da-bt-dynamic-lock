@@ -173,6 +173,17 @@ public sealed partial class SettingsWindow : Window
     internal void ShowPage(int index) => Nav.SelectedIndex = index;
 
     /// <summary>
+    /// Whether this page is taller than the window. A page that only gets
+    /// photographed down to the bottom edge is a page whose lower half nobody
+    /// ever looks at - which is how a card added at the end escapes review.
+    /// </summary>
+    internal bool PageScrolls => PagesScroller.ScrollableHeight > 1;
+
+    /// <summary>Scrolls the page for the picture run, and back again.</summary>
+    internal void ScrollPage(bool toBottom) => PagesScroller.ChangeView(
+        null, toBottom ? PagesScroller.ScrollableHeight : 0, null, true);
+
+    /// <summary>
     /// The page showing, by its key rather than its label - so the picture
     /// files are named the same in both languages and can be compared.
     /// </summary>
@@ -283,6 +294,8 @@ public sealed partial class SettingsWindow : Window
             LblPositionHint.Text = Texts.Get("lbl_position_hint");
             SwPrimaryOnly.Text = Texts.Get("sw_primary_only");
             SwPrimaryOnlyHint.Text = Texts.Get("sw_primary_only_hint");
+            CardPause.Text = Texts.Get("card_pause");
+            CardPauseHint.Text = Texts.Get("card_pause_hint");
 
             // networks
             SwTrusted.Text = Texts.Get("sw_trusted");
@@ -345,7 +358,31 @@ public sealed partial class SettingsWindow : Window
                 m == 0 ? Texts.Get("opt_no_warning") : Texts.Get("opt_after_minutes", m),
                 (double?)m))
             .ToList();
+
+        Pause.ItemsSource = PauseChoices
+            .Select(m => new Choice(Texts.Get(PauseKey(m)), (double?)m)).ToList();
     }
+
+    /// <summary>
+    /// How long a pause can be. The same range the shipped version offers -
+    /// five minutes for stepping out, two days for going away.
+    /// </summary>
+    private static readonly double[] PauseChoices =
+        { 0, 5, 15, 30, 60, 120, 240, 720, 1440, 2880 };
+
+    private static string PauseKey(double minutes) => minutes switch
+    {
+        0 => "opt_not_paused",
+        5 => "opt_5_min",
+        15 => "opt_15_min",
+        30 => "opt_30_min",
+        60 => "opt_1_hour",
+        120 => "opt_2_hours",
+        240 => "opt_4_hours",
+        720 => "opt_12_hours",
+        1440 => "opt_1_day",
+        _ => "opt_2_days",
+    };
 
     /// <summary>
     /// The sensitivity entries say what the number MEANS where it is worth
@@ -378,6 +415,7 @@ public sealed partial class SettingsWindow : Window
             Select(CountdownFrom, cfg.Countdown ? cfg.CountdownFromSeconds : 0);
             Select(Position, Math.Round(cfg.CountdownVertical * 100));
             Select(WarnAfter, cfg.AlertNoSignalMinutes);
+            FillPause();
 
             Active.IsOn = cfg.Active;
             IdleGuard.IsOn = cfg.IdleGuard;
@@ -403,6 +441,39 @@ public sealed partial class SettingsWindow : Window
         {
             _filling = false;
         }
+    }
+
+    /// <summary>
+    /// The pause card. The drop-down keeps what was CHOSEN; the line under it
+    /// says what is actually left, which is a different question - the pause
+    /// runs down by itself and can also be started from the tray.
+    /// </summary>
+    private void FillPause()
+    {
+        double left = _host.Watch.PauseLeft;
+
+        // Whole minutes and never rounded up: "1 min left" with forty seconds
+        // to go is a promise the app cannot keep, so under a minute says so in
+        // words instead.
+        PauseLeft.Text = left > 60
+            ? Texts.Get("lbl_pause_left", (int)(left / 60))
+            : left > 0 ? Texts.Get("lbl_pause_last") : "";
+
+        if (left <= 0)
+        {
+            // Also when nothing is chosen yet: an empty box says nothing at
+            // all, and the honest answer to "how long is it paused for" when
+            // it is not paused is "not paused".
+            Select(Pause, 0);
+            return;
+        }
+
+        // Paused, but by the panel or the tray rather than from here - so the
+        // list has nothing chosen. The shortest offered length that covers what
+        // is left is the closest true thing it can say.
+        if (Chosen(Pause) is not double chosen || chosen <= 0)
+            Select(Pause, PauseChoices.FirstOrDefault(m => m > 0 && m * 60 >= left,
+                PauseChoices[^1]));
     }
 
     private void FillOverview(Settings cfg)
@@ -757,6 +828,20 @@ public sealed partial class SettingsWindow : Window
         _host.SaveSettings();
     }
 
+    private void OnPauseChosen(object sender, SelectionChangedEventArgs e)
+    {
+        if (_filling || Chosen(Pause) is not double minutes) return;
+
+        // Not saved to the settings file on purpose: a pause is a state of this
+        // run, not a preference. One that survived a restart would leave the
+        // screen unguarded after a reboot with nothing on screen saying so.
+        if (minutes <= 0)
+            _host.ResumePausing();
+        else
+            _host.PauseFor(TimeSpan.FromMinutes(minutes));
+        Refresh();
+    }
+
     private void OnWarnAfterChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_filling || Chosen(WarnAfter) is not double minutes) return;
@@ -800,11 +885,14 @@ public sealed partial class SettingsWindow : Window
         Refresh();
     }
 
-    private void OnPause15(object sender, RoutedEventArgs e) => Pause(ShortPause);
+    private void OnPause15(object sender, RoutedEventArgs e) => StartPause(ShortPause);
 
-    private void OnPause60(object sender, RoutedEventArgs e) => Pause(LongPause);
+    private void OnPause60(object sender, RoutedEventArgs e) => StartPause(LongPause);
 
-    private void Pause(TimeSpan how)
+    // StartPause, not Pause: "Pause" is the drop-down on the locking page, and
+    // a method sharing a name with a control is a compile error at best and a
+    // silent shadowing at worst.
+    private void StartPause(TimeSpan how)
     {
         _host.PauseFor(how);
         Refresh();
