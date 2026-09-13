@@ -1,0 +1,169 @@
+using DaBtDynamicLock.Engine;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+
+namespace DaBtDynamicLock.App;
+
+/// <summary>
+/// Works the settings window's controls the way a person would and checks that
+/// each one reaches the settings FILE.
+///
+/// This exists because the pictures cannot answer the question that matters. A
+/// screenshot proves a switch is drawn; it says nothing about whether flipping
+/// it saves anything - and 1.4 shipped exactly that fault, a switch that moved
+/// while the file did not.
+///
+/// Controls are driven the same way a click drives them (IsOn, IsChecked,
+/// SelectedItem), so the real handlers run. Calling the handlers directly would
+/// test the methods and skip the wiring, which is the half that actually breaks.
+/// </summary>
+public sealed partial class SettingsWindow
+{
+    /// <summary>Runs the checks. Returns one line per check, "OK" or "FAIL".</summary>
+    /// <remarks>
+    /// EVERY value tried below has to differ from the default the file is reset
+    /// to first. That is not tidiness - it is the whole check. Without the
+    /// reset, the file still held the previous run's answers, so "it was saved"
+    /// passed even with the save taken out of the handler; the first sabotage
+    /// run went green and proved the check was worthless.
+    /// </remarks>
+    internal IReadOnlyList<string> SelfCheck(string settingsPath)
+    {
+        var lines = new List<string>();
+
+        void Check(string what, object? wanted, Func<Settings, object?> read)
+        {
+            // Read back from DISK, not from the settings object in memory: the
+            // point of the check is that the write happened, and an object the
+            // handler just changed would say yes either way.
+            var (saved, problem) = Settings.Load(settingsPath);
+            object? got = problem is null ? read(saved) : problem;
+            bool ok = Equals(wanted, got);
+            lines.Add(ok
+                ? $"  OK    {what}"
+                : $"  FAIL  {what}: wanted {Show(wanted)}, saved {Show(got)}");
+        }
+
+        // ---- switches ----------------------------------------------------
+        Active.IsOn = false;
+        Check("switching watching off is saved", false, s => s.Active);
+        Active.IsOn = true;
+        Check("switching watching on is saved", true, s => s.Active);
+
+        IdleGuard.IsOn = true;
+        Check("the typing safeguard is saved", true, s => s.IdleGuard);
+
+        PrimaryOnly.IsOn = true;
+        Check("countdown on the main monitor only is saved", true,
+            s => s.CountdownPrimaryOnly);
+
+        LogOn.IsOn = false;
+        Check("switching the log off is saved", false, s => s.Log);
+        LogOn.IsOn = true;
+
+        TrustedOn.IsOn = true;
+        Check("the Wi-Fi exception switch is saved", true, s => s.TrustedNetworkPause);
+
+        // ---- drop-downs --------------------------------------------------
+        Pick(Silence, 90);
+        Check("the silence before locking is saved", 90.0, s => s.SilenceSeconds);
+
+        // The threshold first, "no limit" second - and that order matters. No
+        // limit IS the default, so checking it first would pass on a file that
+        // was never written to.
+        Pick(Range, -80);
+        Check("a sensitivity threshold is saved", -80.0, s => s.RssiThreshold);
+        Pick(Range, null);
+        Check("\"no limit\" saves no threshold at all", null, s => s.RssiThreshold);
+
+        // 0 is not a number of seconds, it is "do not show" - the two settings
+        // behind one list are what keeps the file readable by 1.5.
+        Pick(CountdownFrom, 0);
+        Check("\"do not show\" switches the countdown off", false, s => s.Countdown);
+        Pick(CountdownFrom, 20);
+        Check("choosing a countdown switches it back on", true, s => s.Countdown);
+        Check("...and saves the seconds", 20, s => s.CountdownFromSeconds);
+
+        Pick(Position, 70);
+        Check("the countdown position is saved as a fraction", 0.70,
+            s => Math.Round(s.CountdownVertical, 2));
+
+        Pick(WarnAfter, 30);
+        Check("the warning delay is saved", 30.0, s => s.AlertNoSignalMinutes);
+
+        // ---- the lists ---------------------------------------------------
+        var devices = DeviceList.Children.OfType<RadioButton>().ToList();
+        if (devices.Count < 2)
+        {
+            lines.Add("  FAIL  the device list should offer the made-up devices, "
+                + $"but it holds {devices.Count} row(s)");
+        }
+        else
+        {
+            string wanted = (string)devices[1].Tag;
+            devices[1].IsChecked = true;
+            Check("picking a device is saved", wanted, s => s.Target);
+        }
+
+        var networks = NetworkList.Children.OfType<CheckBox>().ToList();
+        if (networks.Count == 0)
+        {
+            lines.Add("  FAIL  the network list should hold the made-up network, "
+                + "but it is empty");
+        }
+        else
+        {
+            var network = (TrustedNetwork)networks[0].Tag;
+            networks[0].IsChecked = true;
+            Check("ticking a network saves it", true,
+                s => s.TrustedNetworks.Any(n => n.Ssid == network.Ssid
+                    && n.Bssid == network.Bssid));
+            networks[0].IsChecked = false;
+            Check("unticking it forgets it", false,
+                s => s.TrustedNetworks.Any(n => n.Ssid == network.Ssid
+                    && n.Bssid == network.Bssid));
+        }
+
+        // ---- pages and language -----------------------------------------
+        Nav.SelectedIndex = 4;
+        lines.Add(PageApp.Visibility == Visibility.Visible
+                && PageOverview.Visibility == Visibility.Collapsed
+            ? "  OK    choosing a topic shows that page and hides the others"
+            : "  FAIL  choosing a topic did not switch the page");
+        Nav.SelectedIndex = 0;
+
+        // The flag is a drawing, not a button, so this is the one place a raw
+        // handler call is honest: there is no property to set that would raise
+        // the event the way a press does.
+        string before = NavOverview.Text;
+        OnFlagPressed(FlagEn, null!);
+        lines.Add(NavOverview.Text != before && Texts.Language == "en"
+            ? "  OK    the flag switches the language and redraws the labels"
+            : $"  FAIL  the language did not redraw: \"{before}\" -> "
+                + $"\"{NavOverview.Text}\" ({Texts.Language})");
+        Check("the chosen language is saved", "en", s => s.Language);
+
+        OnFlagPressed(FlagCs, null!);
+        lines.Add(NavOverview.Text == before
+            ? "  OK    switching back restores the first language"
+            : $"  FAIL  switching back left \"{NavOverview.Text}\"");
+
+        return lines;
+    }
+
+    /// <summary>Picks the entry with this value, the way a click on it would.</summary>
+    private static void Pick(ComboBox box, double? value)
+    {
+        var items = (List<Choice>)box.ItemsSource;
+        var wanted = items.FirstOrDefault(c => Equals(c.Value, value));
+        if (wanted is not null)
+            box.SelectedItem = wanted;
+    }
+
+    private static string Show(object? value) => value switch
+    {
+        null => "nothing",
+        string text => $"\"{text}\"",
+        _ => value.ToString() ?? "?",
+    };
+}

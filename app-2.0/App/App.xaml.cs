@@ -105,7 +105,11 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         _timer.Tick += (_, _) => _loop.Tick();
         _timer.Start();
 
-        if (_options.ScreenshotFolder is not null)
+        if (_options.SelfCheck)
+        {
+            _ = RunSelfCheckAsync();
+        }
+        else if (_options.ScreenshotFolder is not null)
         {
             string? unusable = _options.WhyScreenshotFolderIsUnusable();
             if (unusable is not null)
@@ -242,6 +246,58 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     {
         if (problem is not null)
             problems.Add(problem);
+    }
+
+    /// <summary>
+    /// Opens the settings window, works its controls, and reports whether each
+    /// one reached the settings file. Ends with 0 when everything held and 1
+    /// when it did not, so it can be run before a release like the other checks.
+    /// </summary>
+    private async Task RunSelfCheckAsync()
+    {
+        int failed = 1;      // anything short of a clean finish counts as failure
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(1));      // let the first tick run
+            // The loop is stopped for the rest: it ticks twice a second and
+            // would refresh the window mid-check, putting saved values back
+            // into controls this is in the middle of working.
+            _timer?.Stop();
+
+            // Started from a KNOWN file, not from whatever the last run left
+            // behind. Without this the check reads back its own history: the
+            // first sabotage run - with the save taken out of a handler - went
+            // green, because the value was already in the file from before.
+            _settings = new Settings { Target = SampleDevices[0].Name };
+            string? problem = _settings.Save(_options.SettingsPath);
+            if (problem is not null)
+                throw new IOException(problem);
+
+            _watch.Record(-62, _settings.ForWatching());
+            _loop.Tick();
+
+            OpenSettingsWindow();
+            await Task.Delay(400);                          // let it draw
+
+            var lines = _settingsWindow!.SelfCheck(_options.SettingsPath);
+            _log.Write($"Self-check of the settings window ({lines.Count} checks):");
+            foreach (string line in lines)
+                _log.Write(line);
+
+            failed = lines.Count(l => l.Contains("FAIL"));
+            _log.Write(failed == 0 ? "Self-check: ALL OK" : $"Self-check: {failed} FAILED");
+        }
+        catch (Exception e)
+        {
+            // Written out whole: a check that dies halfway has to say where,
+            // or it looks exactly like a check that passed.
+            _log.Write($"Self-check stopped on an error: {e}");
+        }
+        finally
+        {
+            Shutdown();
+            Environment.Exit(failed == 0 ? 0 : 1);
+        }
     }
 
     private async Task QuitAfterAsync(TimeSpan how)
@@ -465,7 +521,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         // name and router address have no business being in one. The log keeps
         // them out for the same reason; a preview that drew the real network
         // was found in review on 12.09.2026, so this one does not.
-        if (_options.ScreenshotFolder is not null)
+        if (MadeUpData)
             return SampleNetwork;
 
         var reading = WifiNetwork.Current();
@@ -473,7 +529,15 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     }
 
     IReadOnlyList<NearbyDevice> IAppHost.NearbyDevices() =>
-        _options.ScreenshotFolder is not null ? SampleDevices : _watch.NearbyList();
+        MadeUpData ? SampleDevices : _watch.NearbyList();
+
+    /// <summary>
+    /// Whether this run shows made-up devices and networks instead of the real
+    /// ones. True for both the pictures and the self-check: the self-check
+    /// writes what it picked INTO THE LOG, and a log is attached to fault
+    /// reports.
+    /// </summary>
+    private bool MadeUpData => _options.ScreenshotFolder is not null || _options.SelfCheck;
 
     /// <summary>Made-up data for the pictures, so nothing real ends up in one.</summary>
     private static readonly WifiConnection SampleNetwork =

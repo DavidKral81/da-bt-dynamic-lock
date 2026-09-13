@@ -23,17 +23,27 @@ public sealed record Options
     /// <summary>Where settings, the log and the history live for this run.</summary>
     public string DataFolder { get; init; } = AppInfo.DataFolder;
 
+    /// <summary>
+    /// Work the settings window's controls the way a person would and check
+    /// that each one lands in the settings file. What a picture cannot show -
+    /// a screenshot proves a switch is drawn, never that flipping it saves
+    /// anything.
+    /// </summary>
+    public bool SelfCheck { get; init; }
+
     public static Options Parse(string[] argv)
     {
         bool dryRun = argv.Contains("--dry-run");
+        bool selfCheck = argv.Contains("--self-check");
         string? shots = ValueAfter(argv, "--screenshot");
 
         return new Options
         {
-            DryRun = dryRun || shots is not null,
+            DryRun = dryRun || selfCheck || shots is not null,
             QuitAfterSeconds = double.TryParse(ValueAfter(argv, "--quit-after"),
                 System.Globalization.CultureInfo.InvariantCulture, out double s) ? s : 0,
             ScreenshotFolder = shots,
+            SelfCheck = selfCheck,
             // A test run must never write into the installed app's settings or
             // log: the shipped copy is somebody's working setup, and its config
             // holds the device they actually watch.
@@ -43,7 +53,7 @@ public sealed record Options
             // and one run from source writes next to itself. It also keeps a
             // test run's files somewhere the person running it expects to find
             // them, instead of scattering a named folder through TEMP.
-            DataFolder = dryRun || shots is not null
+            DataFolder = dryRun || selfCheck || shots is not null
                 ? Path.Combine(AppContext.BaseDirectory, "dry-run-data")
                 : AppInfo.DataFolder,
         };
