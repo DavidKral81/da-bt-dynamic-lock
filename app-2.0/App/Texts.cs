@@ -34,6 +34,38 @@ public static class Texts
     private static readonly CultureInfo CzechCulture = new("cs-CZ");
     private static readonly CultureInfo EnglishCulture = new("en-GB");
 
+    /// <summary>
+    /// The languages on offer, each written IN ITSELF - never translated, so
+    /// somebody who opened the app in a language they cannot read still
+    /// recognises their own.
+    ///
+    /// Named rather than flagged. A flag is a country, not a language: English
+    /// has no flag that is not also a claim about whose English it is, and the
+    /// choice between a British and an American one has no right answer. The
+    /// common practice in software is to write the language out.
+    ///
+    /// One list, used by the settings window and by the installer.
+    /// </summary>
+    /// <summary>One language on offer. A record, not a tuple: a drop-down binds
+    /// to a real property name, and a tuple has none at run time.</summary>
+    public sealed record LanguageOption(string Code, string Name);
+
+    public static readonly LanguageOption[] Languages =
+    {
+        new("cs", "Čeština"),
+        new("en", "English"),
+    };
+
+    /// <summary>
+    /// The language to start in when nothing has been chosen yet: the one
+    /// Windows is in, falling back to English.
+    ///
+    /// Never Czech by default. An English-speaking user installing this must
+    /// not be handed a Czech interface because of where it was written.
+    /// </summary>
+    public static string SystemLanguage() =>
+        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "cs" ? "cs" : "en";
+
     /// <summary>The text for a key, with {0}, {1}… filled in when values are given.</summary>
     public static string Get(string key, params object?[] values)
     {
@@ -248,6 +280,9 @@ public static class Texts
         ["sw_log"] = "Zapisovat záznam o běhu",
         ["sw_log_hint"] = "Podle něj se pozná, proč se notebook zamkl. "
                         + "Hodí se přiložit k hlášení chyby.",
+        // Back after being dropped for the flags. A drop-down needs saying what
+        // it is; a flag did not.
+        ["lbl_language"] = "Jazyk",
         ["lbl_folder"] = "Kde záznam leží",
         ["act_open_folder"] = "Otevřít složku",
         ["lbl_version"] = "Verze {0}",
@@ -483,6 +518,7 @@ public static class Texts
         ["sw_log"] = "Keep a log of what happens",
         ["sw_log_hint"] = "It is what tells you why the computer locked. "
                         + "Worth attaching to a fault report.",
+        ["lbl_language"] = "Language",
         ["lbl_folder"] = "Where the log is kept",
         ["act_open_folder"] = "Open the folder",
         ["lbl_version"] = "Version {0}",

@@ -62,21 +62,14 @@
         </Grid.ColumnDefinitions>
 
         <!-- ===================================================== top strip -->
-        <!-- The flags sit top right, as they do in the app, the installer and
-             the phone. Outside the scrolling area, so they stay put. -->
-        <Grid Grid.Row="0" Grid.ColumnSpan="2" Padding="20,14,20,10" ColumnSpacing="12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
+        <!-- The language used to be chosen up here, with flags. It moved onto
+             the Aplikace page as an ordinary drop-down, where the rest of the
+             settings are: a flag names a country, not a language, and picking
+             between a British and an American one for "English" has no right
+             answer. -->
+        <Grid Grid.Row="0" Grid.ColumnSpan="2" Padding="20,14,20,10">
             <TextBlock x:Name="AppName" Text="" FontSize="15" FontWeight="SemiBold"
                        VerticalAlignment="Center"/>
-
-            <!-- One control, shared with the installer window. The drawing used
-                 to sit here; it moved out the moment a second window needed it,
-                 rather than being copied into both. -->
-            <local:LanguageFlags x:Name="Flags" Grid.Column="1"/>
         </Grid>
 
         <!-- ===================================================== navigation -->
@@ -513,8 +506,30 @@
                 <StackPanel x:Name="PageApp" Spacing="14" Visibility="Collapsed">
                     <TextBlock x:Name="TitleApp" Text="" FontSize="24" FontWeight="SemiBold"/>
 
-                    <!-- First on the page: an app that guards the screen is no
-                         use if somebody has to remember to start it. -->
+                    <!-- The language, as an ordinary drop-down like every other
+                         choice on these pages. The entries are written in their
+                         own language and are NOT translated, so somebody who
+                         opened the app in a language they cannot read still
+                         recognises their own. -->
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xF2B7;" FontSize="18" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock x:Name="LblLanguage" Text="" Style="{StaticResource CardTitle}"/>
+                            </StackPanel>
+                            <ComboBox x:Name="LanguageChoice" DisplayMemberPath="Name"
+                                      Grid.Column="2" Width="280" VerticalAlignment="Center"
+                                      SelectionChanged="OnLanguageChosen"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- An app that guards the screen is no use if somebody has
+                         to remember to start it. -->
                     <Border Style="{StaticResource Card}">
                         <Grid ColumnSpacing="14">
                             <Grid.ColumnDefinitions>

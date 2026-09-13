@@ -163,18 +163,20 @@ public sealed partial class SettingsWindow
             : "  FAIL  choosing a topic did not switch the page");
         SelectPage("overview");
 
-        // The flag is a drawing, not a button, so this is the one place a raw
-        // handler call is honest: there is no property to set that would raise
-        // the event the way a press does.
+        // Now an ordinary drop-down, so it is worked the way every other choice
+        // here is: setting the item raises the same event a person's click
+        // does. Stronger than what this used to do, which was call the handler
+        // directly because a flag has no property to set.
         string before = NavOverview.Text;
-        Flags.Press("en");
+        SelectPage("app");
+        LanguageChoice.SelectedItem = Texts.Languages.First(l => l.Code == "en");
         lines.Add(NavOverview.Text != before && Texts.Language == "en"
             ? "  OK    the flag switches the language and redraws the labels"
             : $"  FAIL  the language did not redraw: \"{before}\" -> "
                 + $"\"{NavOverview.Text}\" ({Texts.Language})");
         Check("the chosen language is saved", "en", s => s.Language);
 
-        Flags.Press("cs");
+        LanguageChoice.SelectedItem = Texts.Languages.First(l => l.Code == "cs");
         lines.Add(NavOverview.Text == before
             ? "  OK    switching back restores the first language"
             : $"  FAIL  switching back left \"{NavOverview.Text}\"");

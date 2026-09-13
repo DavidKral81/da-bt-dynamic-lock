@@ -42,7 +42,15 @@ public sealed record Settings
     [JsonPropertyName("scanner_restart_s")] public double ScannerRestartSeconds { get; set; } = 120;
     [JsonPropertyName("silence_watchdog_s")] public double SilenceWatchdogSeconds { get; set; } = 45;
     [JsonPropertyName("alert_no_signal_min")] public double AlertNoSignalMinutes { get; set; } = 10;
-    [JsonPropertyName("language")] public string Language { get; set; } = "cs";
+    /// <summary>
+    /// The interface language, or EMPTY when nobody has chosen one yet.
+    ///
+    /// Empty rather than "cs": a first run then follows Windows instead of
+    /// handing a Czech interface to somebody whose computer is in English.
+    /// Which language that turns out to be is decided one layer up, where the
+    /// texts live - this layer has no business knowing what is on offer.
+    /// </summary>
+    [JsonPropertyName("language")] public string Language { get; set; } = "";
     [JsonPropertyName("log")] public bool Log { get; set; } = true;
 
     /// <summary>

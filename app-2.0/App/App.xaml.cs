@@ -55,6 +55,15 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         // again", and there was nothing to look at.
         var (settings, problem) = Settings.Load(_options.SettingsPath);
         _settings = settings;
+
+        // Nobody has chosen a language yet - follow Windows. Written back so
+        // the file says what the app is actually doing rather than leaving the
+        // answer to be worked out again on every start.
+        if (string.IsNullOrEmpty(_settings.Language))
+        {
+            _settings.Language = Texts.SystemLanguage();
+            _settings.Save(_options.SettingsPath);
+        }
         Texts.Language = _settings.Language;
 
         _log = new Log(_options.LogPath, () => _settings.Log);
@@ -248,11 +257,11 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     private static string SetupLanguage(SetupRole role)
     {
         if (role == SetupRole.Uninstall
-            && Installer.Setup.StoredLanguage(InstallerWindow.Where()) is string stored)
+            && Installer.Setup.StoredLanguage(InstallerWindow.Where()) is string stored
+            && stored.Length > 0)
             return stored;
 
-        return System.Globalization.CultureInfo.CurrentUICulture
-            .TwoLetterISOLanguageName == "cs" ? "cs" : "en";
+        return Texts.SystemLanguage();
     }
 
     private static bool IsAdministrator()

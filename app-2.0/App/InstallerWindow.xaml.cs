@@ -3,6 +3,7 @@ using DaBtDynamicLock.Installer;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.Win32;
 using Windows.Graphics;
 using WinRT.Interop;
@@ -66,7 +67,7 @@ public sealed partial class InstallerWindow : Window
         // program alive holding the very files it just wrote.
         AppWindow.Closing += (_, _) => Quit();
 
-        Flags.LanguagePicked += OnLanguagePicked;
+        LanguageChoice.ItemsSource = Texts.Languages;
 
         ApplyTexts();
         FillChoices();
@@ -155,7 +156,9 @@ public sealed partial class InstallerWindow : Window
         CancelButton.Content = Texts.Get(_finished ? "ins_btn_close" : "ins_btn_cancel");
         GoButton.Content = Texts.Get(_uninstall ? "ins_btn_uninstall" : "ins_btn_install");
 
-        Flags.Mark();
+        LanguageChoice.SelectedItem =
+            Texts.Languages.FirstOrDefault(l => l.Code == Texts.Language)
+            ?? Texts.Languages[0];
 
         // The outcome is written from a key too, so switching language on the
         // result screen translates it rather than leaving the old wording.
@@ -163,9 +166,13 @@ public sealed partial class InstallerWindow : Window
             ApplyResultTexts();
     }
 
-    private void OnLanguagePicked(string language)
+    private void OnLanguageChosen(object sender, SelectionChangedEventArgs e)
     {
-        Texts.Language = language;
+        if (LanguageChoice.SelectedItem is not Texts.LanguageOption picked
+            || picked.Code == Texts.Language)
+            return;
+
+        Texts.Language = picked.Code;
         ApplyTexts();
         // The two languages do not wrap to the same number of lines, so the
         // height is worked out again rather than left at what the other one

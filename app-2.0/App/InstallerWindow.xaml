@@ -70,9 +70,12 @@
                 <TextBlock x:Name="Subtitle" Text="" Style="{StaticResource CardHint}"/>
             </StackPanel>
 
-            <!-- The same control the settings window uses, not a second copy of
-                 the drawing. -->
-            <local:LanguageFlags x:Name="Flags" Grid.Column="1" VerticalAlignment="Top"/>
+            <!-- The same kind of control the settings window uses, filled from
+                 the same list. Named languages rather than flags: a flag is a
+                 country, not a language. -->
+            <ComboBox x:Name="LanguageChoice" DisplayMemberPath="Name" Grid.Column="1"
+                      MinWidth="150" VerticalAlignment="Top"
+                      SelectionChanged="OnLanguageChosen"/>
         </Grid>
 
         <!-- ======================================================= content -->

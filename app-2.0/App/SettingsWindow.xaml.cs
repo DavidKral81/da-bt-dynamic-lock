@@ -84,9 +84,9 @@ public sealed partial class SettingsWindow : Window
         // last looked at is still the one showing.
         AppWindow.Closing += (_, e) => { e.Cancel = true; HideWindow(); };
 
-        // Wired here rather than in XAML: the event carries a plain string, and
-        // XAML can only attach to events with a WinRT signature.
-        Flags.LanguagePicked += OnLanguagePicked;
+        // Filled once: the languages on offer do not change while running, and
+        // their names are never translated.
+        LanguageChoice.ItemsSource = Texts.Languages;
 
         ApplyTexts();
         Nav.SelectedIndex = 0;
@@ -247,6 +247,7 @@ public sealed partial class SettingsWindow : Window
             CardNetworksHint.Text = Texts.Get("card_networks_hint");
 
             // app
+            LblLanguage.Text = Texts.Get("lbl_language");
             SwAutostart.Text = Texts.Get("sw_autostart");
             SwAutostartHint.Text = Texts.Get("sw_autostart_hint");
             SwLog.Text = Texts.Get("sw_log");
@@ -486,8 +487,11 @@ public sealed partial class SettingsWindow : Window
     private static bool IsTrusted(Settings cfg, WifiConnection here) =>
         cfg.TrustedNetworks.Any(n => n.Ssid == here.Ssid && n.Bssid == here.Bssid);
 
-    /// <summary>Marks the language in use with the bar under its flag.</summary>
-    private void MarkLanguage() => Flags.Mark();
+    /// <summary>Shows which language is in use in the drop-down.</summary>
+    private void MarkLanguage() =>
+        LanguageChoice.SelectedItem =
+            Texts.Languages.FirstOrDefault(l => l.Code == Texts.Language)
+            ?? Texts.Languages[0];
 
     // ------------------------------------------------------- device list
 
@@ -646,8 +650,16 @@ public sealed partial class SettingsWindow : Window
     private static Visibility Shown(bool yes) =>
         yes ? Visibility.Visible : Visibility.Collapsed;
 
-    private void OnLanguagePicked(string language)
+    private void OnLanguageChosen(object sender, SelectionChangedEventArgs e)
     {
+        // Set from code while the window fills itself in, not by a person.
+        if (_filling)
+            return;
+        if (LanguageChoice.SelectedItem is not Texts.LanguageOption picked
+            || picked.Code == Texts.Language)
+            return;
+
+        string language = picked.Code;
         Texts.Language = language;
         _host.Settings.Language = language;
         _host.SaveSettings();
