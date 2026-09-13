@@ -1,0 +1,194 @@
+using DaBtDynamicLock.Installer;
+using Microsoft.Win32;
+
+// Runs a whole installation and removal against a harmless folder.
+//
+// The point is that the installer is RUN before it is shipped. The shipped one
+// went out once without anybody having started it, and the faults that came
+// back were all in paths nobody had walked: a folder that would not delete, a
+// process that had not let go of its files yet, a shortcut that was never made.
+//
+// Nothing here touches Program Files, the Start menu, the desktop or HKLM: the
+// paths are all pointed at a temporary folder, and the uninstall entry goes
+// into the current user's own hive under a name of its own. The registry part
+// is skipped out loud unless it is asked for by name.
+
+internal static class InstallerChecks
+{
+    static readonly List<string> Failures = new();
+    static int _skipped;
+
+    static int Main(string[] argv)
+    {
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
+        bool withRegistry = argv.Contains("--with-registry");
+
+        string root = Path.Combine(Path.GetTempPath(),
+            "ddl-setup-check-" + Guid.NewGuid().ToString("N")[..8]);
+        string source = Path.Combine(root, "source");
+        string target = Path.Combine(root, "Program Files", "Da BT Dynamic Lock");
+
+        try
+        {
+            MakeSource(source);
+            CheckInstall(root, source, target, withRegistry);
+            CheckUninstall(root, target, withRegistry);
+        }
+        finally
+        {
+            Setup.TryDeleteFolder(root);
+        }
+
+        Console.WriteLine();
+        if (_skipped > 0)
+            Console.WriteLine($"({_skipped} case(s) skipped - see above for why)");
+        if (Failures.Count == 0)
+        {
+            Console.WriteLine("ALL OK");
+            return 0;
+        }
+        Console.WriteLine($"FAILED: {Failures.Count}");
+        foreach (var f in Failures) Console.WriteLine($"  - {f}");
+        return 1;
+    }
+
+    static void Check(string what, object? expected, object? actual)
+    {
+        bool ok = Equals(expected, actual);
+        Console.WriteLine($"  {(ok ? "OK  " : "FAIL")}  {what}: {actual ?? "null"}"
+            + (ok ? "" : $"  (expected {expected ?? "null"})"));
+        if (!ok) Failures.Add(what);
+    }
+
+    static void Skip(string what, string why)
+    {
+        Console.WriteLine($"  SKIP  {what}: {why}");
+        _skipped++;
+    }
+
+    /// <summary>
+    /// A stand-in for the published app: the right file names, none of the
+    /// behaviour. The program has to be something Windows will start and that
+    /// ENDS BY ITSELF, because the installer runs it to set start at logon.
+    ///
+    /// ping.exe, and not cmd.exe: cmd with an argument it does not understand
+    /// opens an interactive shell and waits for input. This check hung on that
+    /// for seven minutes and left the shell running under the app's name.
+    /// </summary>
+    static void MakeSource(string source)
+    {
+        Directory.CreateDirectory(Path.Combine(source, "sub"));
+        File.Copy(Path.Combine(Environment.SystemDirectory, "PING.EXE"),
+            Path.Combine(source, Setup.ProgramName));
+        File.WriteAllText(Path.Combine(source, "settings.json"), "{}");
+        File.WriteAllText(Path.Combine(source, "sub", "nested.txt"), "in a subfolder");
+    }
+
+    static SetupPaths Where(string root, string target, bool withRegistry) => new(
+        TargetDir: target,
+        StartMenuLink: Path.Combine(root, "Start Menu", "Da BT Dynamic Lock.lnk"),
+        DesktopLink: Path.Combine(root, "Desktop", "Da BT Dynamic Lock.lnk"),
+        RegistryRoot: RegistryHive.CurrentUser,
+        // null, not another key name: pointing it at a different NAME still
+        // wrote to the registry, which is exactly what this run must not do.
+        RegistryKey: withRegistry ? @"Software\DaBtDynamicLock-installer-check" : null,
+        DataDir: Path.Combine(root, "AppData", "Da BT Dynamic Lock"));
+
+    static void CheckInstall(string root, string source, string target, bool withRegistry)
+    {
+        Console.WriteLine("Installing:");
+        var where = Where(root, target, withRegistry);
+        Directory.CreateDirectory(where.DataDir);
+        File.WriteAllText(Path.Combine(where.DataDir, "config.json"), "{}");
+
+        // Something already in the way, as on a reinstall: a file that must be
+        // gone afterwards rather than left mixed in with the new copy.
+        Directory.CreateDirectory(target);
+        File.WriteAllText(Path.Combine(target, "leftover.txt"), "from an older version");
+
+        var steps = new List<string>();
+        var report = Setup.Install(where, source,
+            new SetupChoices(StartMenu: true, Desktop: true, Autostart: false),
+            uninstallerSource: Path.Combine(source, "settings.json"),
+            version: "2.0", language: "cs", report: steps.Add);
+
+        if (!withRegistry)
+        {
+            // The uninstall entry is the one thing that cannot be checked
+            // without writing to the registry, so it is said out loud rather
+            // than passed over: run with --with-registry to include it.
+            Skip("the entry in Installed apps",
+                "this run writes nothing to the registry (pass --with-registry "
+                + "to include it)");
+            Check("the install reports no problems", 0, report.Problems.Count);
+        }
+        else
+        {
+            Check("the install reports no problems", 0, report.Problems.Count);
+            Check("...and the entry in Installed apps is there", true,
+                Setup.UninstallEntryExists(where));
+            Check("...and it remembers the language for the uninstaller", "cs",
+                Setup.StoredLanguage(where));
+        }
+        foreach (var problem in report.Problems)
+            Console.WriteLine($"        ({problem})");
+
+        Check("the program is in place", true,
+            File.Exists(Path.Combine(target, Setup.ProgramName)));
+        Check("...with the folders under it", true,
+            File.Exists(Path.Combine(target, "sub", "nested.txt")));
+        Check("...and the uninstaller beside it", true,
+            File.Exists(Path.Combine(target, Setup.UninstallerName)));
+
+        // An older installation must be REPLACED, not mixed with: a file left
+        // from a previous version is how two versions end up running as one.
+        Check("what an older version left is gone", false,
+            File.Exists(Path.Combine(target, "leftover.txt")));
+
+        Check("the Start menu shortcut is there", true, File.Exists(where.StartMenuLink));
+        Check("the desktop shortcut is there", true, File.Exists(where.DesktopLink));
+
+        // Unticking a shortcut removes one made earlier, so the answer to "do I
+        // want a shortcut" means the same on a reinstall as on a first install.
+        Setup.Install(where, source,
+            new SetupChoices(StartMenu: false, Desktop: false, Autostart: false),
+            uninstallerSource: null, version: "2.0", language: "cs", report: _ => { });
+        Check("unticking the shortcuts removes them", false,
+            File.Exists(where.StartMenuLink) || File.Exists(where.DesktopLink));
+
+        Check("the steps are reported in order", "stopping,copying,shortcuts,"
+            + "registry,autostart,checking", string.Join(",", steps));
+    }
+
+    static void CheckUninstall(string root, string target, bool withRegistry)
+    {
+        Console.WriteLine("\nUninstalling:");
+        var where = Where(root, target, withRegistry);
+
+        // Settings are kept unless removal is asked for: somebody reinstalling
+        // should not lose the device they watch.
+        var kept = Setup.Uninstall(where, deleteData: false, report: _ => { });
+        Check("removing without the data reports no problems", 0, kept.Problems.Count);
+        foreach (var problem in kept.Problems)
+            Console.WriteLine($"        ({problem})");
+        Check("...and the settings folder is still there", true,
+            Directory.Exists(where.DataDir));
+
+        if (withRegistry)
+            Check("...and the entry in Installed apps is gone", false,
+                Setup.UninstallEntryExists(where));
+        else
+            Skip("removing the entry in Installed apps", "the registry is not "
+                + "written in this run");
+
+        var all = Setup.Uninstall(where, deleteData: true, report: _ => { });
+        Check("removing with the data reports no problems", 0, all.Problems.Count);
+        Check("...and the settings folder is gone", false, Directory.Exists(where.DataDir));
+
+        // The program folder itself is deleted by the caller after the
+        // uninstaller has quit - it is running from inside it. What is checked
+        // here is that everything else is already gone.
+        Check("the shortcuts are gone", false,
+            File.Exists(where.StartMenuLink) || File.Exists(where.DesktopLink));
+    }
+}

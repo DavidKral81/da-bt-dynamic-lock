@@ -31,14 +31,27 @@ public sealed record Options
     /// </summary>
     public bool SelfCheck { get; init; }
 
+    /// <summary>
+    /// Turn start at logon on or off and quit, with the exit code saying
+    /// whether it worked. This is how the installer sets it up: the app owns
+    /// that job, the way it owns the switch in its own window, so the two
+    /// cannot drift into registering different tasks.
+    /// </summary>
+    public bool? Autostart { get; init; }
+
     public static Options Parse(string[] argv)
     {
         bool dryRun = argv.Contains("--dry-run");
         bool selfCheck = argv.Contains("--self-check");
         string? shots = ValueAfter(argv, "--screenshot");
 
+        bool? autostart = argv.Contains("--autostart-on") ? true
+            : argv.Contains("--autostart-off") ? false
+            : null;
+
         return new Options
         {
+            Autostart = autostart,
             DryRun = dryRun || selfCheck || shots is not null,
             QuitAfterSeconds = double.TryParse(ValueAfter(argv, "--quit-after"),
                 System.Globalization.CultureInfo.InvariantCulture, out double s) ? s : 0,
@@ -70,7 +83,8 @@ public sealed record Options
     /// quits on a timer. Such a run must never put up a modal dialog - it would
     /// sit there waiting for a click that is never coming.
     /// </summary>
-    public bool Batch => SelfCheck || ScreenshotFolder is not null || QuitAfterSeconds > 0;
+    public bool Batch => SelfCheck || ScreenshotFolder is not null
+        || QuitAfterSeconds > 0 || Autostart is not null;
 
     public string SettingsPath => Path.Combine(DataFolder, "config.json");
     public string LogPath => Path.Combine(DataFolder, "dyn_lock.log");

@@ -62,6 +62,20 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         if (problem is not null)
             _log.Write(problem);
 
+        // Setting start at logon and quitting again. Before the single-copy
+        // check on purpose: the installer runs this while the app may well be
+        // running, and refusing to do it then would leave the box ticked in the
+        // installer and nothing registered in Windows.
+        if (_options.Autostart is bool wanted)
+        {
+            var done = SetAutostart(wanted);
+            if (!done.Ok)
+                _log.Write($"Start at logon: {done.Problem}");
+            Exit();
+            Environment.Exit(done.Ok ? 0 : 1);
+            return;
+        }
+
         // One instance only. The installer looks for this name too, so it is a
         // constant rather than a literal - a renamed mutex once left the
         // installer unable to notice the app was running. A dry run uses its

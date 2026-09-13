@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- What installing and removing the app actually does, with no window
+       attached. A library, so the whole of it can be run against a harmless
+       folder by Installer.Tests rather than only against Program Files. -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>DaBtDynamicLock.Installer</RootNamespace>
+    <AssemblyName>DaBtDynamicLock.Installer</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+</Project>

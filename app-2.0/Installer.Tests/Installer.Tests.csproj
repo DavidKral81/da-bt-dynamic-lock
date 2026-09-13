@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Runs the installer end to end against a temporary folder. Same shape as
+       the other checks in this project: OK/FAIL per case, a summary, an exit
+       code - no test framework to restore before anything can be verified. -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>DaBtDynamicLock.Installer.Tests</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Installer\Installer.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -35,4 +35,26 @@
     <ProjectReference Include="..\Engine\Engine.csproj" />
   </ItemGroup>
 
+  <!-- The Windows App SDK carries a machine-learning stack and a browser
+       control with it. This app draws a tray icon, two small windows and a
+       chart made of lines - it calls neither. Measured: they are 40 MB of the
+       77 MB published, more than half of what a user would download.
+
+       Dropped at publish time rather than by trimming, which WinUI cannot take
+       (its XAML resolves types by reflection). Whether the app still runs
+       without them is not assumed: the published copy is started with the
+       self-check switch before any of this counts as done.
+
+       (No double hyphen in this comment on purpose: XML forbids it, and that
+       is already on this project's list of repeated faults.) -->
+  <Target Name="DropUnusedFrameworkParts" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+          Condition="'%(Filename)' == 'onnxruntime'
+                  or '%(Filename)' == 'DirectML'
+                  or '%(Filename)' == 'Microsoft.ML.OnnxRuntime'
+                  or $([System.String]::Copy('%(Filename)').StartsWith('Microsoft.Windows.AI'))" />
+    </ItemGroup>
+  </Target>
+
 </Project>
