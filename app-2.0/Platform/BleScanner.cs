@@ -53,6 +53,14 @@ public sealed class BleScanner
     private readonly Func<double> _now;
 
     /// <summary>
+    /// The record the chart is drawn from, or null when nobody is keeping one.
+    /// Filled here rather than inside PhoneWatch: PhoneWatch answers "is the
+    /// phone here now" and is asked twice a second, while this grows to
+    /// megabytes and belongs to the part that gets looked at afterwards.
+    /// </summary>
+    private readonly SignalHistory? _history;
+
+    /// <summary>
     /// Set when the main loop is about to lock on a silence the radio cannot
     /// corroborate: the scanner starts over so a fresh one gets a full threshold
     /// to hear the device. Not throttled like the watchdog, because it can only
@@ -61,12 +69,13 @@ public sealed class BleScanner
     private volatile bool _restartRequested;
 
     public BleScanner(PhoneWatch watch, ScannerSettings cfg, Action<string> log,
-        Func<double>? now = null)
+        Func<double>? now = null, SignalHistory? history = null)
     {
         _watch = watch;
         _cfg = cfg;
         _log = log;
         _now = now ?? PhoneWatch.MonotonicSeconds;
+        _history = history;
     }
 
     /// <summary>Ask for a restart at the next opportunity.</summary>
@@ -209,6 +218,11 @@ public sealed class BleScanner
         if (DeviceMatch.Matches(address, name, ServiceUuids(e), _cfg.Target()))
         {
             var note = _watch.Record(rssi, _cfg.Watch());
+            // Only readings from the WATCHED device go into the chart. Every
+            // other advertisement in the room is counted as proof the radio is
+            // awake (above), but drawing them would make the chart a picture of
+            // the neighbourhood rather than of the phone.
+            _history?.Add(_now(), rssi);
             if (note.What == Sighting.FirstSeen)
                 _log($"Phone seen for the first time ({note.Rssi} dBm) - watching.");
             else if (note.What == Sighting.BackAtTheDesk)

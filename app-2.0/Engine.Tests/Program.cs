@@ -30,6 +30,7 @@ internal static class EngineChecks
             CheckFailedLock(scratch);
             CheckNoSignalWarning(scratch);
             CheckTrustedNetwork(scratch);
+            CheckHistoryStore(scratch);
         }
         finally
         {
@@ -473,5 +474,66 @@ internal static class EngineChecks
         r.Tick();
         Check("an unreadable network is not trusted either", true,
             r.View.Last != "Off/st_trusted_network");
+    }
+
+    // --------------------------------------------------- the chart's history
+
+    static void CheckHistoryStore(string scratch)
+    {
+        Console.WriteLine("\nThe chart history on disk:");
+        string path = Path.Combine(scratch, "history.json");
+
+        // The history works in monotonic seconds - seconds since the machine
+        // started - while the file keeps wall clock times. Both clocks are
+        // supplied here, so the conversion can be checked rather than hoped for.
+        double mono = 5_000;
+        double wall = 1_700_000_000;
+
+        var history = new SignalHistory();
+        history.Add(mono - 120, -70);
+        history.Add(mono - 60, -55);
+        history.Locked(mono - 30);
+        history.NotRunning(mono - 600, mono - 500);
+
+        Check("saving reports no problem", null,
+            HistoryStore.Save(history, path, mono, wall));
+        Check("...and the file is there", true, File.Exists(path));
+
+        // Read back into a DIFFERENT run: the machine has been up longer, so
+        // the same moments are different monotonic seconds now. The readings
+        // must keep their distance from "now", not their raw numbers.
+        var reread = new SignalHistory();
+        double laterMono = 900_000;             // a much longer uptime
+        double laterWall = wall + 60;           // one minute later by the clock
+        var (notRunning, problem) = HistoryStore.Load(reread, path, laterMono, laterWall);
+
+        Check("reading it back reports no problem", null, problem);
+        Check("...with both readings", 2, reread.Count);
+        Check("...and the lock", 1, reread.Locks().Count);
+        Check("a reading keeps its age, not its number", 180.0,
+            Math.Round(laterMono - reread.Samples()[0].At));
+        Check("...and its strength", -70, reread.Samples()[0].Rssi);
+        Check("the minute the app was not running is noticed", 1.0,
+            notRunning is double m ? Math.Round(m) : null);
+        Check("...and drawn as a gap", 2, reread.Downtimes().Count);
+
+        // A history older than the window the chart covers is not worth
+        // restoring - it would draw a day that is already off the left edge.
+        var ancient = new SignalHistory();
+        var (_, stale) = HistoryStore.Load(ancient, path, laterMono,
+            wall + SignalHistory.LengthSeconds + 60);
+        Check("everything past the window is left behind", 0, ancient.Count);
+        Check("...quietly, because that is not a fault", null, stale);
+
+        // Valid JSON of the wrong shape. 1.5 unpacked it outside its guard and
+        // then would not start at all - a lost chart is worth losing, a program
+        // that will not run is not.
+        File.WriteAllText(path, """
+            {"until": 1, "samples": [[1], "nonsense", [2, 3]], "locks": "not a list"}
+            """);
+        var damaged = new SignalHistory();
+        var (_, complaint) = HistoryStore.Load(damaged, path, laterMono, laterWall);
+        Check("a damaged file is reported, not thrown", true, complaint is not null);
+        Check("...and the app carries on with an empty chart", 0, damaged.Count);
     }
 }

@@ -251,5 +251,54 @@ internal static class PlatformChecks
             Check("advertisements were counted, with their devices", true,
                 adverts > 0 && devices > 0);
         Console.WriteLine($"        ({adverts} advertisements from {devices} devices in 8 s)");
+
+        await CheckHistoryIsFilledAsync(watch);
+    }
+
+    /// <summary>
+    /// Readings from the WATCHED device have to reach the chart's history - the
+    /// one line that connects the radio to the chart, and the only place it can
+    /// be checked is against a real radio.
+    ///
+    /// Whatever was heard a moment ago is used as the target. Its name is never
+    /// printed: a test's output gets pasted into reports, and somebody's devices
+    /// have no business being in one.
+    /// </summary>
+    static async Task CheckHistoryIsFilledAsync(PhoneWatch heardSoFar)
+    {
+        var nearby = heardSoFar.NearbyList();
+        if (nearby.Count == 0)
+        {
+            Skip("readings reaching the chart history",
+                "no NAMED device was heard just now, so there is nothing to point "
+                + "the watcher at");
+            return;
+        }
+
+        string target = nearby[0].Name;
+        var history = new SignalHistory();
+        var watch = new PhoneWatch();
+        var scanner = new BleScanner(watch,
+            new ScannerSettings
+            {
+                Target = () => target,
+                Watch = () => new WatchSettings(),
+            },
+            _ => { }, history: history);
+
+        using var stopping = new CancellationTokenSource();
+        var run = scanner.RunAsync(stopping.Token);
+        await Task.Delay(TimeSpan.FromSeconds(8));
+        stopping.Cancel();
+        await run;
+
+        if (history.Count == 0)
+            Skip("readings reaching the chart history",
+                "the device heard a moment ago went quiet during this pass - it "
+                + "may have stopped advertising or moved out of range");
+        else
+            Check("readings from the watched device reach the chart history", true,
+                history.Count > 0 && history.Samples()[0].Rssi < 0);
+        Console.WriteLine($"        ({history.Count} readings recorded in 8 s)");
     }
 }

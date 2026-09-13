@@ -23,6 +23,8 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     private PhoneWatch _watch = null!;
     private BleScanner _scanner = null!;
     private Watcher _loop = null!;
+    private readonly SignalHistory _history = new();
+    private DispatcherQueueTimer? _saveTimer;
     private TrayIcon? _tray;
     private PanelWindow? _panel;
     private SettingsWindow? _settingsWindow;
@@ -86,13 +88,23 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         _log.Write($"{AppInfo.Name} {AppInfo.Version} starting.");
 
         _watch = new PhoneWatch();
+
+        // The previous run's chart, and the gap while the app was not running.
+        var (notRunning, historyProblem) = HistoryStore.Load(_history, HistoryPath,
+            PhoneWatch.MonotonicSeconds(), Wall());
+        if (historyProblem is not null)
+            _log.Write(historyProblem);
+        if (notRunning is double minutes)
+            _log.Write($"The app was not running for {minutes:F0} min "
+                + "- marked as a gap in the chart.");
+
         _scanner = new BleScanner(_watch, new ScannerSettings
         {
             Target = () => _settings.Target,
             Watch = () => _settings.ForWatching(),
             RestartAfterSeconds = _settings.ScannerRestartSeconds,
             WatchdogSeconds = _settings.SilenceWatchdogSeconds,
-        }, _log.Write);
+        }, _log.Write, history: _history);
 
         _loop = new Watcher(_watch, () => _settings, this, this, _log)
         {
@@ -122,6 +134,14 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         _timer.Interval = Watcher.TickInterval;
         _timer.Tick += (_, _) => _loop.Tick();
         _timer.Start();
+
+        // The chart is written out on its own slow timer, not with every tick:
+        // the loop runs twice a second and writing the file that often would be
+        // pointless work. A crash then costs at most a minute of chart.
+        _saveTimer = DispatcherQueue.GetForCurrentThread().CreateTimer();
+        _saveTimer.Interval = TimeSpan.FromMinutes(1);
+        _saveTimer.Tick += (_, _) => SaveHistory();
+        _saveTimer.Start();
 
         if (_options.SelfCheck)
         {
@@ -348,8 +368,27 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     }
 
     /// <summary>Stops everything that is running, then quits.</summary>
+    /// <summary>Where this run keeps the chart.</summary>
+    private string HistoryPath => Path.Combine(_options.DataFolder, "history.json");
+
+    /// <summary>Seconds since 1970, the clock the history file is written in.</summary>
+    private static double Wall() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
+
+    private void SaveHistory()
+    {
+        string? problem = HistoryStore.Save(_history, HistoryPath,
+            PhoneWatch.MonotonicSeconds(), Wall());
+        if (problem is not null)
+            _log.Write(problem);
+    }
+
     private void Shutdown()
     {
+        // Written before anything is torn down: without this the last stretch
+        // since the previous save would be lost on every ordinary quit, and the
+        // chart would show a gap the app was actually running through.
+        SaveHistory();
+        _saveTimer?.Stop();
         _timer?.Stop();
         _stopping?.Cancel();
         HideCountdown();
@@ -427,7 +466,11 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         string tip = rssi is int dbm ? $"{label} ({dbm} dBm)" : label;
 
         if (decision.LabelKey == "st_locked")
+        {
             LastLockedAt = DateTime.Now;
+            // Reported exactly once per lock, so this cannot pile up duplicates.
+            _history.Locked(PhoneWatch.MonotonicSeconds());
+        }
 
         // Only when something actually changed: rebuilding the icon twice a
         // second would be a lot of work for a picture nobody watches.
