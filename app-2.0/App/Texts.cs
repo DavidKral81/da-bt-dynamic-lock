@@ -256,6 +256,54 @@ public static class Texts
         ["link_project"] = "Projekt na GitHubu",
         ["link_phone_app"] = "Stáhnout aplikaci pro telefon",
         ["btn_quit"] = "Ukončit aplikaci",
+
+        // --- installer ---------------------------------------------------
+        // Taken from the shipped 1.5 (windows/texts.py, the ins_ and uni_
+        // keys), with the wording made impersonal: the installer speaks about
+        // what happens, not to the reader.
+        ["ins_title_install"] = "Instalace – {0}",
+        ["ins_title_uninstall"] = "Odinstalace – {0}",
+        ["ins_subtitle"] = "Automatické uzamčení počítače při vzdálení s telefonem.",
+        ["ins_to_folder"] = "Program se nainstaluje do složky:",
+        ["ins_from_folder"] = "Program se odinstaluje ze složky:",
+        ["ins_opt_startmenu"] = "Přidat zástupce do nabídky Start",
+        ["ins_opt_desktop"] = "Přidat zástupce na plochu",
+        ["ins_opt_autostart"] = "Spouštět automaticky při přihlášení",
+        ["uni_opt_data"] = "Odstranit i nastavení a historii",
+        ["ins_btn_install"] = "Instalovat",
+        ["ins_btn_uninstall"] = "Odinstalovat",
+        ["ins_btn_cancel"] = "Zrušit",
+        ["ins_btn_close"] = "Zavřít",
+
+        // The steps Setup reports while it works. The keys are built from the
+        // word Setup passes, so a step added there without a text here shows up
+        // as a missing key rather than as silence.
+        ["ins_step_stopping"] = "Ukončuje se běžící aplikace…",
+        ["ins_step_copying"] = "Kopíruje se program…",
+        ["ins_step_shortcuts"] = "Vytvářejí se zástupci…",
+        ["ins_step_registry"] = "Zapisuje se záznam do seznamu aplikací…",
+        ["ins_step_autostart"] = "Nastavuje se spouštění při přihlášení…",
+        ["ins_step_checking"] = "Kontroluje se výsledek…",
+        ["ins_step_data"] = "Odstraňuje se nastavení a historie…",
+
+        ["ins_head_installed"] = "Nainstalováno",
+        ["ins_head_uninstalled"] = "Odinstalováno",
+        ["ins_head_problems"] = "Dokončeno s výhradami",
+        ["ins_ok_desc"] = "Hlídání vyžaduje, aby telefon vysílal signál. "
+                        + "Aplikace pro telefon je ke stažení na stránce vydání.",
+        ["uni_ok_desc"] = "Program byl z počítače odstraněn.",
+        // A heading that says something went wrong must not sit above a line
+        // claiming it all worked. Found by looking at the picture.
+        ["ins_partial_desc"] = "Program je nainstalovaný, ale některé kroky "
+                             + "se nepodařily.",
+        ["uni_partial_desc"] = "Program byl odstraněn, ale některé kroky "
+                             + "se nepodařily.",
+        ["ins_problems_desc"] = "Následující kroky se nepodařily:",
+        ["ins_opt_launch"] = "Spustit aplikaci",
+        ["ins_opt_phone"] = "Otevřít stránku se stažením aplikace pro telefon",
+
+        ["ins_admin_refused"] = "Instalace vyžaduje oprávnění správce "
+                              + "a bez nich nemůže pokračovat.",
     };
 
     private static readonly Dictionary<string, string> English = new()
@@ -443,5 +491,45 @@ public static class Texts
         ["link_project"] = "Project on GitHub",
         ["link_phone_app"] = "Download the phone app",
         ["btn_quit"] = "Quit the application",
+
+        // --- installer ---------------------------------------------------
+        ["ins_title_install"] = "Setup – {0}",
+        ["ins_title_uninstall"] = "Uninstall – {0}",
+        ["ins_subtitle"] = "Locks the computer automatically when the phone moves away.",
+        ["ins_to_folder"] = "The program will be installed into:",
+        ["ins_from_folder"] = "The program will be removed from:",
+        ["ins_opt_startmenu"] = "Add a shortcut to the Start menu",
+        ["ins_opt_desktop"] = "Add a shortcut to the desktop",
+        ["ins_opt_autostart"] = "Start automatically on sign-in",
+        ["uni_opt_data"] = "Remove the settings and history as well",
+        ["ins_btn_install"] = "Install",
+        ["ins_btn_uninstall"] = "Uninstall",
+        ["ins_btn_cancel"] = "Cancel",
+        ["ins_btn_close"] = "Close",
+
+        ["ins_step_stopping"] = "Stopping the running application…",
+        ["ins_step_copying"] = "Copying the program…",
+        ["ins_step_shortcuts"] = "Creating the shortcuts…",
+        ["ins_step_registry"] = "Writing the entry in the list of apps…",
+        ["ins_step_autostart"] = "Setting up the start on sign-in…",
+        ["ins_step_checking"] = "Checking the result…",
+        ["ins_step_data"] = "Removing the settings and history…",
+
+        ["ins_head_installed"] = "Installed",
+        ["ins_head_uninstalled"] = "Uninstalled",
+        ["ins_head_problems"] = "Finished with problems",
+        ["ins_ok_desc"] = "Watching requires the phone to broadcast a signal. "
+                        + "The phone app can be downloaded from the releases page.",
+        ["uni_ok_desc"] = "The program has been removed from the computer.",
+        ["ins_partial_desc"] = "The program is installed, but some steps "
+                             + "did not succeed.",
+        ["uni_partial_desc"] = "The program has been removed, but some steps "
+                             + "did not succeed.",
+        ["ins_problems_desc"] = "These steps did not succeed:",
+        ["ins_opt_launch"] = "Run the application",
+        ["ins_opt_phone"] = "Open the download page for the phone app",
+
+        ["ins_admin_refused"] = "Setup needs administrator rights "
+                              + "and cannot continue without them.",
     };
 }

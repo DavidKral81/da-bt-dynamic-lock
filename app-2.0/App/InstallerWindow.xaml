@@ -1,0 +1,153 @@
+<Window
+    x:Class="DaBtDynamicLock.App.InstallerWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:DaBtDynamicLock.App"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <!-- The installer, which is this very program started under another name.
+         There is no separate installer executable in 2.0: a second one would
+         have had to carry its own copy of .NET, and measuring showed that costs
+         more than the whole application does. The shipped 1.5 already worked
+         this way for the UNinstaller, so the shape is the project's own.
+
+         ONE window with two states rather than 1.5's two windows. The result is
+         the same screen with the choices swapped for an outcome, so what was
+         chosen stays visible above it.
+
+         No text is written in here. Every label is set in ApplyTexts(), so a
+         forgotten one shows up empty instead of stuck in the other language. -->
+
+    <Grid x:Name="Root" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+        <Grid.Resources>
+            <Style x:Key="Card" TargetType="Border">
+                <Setter Property="Background"
+                        Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+                <Setter Property="BorderBrush"
+                        Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="Padding" Value="16,14"/>
+            </Style>
+            <Style x:Key="CardTitle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
+            <!-- 0.95, not the 0.75 that looks tasteful in a mockup: faint grey
+                 on a dark ground is the one thing this project is told never to
+                 ship. -->
+            <Style x:Key="CardHint" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Opacity" Value="0.95"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
+        </Grid.Resources>
+
+        <!-- The middle row is Auto, not *: the window is then exactly as tall as
+             what it holds, measured rather than guessed at. A fixed height left
+             a third of the window empty below the buttons, which is the same
+             fault the chart page had. The scroller's MaxHeight is the ceiling,
+             so a long list of problems scrolls instead of growing the window
+             past the screen. -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ===================================================== top strip -->
+        <Grid Grid.Row="0" Padding="24,18,24,10" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Spacing="3">
+                <TextBlock x:Name="Heading" Text="" FontSize="18" FontWeight="SemiBold"
+                           TextWrapping="Wrap"/>
+                <TextBlock x:Name="Subtitle" Text="" Style="{StaticResource CardHint}"/>
+            </StackPanel>
+
+            <!-- The same control the settings window uses, not a second copy of
+                 the drawing. -->
+            <local:LanguageFlags x:Name="Flags" Grid.Column="1" VerticalAlignment="Top"/>
+        </Grid>
+
+        <!-- ======================================================= content -->
+        <ScrollViewer Grid.Row="1" Padding="24,6,24,6" MaxHeight="520"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="12">
+
+                <!-- what is about to happen, and what to include -->
+                <StackPanel x:Name="PageChoices" Spacing="12">
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel Spacing="6">
+                            <TextBlock x:Name="FolderLabel" Text=""
+                                       Style="{StaticResource CardTitle}"/>
+                            <TextBlock x:Name="FolderPath" Text=""
+                                       Style="{StaticResource CardHint}"
+                                       IsTextSelectionEnabled="True"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel Spacing="12">
+                            <CheckBox x:Name="OptStartMenu" Content=""/>
+                            <CheckBox x:Name="OptDesktop" Content=""/>
+                            <CheckBox x:Name="OptAutostart" Content=""/>
+                            <CheckBox x:Name="OptData" Content=""/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- how it went -->
+                <StackPanel x:Name="PageResult" Spacing="12" Visibility="Collapsed">
+                    <TextBlock x:Name="ResultHead" Text="" FontSize="18"
+                               FontWeight="SemiBold" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="ResultDesc" Text=""
+                               Style="{StaticResource CardHint}"/>
+
+                    <Border x:Name="ProblemsCard" Style="{StaticResource Card}"
+                            Visibility="Collapsed">
+                        <StackPanel Spacing="6">
+                            <TextBlock x:Name="ProblemsHead" Text=""
+                                       Style="{StaticResource CardTitle}"/>
+                            <TextBlock x:Name="ProblemsList" Text=""
+                                       Style="{StaticResource CardHint}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="AfterCard" Style="{StaticResource Card}">
+                        <StackPanel Spacing="12">
+                            <CheckBox x:Name="OptLaunch" Content=""/>
+                            <CheckBox x:Name="OptPhone" Content=""/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ================================================== bottom strip -->
+        <Grid Grid.Row="2" Padding="24,10,24,20" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <ProgressRing x:Name="Busy" Width="16" Height="16" IsActive="False"
+                              Visibility="Collapsed"/>
+                <TextBlock x:Name="StepText" Text="" Style="{StaticResource CardHint}"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                <Button x:Name="CancelButton" Content="" Click="OnCancel"/>
+                <Button x:Name="GoButton" Content="" Click="OnGo"
+                        Style="{StaticResource AccentButtonStyle}"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

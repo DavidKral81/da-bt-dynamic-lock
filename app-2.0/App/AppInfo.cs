@@ -27,6 +27,19 @@ public static class AppInfo
     /// </summary>
     public const string MutexName = @"Global\DaBTDynamicLock";
 
+    /// <summary>
+    /// The folder the running .exe actually sits in.
+    ///
+    /// ⚠ NOT AppContext.BaseDirectory. In a single-file publish - which is how
+    /// 2.0 ships - that points at the temporary folder the program unpacks
+    /// itself into: measured 13.09.2026 as
+    /// %TEMP%\.net\DaBtDynamicLock\&lt;random&gt;. Writing there scatters files
+    /// somewhere nobody would look, and registering it as a logon task's
+    /// working directory names a folder that will not exist next time.
+    /// </summary>
+    public static string ProgramFolder =>
+        Path.GetDirectoryName(Environment.ProcessPath) ?? AppContext.BaseDirectory;
+
     /// <summary>Where settings, the log and the chart history live.</summary>
     public static string DataFolder => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Name);

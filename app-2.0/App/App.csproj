@@ -33,6 +33,10 @@
     <ProjectReference Include="..\Core\Core.csproj" />
     <ProjectReference Include="..\Platform\Platform.csproj" />
     <ProjectReference Include="..\Engine\Engine.csproj" />
+    <!-- The app is also the installer: started under the setup name it puts
+         itself in place. There is no second executable, which is what keeps the
+         download at one copy of .NET instead of two. -->
+    <ProjectReference Include="..\Installer\Installer.csproj" />
   </ItemGroup>
 
   <!-- The Windows App SDK carries a machine-learning stack and a browser

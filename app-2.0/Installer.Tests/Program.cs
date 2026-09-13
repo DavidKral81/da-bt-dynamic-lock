@@ -33,6 +33,7 @@ internal static class InstallerChecks
             MakeSource(source);
             CheckInstall(root, source, target, withRegistry);
             CheckUninstall(root, target, withRegistry);
+            CheckSingleFileInstall(root, withRegistry);
         }
         finally
         {
@@ -158,6 +159,63 @@ internal static class InstallerChecks
 
         Check("the steps are reported in order", "stopping,copying,shortcuts,"
             + "registry,autostart,checking", string.Join(",", steps));
+    }
+
+    /// <summary>
+    /// Installing from ONE FILE, which is how 2.0 actually ships: the setup
+    /// executable is the whole application, so there is no folder to copy from
+    /// and the file has to land under the program's name.
+    ///
+    /// Checked separately because it is a different branch of the copy. The
+    /// folder case above would go on passing with this one broken.
+    /// </summary>
+    static void CheckSingleFileInstall(string root, bool withRegistry)
+    {
+        Console.WriteLine("\nInstalling from a single file (how 2.0 ships):");
+        string target = Path.Combine(root, "Program Files", "from-one-file");
+        var where = Where(root, target, withRegistry) with
+        {
+            TargetDir = target,
+            // A key of its own, so this does not overwrite what the first
+            // install left behind and then check its own leftovers.
+            RegistryKey = withRegistry
+                ? @"Software\DaBtDynamicLock-installer-check-single" : null,
+        };
+
+        string oneFile = Path.Combine(Environment.SystemDirectory, "PING.EXE");
+        var report = Setup.Install(where, oneFile,
+            new SetupChoices(StartMenu: false, Desktop: false, Autostart: false),
+            uninstallerSource: null, version: "2.0", language: "en", report: _ => { });
+
+        Check("installing from one file reports no problems", 0, report.Problems.Count);
+        foreach (var problem in report.Problems)
+            Console.WriteLine($"        ({problem})");
+
+        Check("...and the program is in place under its own name", true,
+            File.Exists(Path.Combine(target, Setup.ProgramName)));
+        // No second copy of a 69 MB program to remove itself with: the entry in
+        // Installed apps has to point at the program itself.
+        Check("...and no separate uninstaller was made", false,
+            File.Exists(Path.Combine(target, Setup.UninstallerName)));
+
+        if (withRegistry)
+        {
+            string uninstall;
+            using (var key = Registry.CurrentUser.OpenSubKey(where.RegistryKey!))
+                uninstall = key?.GetValue("UninstallString") as string ?? "";
+
+            Check("...and Installed apps removes it with the program itself", true,
+                uninstall.Contains(Setup.ProgramName) && uninstall.Contains("--uninstall"));
+
+            // Put back exactly as it was found: this check is the only thing
+            // that wrote there.
+            Registry.CurrentUser.DeleteSubKeyTree(where.RegistryKey!, false);
+        }
+        else
+        {
+            Skip("what Installed apps would run to remove it",
+                "this run writes nothing to the registry");
+        }
     }
 
     static void CheckUninstall(string root, string target, bool withRegistry)

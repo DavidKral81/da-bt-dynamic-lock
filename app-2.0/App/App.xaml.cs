@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Security.Principal;
 using DaBtDynamicLock.Core;
 using DaBtDynamicLock.Engine;
 using DaBtDynamicLock.Platform;
@@ -61,6 +63,16 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         // being read.
         if (problem is not null)
             _log.Write(problem);
+
+        // Setup, if that is what this copy was started as. Before the
+        // single-copy check on purpose: the installer's whole job is to replace
+        // a copy that is very likely running, so refusing to start because one
+        // is would make it useless.
+        if (_options.Setup is SetupRole role)
+        {
+            RunSetup(role);
+            return;
+        }
 
         // Setting start at logon and quitting again. Before the single-copy
         // check on purpose: the installer runs this while the app may well be
@@ -187,6 +199,93 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             _ = QuitAfterAsync(TimeSpan.FromSeconds(_options.QuitAfterSeconds));
     }
 
+    // ------------------------------------------------------------------ setup
+
+    /// <summary>
+    /// Runs as the installer rather than as the app: no tray icon, no radio, no
+    /// loop - one window that asks, does the work, and reports.
+    /// </summary>
+    private void RunSetup(SetupRole role)
+    {
+        // Program Files and HKLM both need administrator rights. Asked for
+        // rather than complained about: what a person does with a downloaded
+        // setup is double-click it, and telling them to go and start it again
+        // as an administrator is a step a normal installer does not ask for.
+        if (!IsAdministrator())
+        {
+            if (Elevate(role))
+            {
+                _log.Write("Setup restarted with administrator rights.");
+                Exit();
+                Environment.Exit(0);
+                return;
+            }
+
+            // The prompt was refused, or elevation is not available at all.
+            _log.Write("Setup was not given administrator rights - stopping.");
+            Texts.Language = SetupLanguage(role);
+            Native.MessageBoxW(0, Texts.Get("ins_admin_refused"), AppInfo.Name,
+                Native.MB_OK | Native.MB_ICONINFORMATION | Native.MB_SETFOREGROUND);
+            Exit();
+            Environment.Exit(1);
+            return;
+        }
+
+        Texts.Language = SetupLanguage(role);
+        var window = new InstallerWindow(role == SetupRole.Uninstall, _log.Write);
+        window.ShowWindow();
+    }
+
+    /// <summary>
+    /// Which language setup speaks.
+    ///
+    /// A removal uses what the installation was done in, kept in the registry
+    /// for exactly this: it runs elevated, so the user's settings file is not
+    /// the one it can read. An installation has nothing to go on yet and
+    /// follows WINDOWS - the app must not come up in Czech for somebody whose
+    /// computer is in English.
+    /// </summary>
+    private static string SetupLanguage(SetupRole role)
+    {
+        if (role == SetupRole.Uninstall
+            && Installer.Setup.StoredLanguage(InstallerWindow.Where()) is string stored)
+            return stored;
+
+        return System.Globalization.CultureInfo.CurrentUICulture
+            .TwoLetterISOLanguageName == "cs" ? "cs" : "en";
+    }
+
+    private static bool IsAdministrator()
+    {
+        using var who = WindowsIdentity.GetCurrent();
+        return new WindowsPrincipal(who).IsInRole(WindowsBuiltInRole.Administrator);
+    }
+
+    /// <summary>Starts this same file again, asking Windows for the rights.</summary>
+    private static bool Elevate(SetupRole role)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = Environment.ProcessPath!,
+                Arguments = role == SetupRole.Uninstall ? "--uninstall" : "--install",
+                // Both are needed: runas is what raises the prompt, and it only
+                // works when Windows is asked to open the file rather than the
+                // process being started directly.
+                UseShellExecute = true,
+                Verb = "runas",
+            });
+            return true;
+        }
+        catch (Exception)
+        {
+            // Refusing the prompt throws. That is a decision, not a fault, so
+            // the caller says so plainly instead of this reporting an error.
+            return false;
+        }
+    }
+
     /// <summary>
     /// Opens what the app can show, saves a picture of each, and quits.
     ///
@@ -282,6 +381,29 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                         }
                     }
                     _settingsWindow.HideWindow();
+                }
+
+                // The installer, in both roles and with its outcome screen.
+                // It is this same program under another name, so it belongs in
+                // the same pass: a window nobody photographs is a window whose
+                // faults nobody sees, and this one was written last.
+                //
+                // Only shown, never worked: the buttons are what would install
+                // anything, and nothing presses them here.
+                foreach (bool uninstall in new[] { false, true })
+                {
+                    string role = uninstall ? "uninstall" : "install";
+                    var setup = new InstallerWindow(uninstall, _log.Write);
+                    setup.ShowWindow();
+                    await Task.Delay(600);
+                    Note(problems, Screenshot.Save(setup.Handle,
+                        Path.Combine(folder, $"setup-{role}-{language}.png")));
+
+                    setup.ShowSampleResult(withProblems: uninstall);
+                    await Task.Delay(400);
+                    Note(problems, Screenshot.Save(setup.Handle,
+                        Path.Combine(folder, $"setup-{role}-done-{language}.png")));
+                    setup.HideWindow();
                 }
 
                 ShowCountdown(9);
@@ -674,9 +796,13 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     /// </summary>
     private AutostartTarget AutostartWhere() => new(
         TaskName: AppInfo.Name,
-        Program: Environment.ProcessPath ?? AppContext.BaseDirectory + AppInfo.Name + ".exe",
+        Program: Environment.ProcessPath
+            ?? Path.Combine(AppInfo.ProgramFolder, AppInfo.Name + ".exe"),
         Arguments: "",
-        WorkingDirectory: AppContext.BaseDirectory,
+        // Where the .exe is, never AppContext.BaseDirectory: in a single-file
+        // build that is a temporary unpack folder, so the logon task would name
+        // a working directory that is gone by the next sign-in.
+        WorkingDirectory: AppInfo.ProgramFolder,
         ShortcutPath: Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.Startup),
             AppInfo.Name + ".lnk"),

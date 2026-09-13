@@ -1,5 +1,12 @@
 namespace DaBtDynamicLock.App;
 
+/// <summary>What this run is: the app itself, or setup putting it in or taking it out.</summary>
+public enum SetupRole
+{
+    Install,
+    Uninstall,
+}
+
 /// <summary>
 /// Command line switches. The same three the Python version has, for the same
 /// reason: the app has to be runnable next to the installed one without
@@ -7,6 +14,16 @@ namespace DaBtDynamicLock.App;
 /// </summary>
 public sealed record Options
 {
+    /// <summary>
+    /// Set when this run is an installation or a removal rather than the app.
+    ///
+    /// There is no separate installer program in 2.0: the application IS the
+    /// installer, published as one file under another name. Measured on
+    /// 13.09.2026 - a second program would have had to carry its own copy of
+    /// .NET, which is 72 MB, more than the whole application takes.
+    /// </summary>
+    public SetupRole? Setup { get; init; }
+
     /// <summary>Everything runs, but the screen is never really locked.</summary>
     public bool DryRun { get; init; }
 
@@ -49,8 +66,18 @@ public sealed record Options
             : argv.Contains("--autostart-off") ? false
             : null;
 
+        // Setup, but never instead of a run that was asked for explicitly: a
+        // picture or self-check run of a file that happens to be named setup
+        // still has to take pictures.
+        bool otherJob = selfCheck || shots is not null || autostart is not null;
+        SetupRole? role = otherJob ? null
+            : argv.Contains("--uninstall") ? SetupRole.Uninstall
+            : argv.Contains("--install") || NameSaysSetup() ? SetupRole.Install
+            : null;
+
         return new Options
         {
+            Setup = role,
             Autostart = autostart,
             DryRun = dryRun || selfCheck || shots is not null,
             QuitAfterSeconds = double.TryParse(ValueAfter(argv, "--quit-after"),
@@ -67,7 +94,7 @@ public sealed record Options
             // test run's files somewhere the person running it expects to find
             // them, instead of scattering a named folder through TEMP.
             DataFolder = dryRun || selfCheck || shots is not null
-                ? Path.Combine(AppContext.BaseDirectory, "dry-run-data")
+                ? Path.Combine(AppInfo.ProgramFolder, "dry-run-data")
                 : AppInfo.DataFolder,
         };
     }
@@ -94,6 +121,19 @@ public sealed record Options
         int at = Array.IndexOf(argv, name);
         return at >= 0 && at + 1 < argv.Length ? argv[at + 1] : null;
     }
+
+    /// <summary>
+    /// Whether the file this is running from is the setup copy.
+    ///
+    /// The role has to be readable from the NAME as well as from a switch:
+    /// what a person downloads is DaBTDynamicLock-setup.exe and what they do
+    /// with it is double-click it, with no switch at all. The shipped version
+    /// learned this the other way round, when an uninstaller opened by
+    /// double-click behaved as an installer.
+    /// </summary>
+    private static bool NameSaysSetup() =>
+        Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "")
+            .Contains("setup", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Why the screenshot folder cannot be used, or null when it can.

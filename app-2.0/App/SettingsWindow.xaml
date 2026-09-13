@@ -2,6 +2,7 @@
     x:Class="DaBtDynamicLock.App.SettingsWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:DaBtDynamicLock.App"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
@@ -72,47 +73,10 @@
             <TextBlock x:Name="AppName" Text="" FontSize="15" FontWeight="SemiBold"
                        VerticalAlignment="Center"/>
 
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10"
-                        VerticalAlignment="Center">
-                <!-- Drawn rather than lettered: a flag is readable to somebody
-                     who installed a language they cannot read. The size is not
-                     negotiable either - below about 30x20 the Union Jack turns
-                     into a red smudge, the same lesson the Tk checkboxes
-                     taught. The active one is marked by the bar UNDER it; Tk
-                     could not dim the other one and one way of marking it
-                     across the whole project beats two. -->
-                <StackPanel x:Name="FlagCs" Spacing="3" Tag="cs"
-                            PointerPressed="OnFlagPressed">
-                    <Canvas Width="30" Height="20">
-                        <Rectangle Width="30" Height="10" Fill="#FFFFFF"/>
-                        <Rectangle Width="30" Height="10" Canvas.Top="10" Fill="#D7141A"/>
-                        <Polygon Points="0,0 15,10 0,20" Fill="#11457E"/>
-                        <Rectangle Width="30" Height="20" Stroke="#40808080" StrokeThickness="1"/>
-                    </Canvas>
-                    <Rectangle x:Name="FlagCsMark" Height="3" RadiusX="1.5" RadiusY="1.5"
-                               Fill="{ThemeResource AccentFillColorDefaultBrush}"/>
-                </StackPanel>
-
-                <StackPanel x:Name="FlagEn" Spacing="3" Tag="en"
-                            PointerPressed="OnFlagPressed">
-                    <Canvas Width="30" Height="20">
-                        <Rectangle Width="30" Height="20" Fill="#012169"/>
-                        <!-- white diagonals, then the red ones on top, then the
-                             upright cross - the order the real flag is built in -->
-                        <Path Fill="#FFFFFF" Data="M0,0 L9,0 L30,14 L30,20 L21,20 L0,6 Z"/>
-                        <Path Fill="#FFFFFF" Data="M30,0 L30,6 L9,20 L0,20 L0,14 L21,0 Z"/>
-                        <Path Fill="#C8102E" Data="M0,0 L5,0 L30,16.5 L30,20 L25,20 L0,3.5 Z"/>
-                        <Path Fill="#C8102E" Data="M30,0 L30,3.5 L5,20 L0,20 L0,16.5 L25,0 Z"/>
-                        <Rectangle Width="30" Height="7" Canvas.Top="6.5" Fill="#FFFFFF"/>
-                        <Rectangle Width="8" Height="20" Canvas.Left="11" Fill="#FFFFFF"/>
-                        <Rectangle Width="30" Height="4" Canvas.Top="8" Fill="#C8102E"/>
-                        <Rectangle Width="5" Height="20" Canvas.Left="12.5" Fill="#C8102E"/>
-                        <Rectangle Width="30" Height="20" Stroke="#40808080" StrokeThickness="1"/>
-                    </Canvas>
-                    <Rectangle x:Name="FlagEnMark" Height="3" RadiusX="1.5" RadiusY="1.5"
-                               Fill="{ThemeResource AccentFillColorDefaultBrush}"/>
-                </StackPanel>
-            </StackPanel>
+            <!-- One control, shared with the installer window. The drawing used
+                 to sit here; it moved out the moment a second window needed it,
+                 rather than being copied into both. -->
+            <local:LanguageFlags x:Name="Flags" Grid.Column="1"/>
         </Grid>
 
         <!-- ===================================================== navigation -->

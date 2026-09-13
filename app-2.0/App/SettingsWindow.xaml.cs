@@ -84,41 +84,15 @@ public sealed partial class SettingsWindow : Window
         // last looked at is still the one showing.
         AppWindow.Closing += (_, e) => { e.Cancel = true; HideWindow(); };
 
+        // Wired here rather than in XAML: the event carries a plain string, and
+        // XAML can only attach to events with a WinRT signature.
+        Flags.LanguagePicked += OnLanguagePicked;
+
         ApplyTexts();
         Nav.SelectedIndex = 0;
     }
 
-    /// <summary>
-    /// Paints the title bar to match the window.
-    ///
-    /// An unpackaged WinUI 3 window does NOT get the system theme on its title
-    /// bar: the first picture showed a white strip over a dark window. The
-    /// colours are set from the same theme brushes the content uses, so there
-    /// is one decision about what the window looks like rather than two.
-    /// </summary>
-    private void PaintTitleBar()
-    {
-        var bar = AppWindow.TitleBar;
-        var background = (Root.Background as Microsoft.UI.Xaml.Media.SolidColorBrush)?.Color;
-        if (background is not Windows.UI.Color colour)
-            return;
-
-        bar.BackgroundColor = colour;
-        bar.InactiveBackgroundColor = colour;
-        bar.ButtonBackgroundColor = colour;
-        bar.ButtonInactiveBackgroundColor = colour;
-
-        // The foreground follows the content's, so this stays right in either
-        // theme instead of being a hard-coded white that vanishes on a light one.
-        var ink = (Application.Current.Resources["TextFillColorPrimaryBrush"]
-            as Microsoft.UI.Xaml.Media.SolidColorBrush)?.Color;
-        if (ink is Windows.UI.Color text)
-        {
-            bar.ForegroundColor = text;
-            bar.ButtonForegroundColor = text;
-            bar.ButtonHoverForegroundColor = text;
-        }
-    }
+    private void PaintTitleBar() => WindowLayout.PaintTitleBar(AppWindow, Root);
 
     // ------------------------------------------------------------- showing
 
@@ -190,39 +164,8 @@ public sealed partial class SettingsWindow : Window
     internal string PageName =>
         (Nav.SelectedItem as FrameworkElement)?.Tag as string ?? "page";
 
-    private static (int X, int Y, int W, int H) Placement()
-    {
-        var screens = Monitors.WorkAreas();
-        var screen = screens.Value.FirstOrDefault(s => s.Primary)
-            ?? screens.Value.FirstOrDefault();
-
-        if (screen is null)
-            return (120, 120, WidthDip, HeightDip);
-
-        // The scale comes from the MONITOR: the window is not on screen yet, so
-        // XamlRoot would report 1.0 and the window would come out a fifth too
-        // small on a 125 % display - measured on the countdown box.
-        var rect = new Native.RECT
-        {
-            Left = screen.Left,
-            Top = screen.Top,
-            Right = screen.Right,
-            Bottom = screen.Bottom,
-        };
-        nint monitor = Native.MonitorFromRect(ref rect, Native.MONITOR_DEFAULTTONEAREST);
-        double scale = Native.GetDpiForMonitor(monitor, 0, out uint dpiX, out _) == 0 && dpiX > 0
-            ? dpiX / 96.0
-            : 1.0;
-
-        // Kept inside the work area: on a small screen the size asked for is
-        // bigger than the space there is, and a window taller than the screen
-        // puts its bottom edge out of reach.
-        int w = Math.Min((int)Math.Round(WidthDip * scale), screen.Width);
-        int h = Math.Min((int)Math.Round(HeightDip * scale), screen.Height);
-
-        return (screen.Left + (screen.Width - w) / 2,
-                screen.Top + (screen.Height - h) / 2, w, h);
-    }
+    private static (int X, int Y, int W, int H) Placement() =>
+        WindowLayout.Centred(WidthDip, HeightDip);
 
     // --------------------------------------------------------------- texts
 
@@ -544,12 +487,7 @@ public sealed partial class SettingsWindow : Window
         cfg.TrustedNetworks.Any(n => n.Ssid == here.Ssid && n.Bssid == here.Bssid);
 
     /// <summary>Marks the language in use with the bar under its flag.</summary>
-    private void MarkLanguage()
-    {
-        bool english = Texts.Language == "en";
-        FlagCsMark.Opacity = english ? 0 : 1;
-        FlagEnMark.Opacity = english ? 1 : 0;
-    }
+    private void MarkLanguage() => Flags.Mark();
 
     // ------------------------------------------------------- device list
 
@@ -708,12 +646,8 @@ public sealed partial class SettingsWindow : Window
     private static Visibility Shown(bool yes) =>
         yes ? Visibility.Visible : Visibility.Collapsed;
 
-    private void OnFlagPressed(object sender, PointerRoutedEventArgs e)
+    private void OnLanguagePicked(string language)
     {
-        string language = (sender as FrameworkElement)?.Tag as string ?? "cs";
-        if (language == Texts.Language)
-            return;
-
         Texts.Language = language;
         _host.Settings.Language = language;
         _host.SaveSettings();

@@ -58,7 +58,7 @@ public static class Setup
     /// stopping at the first thing: a shortcut that could not be made is not a
     /// reason to leave a half-installed program behind.
     /// </summary>
-    public static SetupReport Install(SetupPaths where, string sourceDir,
+    public static SetupReport Install(SetupPaths where, string source,
         SetupChoices what, string? uninstallerSource, string version,
         string language, Action<string> report)
     {
@@ -72,7 +72,7 @@ public static class Setup
         // be deleted (a locked file) is not fatal - the copy overwrites it.
         if (Directory.Exists(where.TargetDir))
             TryDeleteFolder(where.TargetDir);
-        CopyFolder(sourceDir, where.TargetDir);
+        CopyProgram(source, where.TargetDir);
 
         string program = Path.Combine(where.TargetDir, ProgramName);
         if (!File.Exists(program))
@@ -312,8 +312,15 @@ public static class Setup
             key.SetValue("Publisher", "David");
             key.SetValue("DisplayIcon", program);
             key.SetValue("InstallLocation", where.TargetDir);
-            key.SetValue("UninstallString",
-                $"\"{Path.Combine(where.TargetDir, UninstallerName)}\" --uninstall");
+            // Pointed at whichever file is actually there, not at a name taken
+            // on trust. In 2.0 the program IS the installer, so there is no
+            // second copy to remove it with - and shipping one would have put
+            // another 69 MB in Program Files for no reason. A copy is still
+            // honoured when one was put there.
+            string remover = Path.Combine(where.TargetDir, UninstallerName);
+            if (!File.Exists(remover))
+                remover = program;
+            key.SetValue("UninstallString", $"\"{remover}\" --uninstall");
             key.SetValue("InstallerLanguage", language);
             key.SetValue("EstimatedSize", (int)(size / 1024), RegistryValueKind.DWord);
             key.SetValue("NoModify", 1, RegistryValueKind.DWord);
@@ -365,9 +372,25 @@ public static class Setup
     private static RegistryKey RegistryKeyFor(SetupPaths where) =>
         RegistryKey.OpenBaseKey(where.RegistryRoot, RegistryView.Default);
 
-    private static void CopyFolder(string from, string to)
+    /// <summary>
+    /// Puts the program in place, from either a folder or a single file.
+    ///
+    /// Both, because the shipped installer is the application itself published
+    /// as ONE file: installing then means copying that file in under the
+    /// program's name, with no folder to walk. A folder is still accepted so
+    /// the whole of this can be exercised against a harmless directory, which
+    /// is how it gets tested at all.
+    /// </summary>
+    private static void CopyProgram(string from, string to)
     {
         Directory.CreateDirectory(to);
+
+        if (File.Exists(from))
+        {
+            File.Copy(from, Path.Combine(to, ProgramName), true);
+            return;
+        }
+
         foreach (var file in Directory.EnumerateFiles(from, "*", SearchOption.AllDirectories))
         {
             string relative = Path.GetRelativePath(from, file);

@@ -167,14 +167,14 @@ public sealed partial class SettingsWindow
         // handler call is honest: there is no property to set that would raise
         // the event the way a press does.
         string before = NavOverview.Text;
-        OnFlagPressed(FlagEn, null!);
+        Flags.Press("en");
         lines.Add(NavOverview.Text != before && Texts.Language == "en"
             ? "  OK    the flag switches the language and redraws the labels"
             : $"  FAIL  the language did not redraw: \"{before}\" -> "
                 + $"\"{NavOverview.Text}\" ({Texts.Language})");
         Check("the chosen language is saved", "en", s => s.Language);
 
-        OnFlagPressed(FlagCs, null!);
+        Flags.Press("cs");
         lines.Add(NavOverview.Text == before
             ? "  OK    switching back restores the first language"
             : $"  FAIL  switching back left \"{NavOverview.Text}\"");
