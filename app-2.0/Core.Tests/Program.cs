@@ -304,6 +304,52 @@ Check("a radio that hears again clears the count", DeafRadioVerdict.RadioHearsTh
 Check("so the next spell gets the full allowance", DeafRadioVerdict.HoldOff,
     deaf.Judge(0, 0));
 
+Console.WriteLine("\nThe history the chart is drawn from:");
+var history = new SignalHistory();
+history.Add(1000, -60);
+history.Add(1001, -62);
+history.Locked(1002);
+Check("readings are kept", 2, history.Count);
+Check("so are the locks", 1, history.Locks().Count);
+
+// Older than the window the chart covers at all - it has to fall off, or a
+// machine left running for a week would carry a week of samples. The new
+// reading is far enough ahead that all three earlier entries fall outside;
+// putting it exactly on the boundary would keep them, since the cut is "older
+// than", not "as old as".
+history.Add(1010 + SignalHistory.LengthSeconds, -70);
+Check("anything past the window is forgotten", 1, history.Count);
+Check("and so are its locks", 0, history.Locks().Count);
+
+// Thinning: the last hour stays sample for sample, older stretches keep about
+// one every ten seconds.
+history = new SignalHistory();
+double start = 10_000;
+for (int i = 0; i < 600; i++)              // 600 samples one second apart,
+    history.Add(start + i, -60);           // all of them older than an hour
+for (int i = 0; i < 30; i++)               // and 30 from the last minute
+    history.Add(start + 7200 + i, -60);
+Check("before thinning, everything is there", 630, history.Count);
+
+history.Thin(start + 7230);
+// 600 samples one second apart span 599 s, so keeping one every ten gives the
+// one at 0 s and then 10, 20 … 590 - sixty in all. The 30 recent ones are never
+// touched.
+Check("the old stretch is thinned to one sample per ten seconds", 60,
+    history.Samples().Count(s => s.At < start + 7200));
+Check("the last hour is left alone", 30,
+    history.Samples().Count(s => s.At >= start + 7200));
+
+// Merging per pixel column - what keeps the chart from drawing a hundred
+// thousand objects and freezing, as the Python one did before it.
+var column = SignalHistory.Merge(
+    new[] { new Sample(5, -70), new Sample(6, -50), new Sample(9, -60) }, 5, 10);
+Check("a column knows how many readings fell into it", 3, column?.Count);
+Check("...and the weakest of them", -70, column?.Weakest);
+Check("...and the strongest", -50, column?.Strongest);
+Check("a column with no reading is nothing to draw", null,
+    SignalHistory.Merge(new[] { new Sample(5, -70) }, 10, 20));
+
 Console.WriteLine();
 if (failures.Count == 0)
 {
