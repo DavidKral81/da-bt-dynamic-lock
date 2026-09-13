@@ -54,6 +54,9 @@ public interface IAppHost
     /// phone has no business being in one.
     /// </summary>
     IReadOnlyList<NearbyDevice> NearbyDevices();
+
+    /// <summary>What the chart is drawn from.</summary>
+    SignalHistory History { get; }
 }
 
 /// <summary>

@@ -204,6 +204,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             // setup rather than "none chosen". It goes into the dry run's own
             // settings file, never the installed app's.
             _settings.Target = SampleDevices[0].Name;
+            FillSampleHistory();
             _loop.Tick();
 
             foreach (string language in new[] { "cs", "en" })
@@ -573,6 +574,8 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
 
     public string DataFolder => _options.DataFolder;
 
+    public SignalHistory History => _history;
+
     public void OpenSettingsWindow()
     {
         // Built on first use and kept afterwards: most runs never open it, and
@@ -628,6 +631,31 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     /// reports.
     /// </summary>
     private bool MadeUpData => _options.ScreenshotFolder is not null || _options.SelfCheck;
+
+    /// <summary>
+    /// Fills the chart with a made-up quarter of an hour, so the picture run
+    /// has something to photograph. A real history cannot be used: the machine
+    /// taking the pictures may have heard nothing at all, and an empty chart
+    /// shows neither the curve, nor a lock, nor a gap.
+    /// </summary>
+    private void FillSampleHistory()
+    {
+        double now = PhoneWatch.MonotonicSeconds();
+        var wobble = new Random(1);     // fixed seed: the same picture every time
+
+        for (double back = 900; back > 0; back -= 2)
+        {
+            // A phone on the desk sits around -65 dBm and jumps by several dB
+            // even lying still, which is why the app smooths before deciding.
+            double at = now - back;
+            if (back is < 640 and > 560)     // a spell out of range
+                continue;
+            int rssi = -65 + wobble.Next(-9, 9);
+            _history.Add(at, rssi);
+        }
+        _history.Locked(now - 600);
+        _history.NotRunning(now - 400, now - 300);
+    }
 
     /// <summary>Made-up data for the pictures, so nothing real ends up in one.</summary>
     private static readonly WifiConnection SampleNetwork =

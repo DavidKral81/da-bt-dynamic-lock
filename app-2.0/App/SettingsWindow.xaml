@@ -134,6 +134,12 @@
                         <TextBlock x:Name="NavOverview" Text="" VerticalAlignment="Center"/>
                     </StackPanel>
                 </ListViewItem>
+                <ListViewItem Tag="signal">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <FontIcon Glyph="&#xE9D2;" FontSize="16"/>
+                        <TextBlock x:Name="NavSignal" Text="" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </ListViewItem>
                 <ListViewItem Tag="phone">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <FontIcon Glyph="&#xE8EA;" FontSize="16"/>
@@ -259,6 +265,44 @@
                         <Button x:Name="PauseStop" Content="" Click="OnEndPause" CornerRadius="14"
                                 Padding="14,7"/>
                     </StackPanel>
+                </StackPanel>
+
+                <!-- ======== signal -->
+                <StackPanel x:Name="PageSignal" Spacing="14" Visibility="Collapsed">
+                    <TextBlock x:Name="TitleSignal" Text="" FontSize="24" FontWeight="SemiBold"/>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel Spacing="10">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="ChartTitle" Text=""
+                                           Style="{StaticResource CardTitle}"
+                                           VerticalAlignment="Center"/>
+                                <!-- The ranges are built in code: their labels are
+                                     translated, and one built here would keep the
+                                     language it was written in. -->
+                                <StackPanel x:Name="RangeButtons" Grid.Column="1"
+                                            Orientation="Horizontal" Spacing="4"/>
+                            </Grid>
+
+                            <!-- Plain shapes on a Canvas, no charting library: the
+                                 whole picture is a polyline, a few grid lines and
+                                 some rectangles, and a dependency would have to be
+                                 restored before anything could be built. -->
+                            <Canvas x:Name="Plot" Height="240"
+                                    HorizontalAlignment="Stretch"
+                                    SizeChanged="OnPlotResized"/>
+
+                            <TextBlock x:Name="ChartSummary" Text=""
+                                       Style="{StaticResource CardHint}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock x:Name="ChartLegend" Text=""
+                               Style="{StaticResource CardHint}"/>
                 </StackPanel>
 
                 <!-- ======== phone -->

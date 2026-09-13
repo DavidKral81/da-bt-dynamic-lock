@@ -350,6 +350,50 @@ Check("...and the strongest", -50, column?.Strongest);
 Check("a column with no reading is nothing to draw", null,
     SignalHistory.Merge(new[] { new Sample(5, -70) }, 10, 20));
 
+Console.WriteLine("\nWhere things go in the chart:");
+
+// The grid is anchored to round LOCAL times, not to "so many seconds back from
+// now": with an offset from now the lines shift on every refresh and the chart
+// flickers, and the labels have to read as clock times.
+// 1700000000 is 23:33:20 UTC; with a one hour offset the half-minute lines fall
+// at :33:30, :34:00 and so on.
+var grid = ChartLayout.GridLines(1_700_000_000, 1_700_000_120, 3600);
+Check("a two minute range gets a line every 30 s", 30.0,
+    grid.Count > 1 ? grid[1] - grid[0] : 0);
+Check("...anchored to a round local time", 0.0, (grid[0] + 3600) % 30);
+
+// The case that catches an anchor done in UTC: a half-hour time zone AND a
+// step the offset is not a whole multiple of. With a 15 minute step it would
+// pass either way - every real time zone is a multiple of 15 minutes - so the
+// eight hour range is used, where the step is a full hour.
+const double halfHourZone = 3600 * 5.5;
+var half = ChartLayout.GridLines(1_700_000_000, 1_700_028_800, halfHourZone);
+Check("...on the local hour in a half-hour time zone, not the UTC one", 0.0,
+    (half[0] + halfHourZone) % 3600);
+
+Check("a day's range is spaced three-hourly", 10800.0, ChartLayout.GridStep(86400));
+
+// The strength axis. Anything past either end is pinned to the edge - -127
+// means "unknown" and would otherwise drag the line off the picture.
+Check("the top of the axis is the top of the plot", 0.0, ChartLayout.Y(-30, 200));
+Check("the bottom is the bottom", 200.0, ChartLayout.Y(-110, 200));
+Check("halfway down is halfway", 100.0, ChartLayout.Y(-70, 200));
+Check("an impossible reading is pinned, not drawn outside", 200.0,
+    ChartLayout.Y(-127, 200));
+
+// The summary under the chart.
+var seen = new[]
+{
+    new Sample(10, -80), new Sample(20, -60), new Sample(70, -70),
+};
+var summary = ChartLayout.Summarise(seen, 0, 100);
+Check("the summary counts what is in view", 3, summary.Count);
+Check("...uses the middle strength, not the average", -70, summary.MedianRssi);
+Check("...and finds the longest silence, including the tail", 50.0,
+    summary.LongestSilenceSeconds);
+Check("an empty range is all silence", 100.0,
+    ChartLayout.Summarise(Array.Empty<Sample>(), 0, 100).LongestSilenceSeconds);
+
 Console.WriteLine();
 if (failures.Count == 0)
 {

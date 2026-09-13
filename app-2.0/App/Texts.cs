@@ -96,6 +96,7 @@ public static class Texts
         // --- settings window: navigation ---------------------------------
         ["app_version"] = "verze {0}",
         ["nav_overview"] = "Přehled",
+        ["nav_signal"] = "Signál",
         ["nav_phone"] = "Telefon",
         ["nav_locking"] = "Zamykání",
         ["nav_networks"] = "Wi-Fi sítě",
@@ -130,6 +131,20 @@ public static class Texts
         ["why_idle_guard"] = "Pracuje se na počítači, takže se nezamyká, i když "
                            + "telefon není slyšet.",
         ["why_watching"] = "Notebook se zamkne {0} s poté, co telefon přestane být slyšet.",
+
+        // --- settings window: the chart ----------------------------------
+        ["chart_title"] = "Síla signálu telefonu",
+        ["range_2min"] = "2 min",
+        ["range_5min"] = "5 min",
+        ["range_15min"] = "15 min",
+        ["range_1h"] = "1 h",
+        ["range_8h"] = "8 h",
+        ["range_1day"] = "1 den",
+        ["chart_summary"] = "{0} signálů · {1}/min · medián {2} dBm · "
+                          + "nejdelší ticho {3} s",
+        ["chart_no_signal"] = "V tomhle úseku není žádný signál.",
+        ["chart_legend"] = "Výš = silnější signál. Svislá čára je uzamknutí, "
+                         + "světlý pruh doba, kdy aplikace neběžela.",
 
         // --- settings window: phone --------------------------------------
         ["card_phone"] = "Které zařízení hlídat",
@@ -240,6 +255,7 @@ public static class Texts
         // --- settings window: navigation ---------------------------------
         ["app_version"] = "version {0}",
         ["nav_overview"] = "Overview",
+        ["nav_signal"] = "Signal",
         ["nav_phone"] = "Phone",
         ["nav_locking"] = "Locking",
         ["nav_networks"] = "Wi-Fi networks",
@@ -275,6 +291,20 @@ public static class Texts
         ["why_idle_guard"] = "You are using the computer, so it will not lock even "
                            + "though the phone cannot be heard.",
         ["why_watching"] = "The computer locks {0} s after the phone stops being heard.",
+
+        // --- settings window: the chart ----------------------------------
+        ["chart_title"] = "The phone's signal strength",
+        ["range_2min"] = "2 min",
+        ["range_5min"] = "5 min",
+        ["range_15min"] = "15 min",
+        ["range_1h"] = "1 h",
+        ["range_8h"] = "8 h",
+        ["range_1day"] = "1 day",
+        ["chart_summary"] = "{0} signals · {1}/min · median {2} dBm · "
+                          + "longest silence {3} s",
+        ["chart_no_signal"] = "No signal at all in this range.",
+        ["chart_legend"] = "Higher means stronger. A vertical line is a lock, "
+                         + "a pale band is time the app was not running.",
 
         // --- settings window: phone --------------------------------------
         ["card_phone"] = "Which device to watch",

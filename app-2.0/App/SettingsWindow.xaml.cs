@@ -233,13 +233,18 @@ public sealed partial class SettingsWindow : Window
             NavFoot.Text = Texts.Get("app_version", AppInfo.Version);
 
             NavOverview.Text = Texts.Get("nav_overview");
+            NavSignal.Text = Texts.Get("nav_signal");
             NavPhone.Text = Texts.Get("nav_phone");
             NavLocking.Text = Texts.Get("nav_locking");
             NavNetworks.Text = Texts.Get("nav_networks");
             NavApp.Text = Texts.Get("nav_app");
 
             TitleOverview.Text = Texts.Get("nav_overview");
+            TitleSignal.Text = Texts.Get("nav_signal");
             TitlePhone.Text = Texts.Get("nav_phone");
+            ChartTitle.Text = Texts.Get("chart_title");
+            ChartLegend.Text = Texts.Get("chart_legend");
+            BuildRangeButtons();
             TitleLocking.Text = Texts.Get("nav_locking");
             TitleNetworks.Text = Texts.Get("nav_networks");
             TitleApp.Text = Texts.Get("nav_app");
@@ -379,6 +384,11 @@ public sealed partial class SettingsWindow : Window
             MarkLanguage();
             FillDevices(cfg);
             FillNetworks(cfg);
+
+            // Only while its page is showing: redrawing a chart nobody is
+            // looking at, twice a second, is work for nothing.
+            if (PageSignal.Visibility == Visibility.Visible)
+                DrawChart();
         }
         finally
         {
@@ -603,10 +613,14 @@ public sealed partial class SettingsWindow : Window
         string page = (Nav.SelectedItem as FrameworkElement)?.Tag as string ?? "overview";
 
         PageOverview.Visibility = Shown(page == "overview");
+        PageSignal.Visibility = Shown(page == "signal");
         PagePhone.Visibility = Shown(page == "phone");
         PageLocking.Visibility = Shown(page == "locking");
         PageNetworks.Visibility = Shown(page == "networks");
         PageApp.Visibility = Shown(page == "app");
+
+        if (page == "signal")
+            DrawChart();
     }
 
     // Not called Visible: Window already has a member by that name, and hiding
