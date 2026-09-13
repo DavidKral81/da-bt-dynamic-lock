@@ -135,9 +135,9 @@ public static class Texts
         ["foot_log"] = "Záznam",
 
         ["msg_no_signal"] = "Telefon se {0} min neozval – hlídání nefunguje.",
-        ["msg_already_running"] = "Da BT Dynamic Lock už běží.\n\nNajdeš ho jako "
-                                + "ikonu v oznamovací oblasti vpravo dole u hodin "
-                                + "(případně pod šipkou skrytých ikon).",
+        ["msg_already_running"] = "Da BT Dynamic Lock už běží.\n\nAplikace je "
+                                + "dostupná jako ikona v oznamovací oblasti vpravo "
+                                + "dole u hodin, případně pod šipkou skrytých ikon.",
 
         // --- settings window: navigation ---------------------------------
         ["app_version"] = "verze {0}",
@@ -166,17 +166,17 @@ public static class Texts
         ["act_switch_off"] = "Vypnout hlídání",
         ["act_switch_on"] = "Zapnout hlídání",
 
-        ["why_off"] = "Hlídání je vypnuté. Notebook se sám nezamkne.",
+        ["why_off"] = "Hlídání je vypnuté. Počítač se sám nezamkne.",
         ["why_screen_locked"] = "Za zamčenou obrazovkou se nic nerozhoduje. "
-                              + "Hlídá se zase po odemknutí.",
+                              + "Hlídání pokračuje po odemknutí.",
         ["why_paused"] = "Až pozastavení skončí, hlídání se samo zapne.",
-        ["why_trusted_network"] = "Na téhle Wi-Fi se zamykat nemá, takže se nezamyká.",
-        ["why_waiting"] = "Telefon ještě nebyl slyšet. Zkontroluj, jestli v něm "
-                        + "běží aplikace Da BT Dynamic Lock.",
-        ["why_locked"] = "Zamčeno. Hlídat se začne znovu, až bude telefon zase slyšet.",
-        ["why_idle_guard"] = "Pracuje se na počítači, takže se nezamyká, i když "
-                           + "telefon není slyšet.",
-        ["why_watching"] = "Notebook se zamkne {0} s poté, co telefon přestane být slyšet.",
+        ["why_trusted_network"] = "Tato síť je uložená mezi sítěmi bez zamykání.",
+        ["why_waiting"] = "Telefon ještě nebyl slyšet. V telefonu musí běžet "
+                        + "aplikace Da BT Dynamic Lock.",
+        ["why_locked"] = "Zamčeno. Hlídání začne znovu, až bude telefon zase slyšet.",
+        ["why_idle_guard"] = "Na počítači se právě pracuje, takže se nezamyká, "
+                           + "i když telefon není slyšet.",
+        ["why_watching"] = "Počítač se zamkne {0} s poté, co telefon přestane být slyšet.",
 
         // --- settings window: the chart ----------------------------------
         ["chart_title"] = "Síla signálu telefonu",
@@ -191,7 +191,7 @@ public static class Texts
         // machine's culture and the decimal mark stops following the language.
         ["chart_summary"] = "{0} signálů · {1:F1}/min · medián {2} dBm · "
                           + "nejdelší ticho {3:F0} s",
-        ["chart_no_signal"] = "V tomhle úseku není žádný signál.",
+        ["chart_no_signal"] = "V tomto úseku není žádný signál.",
         ["chart_threshold"] = "práh {0} dBm",
         ["leg_signal"] = "signál (výš = lepší)",
         ["leg_weak"] = "slabý — pod prahem, nepočítá se",
@@ -203,15 +203,16 @@ public static class Texts
 
         // --- settings window: phone --------------------------------------
         ["card_phone"] = "Které zařízení hlídat",
-        ["card_phone_hint"] = "Podle tohohle zařízení se pozná, že jsi u počítače. "
-                            + "Seznam se plní tím, co je právě slyšet.",
-        ["dev_none_heard"] = "Zatím není nic slyšet – chvíli to trvá.",
+        ["card_phone_hint"] = "Podle tohoto zařízení aplikace pozná přítomnost "
+                            + "u počítače. Seznam se plní tím, co je právě slyšet.",
+        ["dev_none_heard"] = "Zatím není slyšet žádné zařízení. Chvíli to trvá.",
         ["dev_not_heard"] = "{0} (není slyšet)",
         ["dev_dbm"] = "{0} ({1} dBm)",
         ["dev_last_heard"] = "{0} (naposledy před {1} s)",
         ["card_gone"] = "Když telefon zmizí",
         ["card_gone_hint"] = "Vybitý nebo vypnutý telefon není slyšet, takže se "
-                           + "notebook jednou zamkne a pak už nehlídá. Tohle na to upozorní.",
+                           + "počítač jednou zamkne a dál už nehlídá. Tato volba "
+                           + "na takový stav upozorní.",
         ["opt_no_warning"] = "Neupozorňovat",
         ["opt_after_minutes"] = "Po {0} minutách bez signálu",
 
@@ -223,21 +224,21 @@ public static class Texts
         ["lbl_silence_hint"] = "Jak dlouho telefon nesmí být slyšet.",
         ["opt_seconds"] = "{0} sekund",
         ["lbl_range"] = "Dosah",
-        ["lbl_range_hint"] = "Slabší signál než tenhle se bere, jako by telefon "
-                           + "nebyl slyšet.",
+        ["lbl_range_hint"] = "Slabší signál, než je zvolený, se považuje "
+                           + "za neslyšitelný.",
         // Short on purpose: it shares a fixed width with the other entries in
         // the list, and the card's own line underneath says what it means.
         ["opt_range_max"] = "Bez omezení",
         ["opt_range_longest"] = "{0} dBm – největší dosah",
         ["opt_range_shortest"] = "{0} dBm – nejmenší dosah",
-        ["opt_range_edge"] = "{0} dBm – v kapse bývá právě tolik",
+        ["opt_range_edge"] = "{0} dBm – obvyklá síla signálu z kapsy",
         ["opt_range_plain"] = "{0} dBm",
-        ["sw_idle_guard"] = "Nezamykat, když zrovna píšu nebo hýbu myší",
-        ["sw_idle_guard_hint"] = "Pojistka pro případ, že telefon zmlkne, "
-                               + "zatímco sedíš u počítače.",
+        ["sw_idle_guard"] = "Nezamykat, když právě píšu nebo hýbu myší",
+        ["sw_idle_guard_hint"] = "Pojistka pro případ, že telefon zmlkne "
+                               + "během práce na počítači.",
         ["group_countdown"] = "Odpočet před zamknutím",
         ["lbl_countdown"] = "Kdy ukázat odpočet",
-        ["lbl_countdown_hint"] = "Kolik času zbývá na to vrátit se ke stolu.",
+        ["lbl_countdown_hint"] = "Kolik času zbývá na návrat ke stolu.",
         ["opt_countdown_off"] = "Nezobrazovat",
         ["opt_countdown_from"] = "{0} sekund předem",
         ["lbl_position"] = "Kde se odpočet ukáže",
@@ -247,8 +248,8 @@ public static class Texts
         ["sw_primary_only_hint"] = "Jinak se odpočet ukáže na každé obrazovce.",
 
         ["card_pause"] = "Dočasně pozastavit",
-        ["card_pause_hint"] = "Hlídání se na zvolenou dobu vypne a pak se samo "
-                            + "zase zapne.",
+        ["card_pause_hint"] = "Hlídání se na zvolenou dobu vypne a poté se "
+                            + "samo zapne.",
         ["lbl_pause_left"] = "Zbývá {0} min",
         ["lbl_pause_last"] = "Zbývá necelá minuta",
         ["opt_not_paused"] = "Nepozastaveno",
@@ -264,11 +265,13 @@ public static class Texts
 
         // --- settings window: networks -----------------------------------
         ["sw_trusted"] = "Nezamykat na vybraných Wi-Fi sítích",
-        ["sw_trusted_hint"] = "Třeba doma nebo v kanceláři, kde zamykat nepotřebuješ.",
+        ["sw_trusted_hint"] = "Například doma nebo v kanceláři, kde zamykání "
+                            + "není potřeba.",
         ["card_networks"] = "Sítě bez zamykání",
         ["card_networks_hint"] = "Zaškrtnutá síť se uloží, odškrtnutá se zapomene. "
                                + "Každý přístupový bod má vlastní řádek.",
-        ["net_none_connected"] = "Nejsi připojený k Wi-Fi a žádná uložená síť tu není.",
+        ["net_none_connected"] = "Počítač není připojen k Wi-Fi a žádná síť "
+                               + "není uložená.",
         ["net_row"] = "{0} · {1}",
         ["net_here"] = "{0} · {1} – právě připojeno",
 
@@ -278,15 +281,15 @@ public static class Texts
         ["sw_autostart_failed"] = "Spuštění po přihlášení se nepodařilo nastavit "
                                 + "— podrobnosti jsou v záznamu o běhu.",
         ["sw_log"] = "Zapisovat záznam o běhu",
-        ["sw_log_hint"] = "Podle něj se pozná, proč se notebook zamkl. "
-                        + "Hodí se přiložit k hlášení chyby.",
+        ["sw_log_hint"] = "Podle záznamu lze zjistit, proč se počítač zamkl. "
+                        + "Vhodné přiložit k hlášení chyby.",
         // Back after being dropped for the flags. A drop-down needs saying what
         // it is; a flag did not.
         ["lbl_language"] = "Jazyk",
         ["lbl_folder"] = "Kde záznam leží",
         ["act_open_folder"] = "Otevřít složku",
         ["lbl_version"] = "Verze {0}",
-        ["lbl_version_hint"] = "Porovnej ji s tou na stránce vydání.",
+        ["lbl_version_hint"] = "Nejnovější verzi uvádí stránka vydání.",
         ["link_updates"] = "Stránka vydání",
         ["link_project"] = "Projekt na GitHubu",
         ["link_phone_app"] = "Stáhnout aplikaci pro telefon",
@@ -374,9 +377,10 @@ public static class Texts
         ["foot_log"] = "Log",
 
         ["msg_no_signal"] = "The phone has not been heard for {0} min - watching is not working.",
-        ["msg_already_running"] = "Da BT Dynamic Lock is already running.\n\nLook "
-                                + "for its icon in the notification area next to the "
-                                + "clock (it may be hidden under the arrow).",
+        ["msg_already_running"] = "Da BT Dynamic Lock is already running.\n\nThe "
+                                + "application is available as an icon in the "
+                                + "notification area next to the clock, possibly "
+                                + "hidden under the arrow.",
 
         // --- settings window: navigation ---------------------------------
         ["app_version"] = "version {0}",
@@ -407,14 +411,14 @@ public static class Texts
 
         ["why_off"] = "Watching is off. The computer will not lock itself.",
         ["why_screen_locked"] = "Nothing is decided behind a locked screen. "
-                              + "Watching resumes after you unlock.",
+                              + "Watching resumes once the screen is unlocked.",
         ["why_paused"] = "When the pause ends, watching switches itself back on.",
-        ["why_trusted_network"] = "This Wi-Fi is one where locking is not wanted, "
-                                + "so nothing locks.",
-        ["why_waiting"] = "The phone has not been heard yet. Check that the "
-                        + "Da BT Dynamic Lock app is running on it.",
+        ["why_trusted_network"] = "This network is saved among the networks "
+                                + "without locking.",
+        ["why_waiting"] = "The phone has not been heard yet. The Da BT Dynamic "
+                        + "Lock app has to be running on it.",
         ["why_locked"] = "Locked. Watching starts again once the phone is heard.",
-        ["why_idle_guard"] = "You are using the computer, so it will not lock even "
+        ["why_idle_guard"] = "The computer is in use, so it will not lock even "
                            + "though the phone cannot be heard.",
         ["why_watching"] = "The computer locks {0} s after the phone stops being heard.",
 
@@ -440,15 +444,16 @@ public static class Texts
 
         // --- settings window: phone --------------------------------------
         ["card_phone"] = "Which device to watch",
-        ["card_phone_hint"] = "This device is what tells the computer you are nearby. "
-                            + "The list fills up with whatever is heard.",
-        ["dev_none_heard"] = "Nothing heard yet - give it a moment.",
+        ["card_phone_hint"] = "This device is how the application knows somebody "
+                            + "is nearby. The list fills up with whatever is heard.",
+        ["dev_none_heard"] = "No device heard yet. This takes a moment.",
         ["dev_not_heard"] = "{0} (not heard)",
         ["dev_dbm"] = "{0} ({1} dBm)",
         ["dev_last_heard"] = "{0} (last heard {1} s ago)",
         ["card_gone"] = "When the phone disappears",
         ["card_gone_hint"] = "A flat or switched-off phone cannot be heard, so the "
-                           + "computer locks once and then stops watching. This warns you.",
+                           + "computer locks once and then stops watching. This "
+                           + "option gives warning of that.",
         ["opt_no_warning"] = "Do not warn",
         ["opt_after_minutes"] = "After {0} minutes without a signal",
 
@@ -460,8 +465,8 @@ public static class Texts
         ["lbl_silence_hint"] = "How long the phone has to go unheard.",
         ["opt_seconds"] = "{0} seconds",
         ["lbl_range"] = "Range",
-        ["lbl_range_hint"] = "A signal weaker than this counts as the phone not "
-                           + "being heard.",
+        ["lbl_range_hint"] = "A signal weaker than the one chosen counts as the "
+                           + "phone not being heard.",
         ["opt_range_max"] = "No limit",
         ["opt_range_longest"] = "{0} dBm - longest range",
         ["opt_range_shortest"] = "{0} dBm - shortest range",
@@ -470,8 +475,8 @@ public static class Texts
         ["opt_range_edge"] = "{0} dBm - a phone in a pocket",
         ["opt_range_plain"] = "{0} dBm",
         ["sw_idle_guard"] = "Do not lock while I am typing or moving the mouse",
-        ["sw_idle_guard_hint"] = "A safeguard for when the phone goes quiet while "
-                               + "you are sitting at the computer.",
+        ["sw_idle_guard_hint"] = "A safeguard for when the phone goes quiet "
+                               + "during work at the computer.",
         ["group_countdown"] = "The countdown before locking",
         ["lbl_countdown"] = "When to show the countdown",
         ["lbl_countdown_hint"] = "How much time is left to get back to the desk.",
@@ -501,11 +506,13 @@ public static class Texts
 
         // --- settings window: networks -----------------------------------
         ["sw_trusted"] = "Do not lock on the selected Wi-Fi networks",
-        ["sw_trusted_hint"] = "At home or at the office, say, where locking is not needed.",
+        ["sw_trusted_hint"] = "For example at home or at the office, where "
+                            + "locking is not needed.",
         ["card_networks"] = "Networks without locking",
         ["card_networks_hint"] = "Ticking a network saves it, unticking forgets it. "
                                + "Every access point has its own row.",
-        ["net_none_connected"] = "You are not on Wi-Fi and no network is saved.",
+        ["net_none_connected"] = "The computer is not on Wi-Fi and no network "
+                               + "is saved.",
         ["net_row"] = "{0} · {1}",
         ["net_here"] = "{0} · {1} - connected now",
 
@@ -516,13 +523,13 @@ public static class Texts
         ["sw_autostart_failed"] = "Start at logon could not be set - the log says "
                                 + "what went wrong.",
         ["sw_log"] = "Keep a log of what happens",
-        ["sw_log_hint"] = "It is what tells you why the computer locked. "
+        ["sw_log_hint"] = "The log is what shows why the computer locked. "
                         + "Worth attaching to a fault report.",
         ["lbl_language"] = "Language",
         ["lbl_folder"] = "Where the log is kept",
         ["act_open_folder"] = "Open the folder",
         ["lbl_version"] = "Version {0}",
-        ["lbl_version_hint"] = "Compare it with the one on the releases page.",
+        ["lbl_version_hint"] = "The releases page carries the newest version.",
         ["link_updates"] = "Releases page",
         ["link_project"] = "Project on GitHub",
         ["link_phone_app"] = "Download the phone app",
