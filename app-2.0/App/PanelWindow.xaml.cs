@@ -57,6 +57,17 @@ public interface IAppHost
 
     /// <summary>What the chart is drawn from.</summary>
     SignalHistory History { get; }
+
+    /// <summary>Does the app start when the user signs in to Windows?</summary>
+    bool AutostartOn();
+
+    /// <summary>
+    /// Turns start at logon on or off and says what it REALLY is afterwards.
+    /// Asked of the host because a dry run must not touch Task Scheduler: the
+    /// scheduled task belongs to the installed copy, and a test run that leaves
+    /// a logon task behind would start the wrong build every morning.
+    /// </summary>
+    Reading<bool> SetAutostart(bool on);
 }
 
 /// <summary>

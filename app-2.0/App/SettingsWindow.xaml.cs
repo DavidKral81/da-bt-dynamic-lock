@@ -289,6 +289,8 @@ public sealed partial class SettingsWindow : Window
             CardNetworksHint.Text = Texts.Get("card_networks_hint");
 
             // app
+            SwAutostart.Text = Texts.Get("sw_autostart");
+            SwAutostartHint.Text = Texts.Get("sw_autostart_hint");
             SwLog.Text = Texts.Get("sw_log");
             SwLogHint.Text = Texts.Get("sw_log_hint");
             LblFolder.Text = Texts.Get("lbl_folder");
@@ -380,6 +382,11 @@ public sealed partial class SettingsWindow : Window
             PrimaryOnly.IsOn = cfg.CountdownPrimaryOnly;
             TrustedOn.IsOn = cfg.TrustedNetworkPause;
             LogOn.IsOn = cfg.Log;
+            // Read from Windows, not from the settings file: the logon task can
+            // be removed in Task Scheduler, and a remembered "on" would then be
+            // a promise the app cannot keep. The answer is cached for half a
+            // minute inside Autostart, so this costs nothing per tick.
+            AutostartOn.IsOn = _host.AutostartOn();
 
             MarkLanguage();
             FillDevices(cfg);
@@ -680,6 +687,36 @@ public sealed partial class SettingsWindow : Window
         if (_filling) return;
         _host.Settings.Log = LogOn.IsOn;
         _host.SaveSettings();
+    }
+
+    /// <summary>
+    /// Start at logon. The switch is NOT a setting in the file - it shows what
+    /// Windows has, and the answer comes back from a fresh look rather than
+    /// from what was asked for. The shipped version announced "enabled" on a
+    /// return code, and after a restart nothing came up.
+    /// </summary>
+    private void OnAutostartToggled(object sender, RoutedEventArgs e)
+    {
+        if (_filling) return;
+
+        bool wanted = AutostartOn.IsOn;
+        var actual = _host.SetAutostart(wanted);
+        if (actual.Ok)
+            return;
+
+        // Put the switch where reality is, and say why out loud: a switch that
+        // stays on while nothing was registered is the app lying to the user.
+        _host.Report($"Start at logon: {actual.Problem}");
+        _filling = true;
+        try
+        {
+            AutostartOn.IsOn = actual.Value;
+        }
+        finally
+        {
+            _filling = false;
+        }
+        SwAutostartHint.Text = Texts.Get("sw_autostart_failed");
     }
 
     private void OnSilenceChanged(object sender, SelectionChangedEventArgs e)

@@ -521,6 +521,26 @@
                 <StackPanel x:Name="PageApp" Spacing="14" Visibility="Collapsed">
                     <TextBlock x:Name="TitleApp" Text="" FontSize="24" FontWeight="SemiBold"/>
 
+                    <!-- First on the page: an app that guards the screen is no
+                         use if somebody has to remember to start it. -->
+                    <Border Style="{StaticResource Card}">
+                        <Grid ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE7E8;" FontSize="18" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock x:Name="SwAutostart" Text="" Style="{StaticResource CardTitle}"/>
+                                <TextBlock x:Name="SwAutostartHint" Text="" Style="{StaticResource CardHint}"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="AutostartOn" Grid.Column="2" OnContent="" OffContent=""
+                                          MinWidth="0" VerticalAlignment="Center"
+                                          Toggled="OnAutostartToggled"/>
+                        </Grid>
+                    </Border>
+
                     <Border Style="{StaticResource Card}">
                         <Grid ColumnSpacing="14">
                             <Grid.ColumnDefinitions>

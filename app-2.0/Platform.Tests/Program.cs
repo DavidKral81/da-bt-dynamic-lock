@@ -30,6 +30,7 @@ internal static class PlatformChecks
         CheckWifi();
         CheckMonitors();
         CheckAddressFormatting();
+        CheckAutostart();
         await CheckScannerAsync();
 
         Console.WriteLine();
@@ -57,6 +58,79 @@ internal static class PlatformChecks
     {
         Console.WriteLine($"  SKIP  {what}: {why}");
         _skipped++;
+    }
+
+    // ------------------------------------------------------------ autostart
+
+    static void CheckAutostart()
+    {
+        Console.WriteLine("\nStart at logon:");
+
+        string scratch = Path.Combine(Path.GetTempPath(),
+            "ddl-autostart-" + Guid.NewGuid().ToString("N")[..8]);
+        var target = new AutostartTarget(
+            TaskName: "DaBtDynamicLock Check " + Guid.NewGuid().ToString("N")[..8],
+            Program: Environment.ProcessPath ?? "C:\\nothing.exe",
+            Arguments: "--dry-run",
+            WorkingDirectory: AppContext.BaseDirectory,
+            ShortcutPath: Path.Combine(scratch, "check.lnk"),
+            ScratchFolder: scratch);
+
+        // The XML, checked without going near Task Scheduler. These two settings
+        // are the entire reason it is XML and not a plain schtasks command:
+        // without them Windows stops the task after three days and never
+        // restarts it after a crash.
+        string xml = Autostart.TaskXml(target, "DOMAIN\\Someone");
+        Check("the task has no time limit", true,
+            xml.Contains("<ExecutionTimeLimit>PT0S</ExecutionTimeLimit>"));
+        Check("...and restarts after a crash", true,
+            xml.Contains("<RestartOnFailure>"));
+        Check("...and starts the program it was given", true,
+            xml.Contains($"<Command>{target.Program}</Command>"));
+
+        // A path with an ampersand in it is valid on Windows and would tear the
+        // XML in half unescaped. Task Scheduler would reject the lot.
+        string awkward = Autostart.TaskXml(target with { Program = "C:\\a & b.exe" },
+            "DOMAIN\\Someone");
+        Check("a path with & in it stays valid XML", true,
+            awkward.Contains("C:\\a &amp; b.exe"));
+
+        Check("the account is DOMAIN\\user", true,
+            Autostart.CurrentUser().EndsWith(Environment.UserName,
+                StringComparison.OrdinalIgnoreCase));
+
+        // A task nobody created is reported as absent. Reading only - this
+        // never writes to Task Scheduler.
+        Check("a task that was never made is not found", false,
+            Autostart.Enabled(target, refresh: true));
+
+        // The FALLBACK branch, run for real. In the shipped version this half
+        // carried an error for three weeks precisely because it only runs when
+        // Task Scheduler refuses - written into a scratch folder, never into
+        // the real Startup folder.
+        try
+        {
+            string? problem = Autostart.WriteShortcut(target);
+            Check("the Startup shortcut can be written", null, problem);
+            Check("...and it is really there", true, File.Exists(target.ShortcutPath));
+            Check("...and that makes autostart count as on", true,
+                Autostart.Enabled(target, refresh: true));
+
+            File.Delete(target.ShortcutPath);
+            Check("...and removing it turns autostart off again", false,
+                Autostart.Enabled(target, refresh: true));
+        }
+        finally
+        {
+            try { Directory.Delete(scratch, true); } catch (IOException) { }
+        }
+
+        // Deliberately not run: creating and deleting a real scheduled task.
+        // Writing to Task Scheduler is the installer's business on this project,
+        // and a test that leaves a logon task behind is worse than no test.
+        Skip("registering a real task", "this project writes to Task Scheduler "
+            + "only from the app itself, on purpose - switch it on in the "
+            + "settings window to check that half");
     }
 
     // ------------------------------------------------------------ session

@@ -637,6 +637,40 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     IReadOnlyList<NearbyDevice> IAppHost.NearbyDevices() =>
         MadeUpData ? SampleDevices : _watch.NearbyList();
 
+    // ------------------------------------------------------------- autostart
+
+    /// <summary>
+    /// Where the logon entry points. Built from where THIS copy is, so an app
+    /// moved or reinstalled elsewhere registers itself and not a path that no
+    /// longer exists.
+    /// </summary>
+    private AutostartTarget AutostartWhere() => new(
+        TaskName: AppInfo.Name,
+        Program: Environment.ProcessPath ?? AppContext.BaseDirectory + AppInfo.Name + ".exe",
+        Arguments: "",
+        WorkingDirectory: AppContext.BaseDirectory,
+        ShortcutPath: Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.Startup),
+            AppInfo.Name + ".lnk"),
+        ScratchFolder: _options.DataFolder);
+
+    public bool AutostartOn() => !_options.DryRun && Autostart.Enabled(AutostartWhere());
+
+    public Reading<bool> SetAutostart(bool on)
+    {
+        // A dry run shares the machine with the installed copy. Registering a
+        // logon task from here would hand the morning to whichever build
+        // happened to be under test - and it would outlive this run.
+        if (_options.DryRun)
+        {
+            _log.Write("Dry run - start at logon was left exactly as it was.");
+            return Reading<bool>.Failed(false,
+                "a test run does not touch Task Scheduler");
+        }
+
+        return Autostart.Set(AutostartWhere(), on, _log.Write);
+    }
+
     /// <summary>
     /// Whether this run shows made-up devices and networks instead of the real
     /// ones. True for both the pictures and the self-check: the self-check

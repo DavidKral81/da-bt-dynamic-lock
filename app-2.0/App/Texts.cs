@@ -219,6 +219,10 @@ public static class Texts
         ["net_here"] = "{0} · {1} – právě připojeno",
 
         // --- settings window: application --------------------------------
+        ["sw_autostart"] = "Spouštět po přihlášení do Windows",
+        ["sw_autostart_hint"] = "Bez toho se hlídání po restartu samo nezapne.",
+        ["sw_autostart_failed"] = "Spuštění po přihlášení se nepodařilo nastavit "
+                                + "— podrobnosti jsou v záznamu o běhu.",
         ["sw_log"] = "Zapisovat záznam o běhu",
         ["sw_log_hint"] = "Podle něj se pozná, proč se notebook zamkl. "
                         + "Hodí se přiložit k hlášení chyby.",
@@ -377,6 +381,11 @@ public static class Texts
         ["net_here"] = "{0} · {1} - connected now",
 
         // --- settings window: application --------------------------------
+        ["sw_autostart"] = "Start after signing in to Windows",
+        ["sw_autostart_hint"] = "Without this, watching does not come back after "
+                              + "a restart.",
+        ["sw_autostart_failed"] = "Start at logon could not be set - the log says "
+                                + "what went wrong.",
         ["sw_log"] = "Keep a log of what happens",
         ["sw_log_hint"] = "It is what tells you why the computer locked. "
                         + "Worth attaching to a fault report.",

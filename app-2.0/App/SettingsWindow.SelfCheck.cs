@@ -64,6 +64,18 @@ public sealed partial class SettingsWindow
         TrustedOn.IsOn = true;
         Check("the Wi-Fi exception switch is saved", true, s => s.TrustedNetworkPause);
 
+        // Start at logon is deliberately NOT switched on for real here: this
+        // run shares the machine with the installed copy, and a logon task left
+        // behind would start a test build every morning. What is checked is
+        // that the switch refuses and puts ITSELF back - a switch that stays on
+        // while nothing was registered is the app lying about being armed.
+        AutostartOn.IsOn = true;
+        lines.Add(AutostartOn.IsOn == false
+            ? "  OK    a test run refuses to touch Task Scheduler, and the "
+                + "switch goes back"
+            : "  FAIL  the autostart switch stayed on in a test run, so "
+                + "something was written to Task Scheduler");
+
         // ---- drop-downs --------------------------------------------------
         Pick(Silence, 90);
         Check("the silence before locking is saved", 90.0, s => s.SilenceSeconds);
