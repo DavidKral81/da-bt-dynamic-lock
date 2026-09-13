@@ -86,7 +86,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
 
         _tray = new TrayIcon(AppInfo.Name + ".TrayWindow");
         _tray.LeftClicked += TogglePanel;
-        _tray.RightClicked += TogglePanel;    // a menu comes with the settings window
+        _tray.RightClicked += ShowTrayMenu;
         ShowStatus(WatchIcon.Off, new Decision(LockAction.Stop, "waiting", 0, "st_waiting"), null);
 
         // Created up front and kept hidden: it is what keeps the message loop
@@ -279,7 +279,30 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             OpenSettingsWindow();
             await Task.Delay(400);                          // let it draw
 
-            var lines = _settingsWindow!.SelfCheck(_options.SettingsPath);
+            var lines = _settingsWindow!.SelfCheck(_options.SettingsPath).ToList();
+
+            // The warning notification, in two parts - and both are needed.
+            //
+            // Windows ACCEPTS the call and reports success even when the flags
+            // tell it to display nothing, so "the call worked" proves almost
+            // nothing on its own; a sabotage run passed that way while showing
+            // no notification at all. So what gets handed over is checked too.
+            //
+            // The menu is NOT checked here: it waits for a click, so a run with
+            // nobody at the keyboard would hang on it.
+            string warning = Texts.Get("msg_no_signal", 10);
+            var carried = _tray?.NotificationData(AppInfo.Name, warning);
+            lines.Add(carried is { } data
+                    && (data.uFlags & Native.NIF_INFO) != 0
+                    && data.szInfo.Length > 0
+                ? "  OK    the notification really carries text to display"
+                : "  FAIL  the notification would be sent with nothing to display");
+
+            string? shown = _tray?.Notify(AppInfo.Name, warning);
+            lines.Add(shown is null
+                ? "  OK    Windows accepted the warning notification"
+                : $"  FAIL  {shown}");
+
             _log.Write($"Self-check of the settings window ({lines.Count} checks):");
             foreach (string line in lines)
                 _log.Write(line);
@@ -419,11 +442,17 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
 
     public void WarnNoSignal(int minutes)
     {
-        // For now the warning goes to the log and to the icon's tooltip; a
-        // Windows notification comes with the settings window, which is where
-        // it can be switched off.
+        string text = Texts.Get("msg_no_signal", minutes);
+        _log.Write($"Warning shown: {text}");
+
+        // Shown where the user will actually see it, not only in a log nobody
+        // reads. The whole point of this warning is that watching has silently
+        // stopped working - a warning that is itself silent would be useless.
+        string? problem = _tray?.Notify(AppInfo.Name, text);
+        if (problem is not null)
+            _log.Write(problem);
+
         _tip = "";      // force the tooltip to be rewritten on the next status
-        _log.Write($"Warning shown: {Texts.Get("msg_no_signal", minutes)}");
     }
 
     public void RefreshMenu()
@@ -556,6 +585,72 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     };
 
     // ------------------------------------------------------------------ tray
+
+    // What the tray menu can do. Numbers, not labels: the menu returns the id
+    // of what was chosen, and branching on displayed text would break the
+    // moment the language changes.
+    private const int MenuWatching = 1;
+    private const int MenuPause = 2;
+    private const int MenuLockNow = 3;
+    private const int MenuSettings = 4;
+    private const int MenuQuit = 5;
+
+    /// <summary>
+    /// The menu on a right click. Short on purpose: the panel is where things
+    /// get done, and this is the shortcut for the two or three that are worth
+    /// reaching without opening anything - plus Quit, which has to be reachable
+    /// from the tray at all.
+    /// </summary>
+    private void ShowTrayMenu()
+    {
+        if (_tray is null)
+            return;
+
+        _panel?.Hide();
+        bool paused = _watch.PauseLeft > 0;
+
+        var items = new List<TrayIcon.MenuItem>
+        {
+            new(MenuWatching, Texts.Get("sw_active"), Ticked: _settings.Active),
+            new(MenuPause, Texts.Get(paused ? "act_resume" : "act_pause")),
+            new(MenuLockNow, Texts.Get("act_lock_now")),
+            new(0, null),
+            new(MenuSettings, Texts.Get("act_settings")),
+            new(MenuQuit, Texts.Get("btn_quit")),
+        };
+
+        switch (_tray.ShowMenu(items))
+        {
+            case MenuWatching:
+                _settings.Active = !_settings.Active;
+                SaveSettings();
+                // The loop notices on its own tick, and coming back from "not
+                // watching" restarts the silence measurement there - which is
+                // what stops it locking the instant it is switched on.
+                RefreshMenu();
+                break;
+
+            case MenuPause:
+                if (paused)
+                    ResumePausing();
+                else
+                    PauseFor(TimeSpan.FromMinutes(15));
+                RefreshMenu();
+                break;
+
+            case MenuLockNow:
+                LockNow();
+                break;
+
+            case MenuSettings:
+                OpenSettingsWindow();
+                break;
+
+            case MenuQuit:
+                QuitApp();
+                break;
+        }
+    }
 
     private void TogglePanel()
     {

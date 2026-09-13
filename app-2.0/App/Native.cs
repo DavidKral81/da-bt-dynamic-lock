@@ -114,6 +114,63 @@ internal static class Native
     [DllImport("shell32.dll")]
     public static extern int Shell_NotifyIconGetRect(ref NOTIFYICONIDENTIFIER identifier, out RECT iconLocation);
 
+    // ---- balloon / notification ------------------------------------------
+
+    public const uint NIF_INFO = 0x00000010;
+    public const uint NIIF_INFO = 0x00000001;
+
+    // ---- popup menu -------------------------------------------------------
+    //
+    // Win32 rather than a XAML MenuFlyout: a flyout needs a window to live in,
+    // and this menu belongs to an icon, not to a window. The hidden window the
+    // tray icon already owns is a plain one (not HWND_MESSAGE) for exactly this
+    // reason - a message-only window cannot own a popup menu.
+
+    public const uint MF_STRING = 0x00000000;
+    public const uint MF_SEPARATOR = 0x00000800;
+    public const uint MF_CHECKED = 0x00000008;
+    public const uint MF_GRAYED = 0x00000001;
+
+    public const uint TPM_RETURNCMD = 0x0100;
+    public const uint TPM_RIGHTBUTTON = 0x0002;
+    public const uint TPM_NONOTIFY = 0x0080;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct POINT
+    {
+        public int X, Y;
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern nint CreatePopupMenu();
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool AppendMenuW(nint hMenu, uint uFlags, nuint uIDNewItem,
+        string? lpNewItem);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool DestroyMenu(nint hMenu);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern int TrackPopupMenuEx(nint hMenu, uint uFlags, int x, int y,
+        nint hwnd, nint lptpm);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetCursorPos(out POINT lpPoint);
+
+    /// <summary>
+    /// Needed after a tray menu closes. Without it the menu stays on screen
+    /// when the user clicks elsewhere - a documented quirk of menus owned by a
+    /// window that is not in the foreground.
+    /// </summary>
+    [DllImport("user32.dll")]
+    public static extern nint PostMessageW(nint hWnd, uint msg, nint wParam, nint lParam);
+
+    public const uint WM_NULL = 0x0000;
+
     // ---- icons ------------------------------------------------------------
 
     [StructLayout(LayoutKind.Sequential)]

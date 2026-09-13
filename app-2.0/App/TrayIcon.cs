@@ -145,6 +145,101 @@ internal sealed class TrayIcon : IDisposable
         if (old != 0) Native.DestroyIcon(old);
     }
 
+    /// <summary>One line of the tray menu. A separator is a null label.</summary>
+    internal sealed record MenuItem(int Id, string? Label, bool Ticked = false,
+        bool Enabled = true);
+
+    /// <summary>
+    /// Shows the menu at the mouse and returns the chosen Id, or 0.
+    ///
+    /// The menu is BUILT EVERY TIME rather than kept: its labels are
+    /// translated, and a menu built once would still be in the old language
+    /// after a switch. The Python version hit exactly that and had to pass its
+    /// labels as functions; building on demand is the same fix, done earlier.
+    /// </summary>
+    public int ShowMenu(IReadOnlyList<MenuItem> items)
+    {
+        nint menu = Native.CreatePopupMenu();
+        if (menu == 0)
+            return 0;
+
+        try
+        {
+            foreach (var item in items)
+            {
+                if (item.Label is null)
+                {
+                    Native.AppendMenuW(menu, Native.MF_SEPARATOR, 0, null);
+                    continue;
+                }
+                uint flags = Native.MF_STRING
+                    | (item.Ticked ? Native.MF_CHECKED : 0)
+                    | (item.Enabled ? 0 : Native.MF_GRAYED);
+                Native.AppendMenuW(menu, flags, (nuint)item.Id, item.Label);
+            }
+
+            if (!Native.GetCursorPos(out Native.POINT where))
+                return 0;
+
+            // Both of these are required and neither is optional folklore:
+            // without the foreground call the menu will not close when the user
+            // clicks elsewhere, and without the posted message the NEXT menu
+            // sometimes refuses to appear at all.
+            Native.SetForegroundWindow(_hwnd);
+            int chosen = Native.TrackPopupMenuEx(menu,
+                Native.TPM_RETURNCMD | Native.TPM_RIGHTBUTTON | Native.TPM_NONOTIFY,
+                where.X, where.Y, _hwnd, 0);
+            Native.PostMessageW(_hwnd, Native.WM_NULL, 0, 0);
+
+            return chosen;
+        }
+        finally
+        {
+            Native.DestroyMenu(menu);
+        }
+    }
+
+    /// <summary>
+    /// Shows a notification from the icon.
+    ///
+    /// Through Shell_NotifyIcon rather than the modern toast API: a toast from
+    /// an UNPACKAGED app needs a registered identity and a COM activator, while
+    /// this works with the icon that is already there. Windows shows it as an
+    /// ordinary notification either way.
+    /// </summary>
+    public string? Notify(string title, string text)
+    {
+        if (!_added)
+            return "the icon is not in the tray, so nothing could be shown";
+
+        var data = NotificationData(title, text);
+        return Native.Shell_NotifyIconW(Native.NIM_MODIFY, ref data)
+            ? null
+            : $"the notification could not be shown ({Marshal.GetLastWin32Error()})";
+    }
+
+    /// <summary>
+    /// What gets handed to Windows for a notification. Separate from sending it
+    /// so a check can look at it.
+    ///
+    /// ⚠ That check is not optional politeness. Windows accepts this call and
+    /// reports SUCCESS even when the flags say to show nothing at all -
+    /// measured, with a sabotage run that passed while displaying nothing. It
+    /// is the same trap as cbSize, which Windows also never verifies.
+    /// </summary>
+    internal Native.NOTIFYICONDATAW NotificationData(string title, string text)
+    {
+        var data = NewData();
+        data.uFlags = Native.NIF_INFO;
+        // Truncated on purpose and to the sizes the struct really has: handing
+        // Windows a longer string than the field holds is how a struct quietly
+        // turns into rubbish.
+        data.szInfoTitle = title.Length > 63 ? title[..63] : title;
+        data.szInfo = text.Length > 255 ? text[..255] : text;
+        data.dwInfoFlags = Native.NIIF_INFO;
+        return data;
+    }
+
     /// <summary>Where the icon sits on screen, so a panel can be anchored to it.</summary>
     public bool TryGetRect(out Native.RECT rect)
     {
