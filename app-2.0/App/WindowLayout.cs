@@ -53,6 +53,35 @@ public static class WindowLayout
     }
 
     /// <summary>
+    /// Gives a window the application's own icon.
+    ///
+    /// Drawn by the same code that draws the tray icon, so there is one picture
+    /// of this application rather than two that can drift apart. An unpackaged
+    /// WinUI 3 window gets no icon at all on its own - it comes up with the
+    /// generic one, which is what a window with no identity looks like.
+    ///
+    /// The icons are handed to the window and stay alive for as long as it
+    /// does; they are not destroyed here, because the window keeps using them.
+    /// </summary>
+    public static void SetWindowIcon(nint hwnd)
+    {
+        try
+        {
+            // Two sizes: the small one is the title bar and the task bar
+            // button, the big one is Alt+Tab.
+            Native.SendMessageW(hwnd, Native.WM_SETICON, Native.ICON_SMALL,
+                TrayIcon.MakeIcon(16, IconArt.Ok));
+            Native.SendMessageW(hwnd, Native.WM_SETICON, Native.ICON_BIG,
+                TrayIcon.MakeIcon(32, IconArt.Ok));
+        }
+        catch (Exception)
+        {
+            // A window without its icon is a blemish, not a reason to refuse to
+            // open. It still works, and the log would say nothing useful here.
+        }
+    }
+
+    /// <summary>
     /// Paints a window's title bar to match what is inside it.
     ///
     /// An unpackaged WinUI 3 window does NOT get the system theme on its title

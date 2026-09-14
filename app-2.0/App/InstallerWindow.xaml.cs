@@ -61,6 +61,7 @@ public sealed partial class InstallerWindow : Window
         presenter.IsMinimizable = false;
 
         WindowLayout.PaintTitleBar(AppWindow, Root);
+        WindowLayout.SetWindowIcon(Handle);
 
         // Closing the window ends the process. There is no tray icon and no
         // loop behind this one - leaving it would keep an invisible copy of the
@@ -137,8 +138,14 @@ public sealed partial class InstallerWindow : Window
     {
         Title = Texts.Get(_uninstall ? "ins_title_uninstall" : "ins_title_install",
             AppInfo.Name);
-        Heading.Text = Title;
-        Subtitle.Text = Texts.Get("ins_subtitle");
+
+        // The heading carries the outcome once there is one, so it is not
+        // written here twice. Before that it names what is about to happen.
+        if (!_finished)
+        {
+            Heading.Text = Title;
+            Subtitle.Text = Texts.Get("ins_subtitle");
+        }
 
         FolderLabel.Text = Texts.Get(_uninstall ? "ins_from_folder" : "ins_to_folder");
         FolderPath.Text = Where().TargetDir;
@@ -196,8 +203,10 @@ public sealed partial class InstallerWindow : Window
         OptAutostart.IsChecked = true;
         OptData.IsChecked = false;
 
+        // Both ticked. The phone app is not optional for this to work at all,
+        // so offering it unticked would be offering to leave the job half done.
+        OptPhone.IsChecked = true;
         OptLaunch.IsChecked = true;
-        OptPhone.IsChecked = false;
     }
 
     private static Visibility Shown(bool yes) =>
@@ -320,20 +329,25 @@ public sealed partial class InstallerWindow : Window
         if (report is null)
             return;
 
-        ResultHead.Text = Texts.Get(report.Ok
-            ? (_uninstall ? "ins_head_uninstalled" : "ins_head_installed")
-            : "ins_head_problems");
+        // Into the window's own heading, as a whole sentence. A second heading
+        // under the first meant the window named itself twice.
+        Heading.Text = report.Ok
+            ? Texts.Get(_uninstall ? "ins_head_uninstalled" : "ins_head_installed",
+                AppInfo.Name)
+            : Texts.Get("ins_head_problems");
 
-        // The description follows the outcome too. A heading saying something
+        // The line under it follows the outcome too. A heading saying something
         // went wrong above a line saying it all worked is the window
-        // contradicting itself, which is what the picture showed.
-        ResultDesc.Text = Texts.Get((_uninstall, report.Ok) switch
-        {
-            (true, true) => "uni_ok_desc",
-            (true, false) => "uni_partial_desc",
-            (false, true) => "ins_ok_desc",
-            (false, false) => "ins_partial_desc",
-        });
+        // contradicting itself, which is what the picture showed. When it all
+        // worked, the heading has said everything and the line goes away.
+        Subtitle.Text = report.Ok ? "" :
+            Texts.Get(_uninstall ? "uni_partial_desc" : "ins_partial_desc");
+        Subtitle.Visibility = Shown(!report.Ok);
+
+        // Only after installing, and only when there is something to run: after
+        // a removal there is no phone app to go with anything.
+        PhoneNeeded.Text = Texts.Get("ins_phone_needed");
+        PhoneNeededCard.Visibility = Shown(!_uninstall);
 
         ProblemsCard.Visibility = Shown(!report.Ok);
         // The problems are Setup's own English sentences, not translated keys:

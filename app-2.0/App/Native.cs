@@ -183,6 +183,17 @@ internal static class Native
 
     public const uint WM_NULL = 0x0000;
 
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern nint SendMessageW(nint hWnd, uint msg, nint wParam, nint lParam);
+
+    // Giving a window its icon. WinUI 3 has no API for it on an unpackaged
+    // window, so it is sent the way Win32 has always done it - and both sizes
+    // have to be set: the small one is the title bar and the task bar button,
+    // the big one is Alt+Tab.
+    public const uint WM_SETICON = 0x0080;
+    public const nint ICON_SMALL = 0;
+    public const nint ICON_BIG = 1;
+
     // ---- icons ------------------------------------------------------------
 
     [StructLayout(LayoutKind.Sequential)]

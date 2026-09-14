@@ -105,12 +105,12 @@
                     </Border>
                 </StackPanel>
 
-                <!-- how it went -->
+                <!-- how it went.
+                     There is NO heading of its own in here: the outcome is
+                     written into the heading at the top of the window. Two of
+                     them meant the window said "Instalace - Da BT Dynamic Lock"
+                     twice, once in its own title bar and once under it. -->
                 <StackPanel x:Name="PageResult" Spacing="12" Visibility="Collapsed">
-                    <TextBlock x:Name="ResultHead" Text="" FontSize="18"
-                               FontWeight="SemiBold" TextWrapping="Wrap"/>
-                    <TextBlock x:Name="ResultDesc" Text=""
-                               Style="{StaticResource CardHint}"/>
 
                     <Border x:Name="ProblemsCard" Style="{StaticResource Card}"
                             Visibility="Collapsed">
@@ -122,10 +122,34 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- Said loudly, because the program does NOTHING without
+                         it: with no app broadcasting from the phone there is
+                         nothing to watch for, and the computer simply never
+                         locks. An accent border rather than a shout in capitals. -->
+                    <Border x:Name="PhoneNeededCard" Style="{StaticResource Card}"
+                            BorderBrush="{ThemeResource AccentFillColorDefaultBrush}"
+                            BorderThickness="2">
+                        <Grid ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE8EA;" FontSize="20"
+                                      VerticalAlignment="Center"
+                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                            <TextBlock x:Name="PhoneNeeded" Grid.Column="1" Text=""
+                                       FontSize="14" FontWeight="SemiBold"
+                                       TextWrapping="Wrap" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- The phone page comes FIRST and is ticked by default:
+                         it is the step without which nothing works, so it is
+                         not the afterthought under "run the app". -->
                     <Border x:Name="AfterCard" Style="{StaticResource Card}">
                         <StackPanel Spacing="12">
-                            <CheckBox x:Name="OptLaunch" Content=""/>
                             <CheckBox x:Name="OptPhone" Content=""/>
+                            <CheckBox x:Name="OptLaunch" Content=""/>
                         </StackPanel>
                     </Border>
                 </StackPanel>

@@ -324,12 +324,16 @@ public static class Texts
         ["ins_step_checking"] = "Kontroluje se výsledek…",
         ["ins_step_data"] = "Odstraňuje se nastavení a historie…",
 
-        ["ins_head_installed"] = "Nainstalováno",
-        ["ins_head_uninstalled"] = "Odinstalováno",
+        // The outcome goes into the window's own heading, so it is written as a
+        // whole sentence. There is no second heading under it any more.
+        ["ins_head_installed"] = "Aplikace {0} byla úspěšně nainstalována.",
+        ["ins_head_uninstalled"] = "Aplikace {0} byla odinstalována.",
         ["ins_head_problems"] = "Dokončeno s výhradami",
-        ["ins_ok_desc"] = "Hlídání vyžaduje, aby telefon vysílal signál. "
-                        + "Aplikace pro telefon je ke stažení na stránce vydání.",
-        ["uni_ok_desc"] = "Program byl z počítače odstraněn.",
+        // Without an app broadcasting from the phone there is nothing to watch
+        // for and the computer never locks, so this is the one thing the result
+        // screen has to make impossible to miss.
+        ["ins_phone_needed"] = "Ke správnému běhu aplikace je potřeba "
+                             + "nainstalovat mobilní aplikaci.",
         // A heading that says something went wrong must not sit above a line
         // claiming it all worked. Found by looking at the picture.
         ["ins_partial_desc"] = "Program je nainstalovaný, ale některé kroky "
@@ -555,12 +559,11 @@ public static class Texts
         ["ins_step_checking"] = "Checking the result…",
         ["ins_step_data"] = "Removing the settings and history…",
 
-        ["ins_head_installed"] = "Installed",
-        ["ins_head_uninstalled"] = "Uninstalled",
+        ["ins_head_installed"] = "{0} has been installed successfully.",
+        ["ins_head_uninstalled"] = "{0} has been uninstalled.",
         ["ins_head_problems"] = "Finished with problems",
-        ["ins_ok_desc"] = "Watching requires the phone to broadcast a signal. "
-                        + "The phone app can be downloaded from the releases page.",
-        ["uni_ok_desc"] = "The program has been removed from the computer.",
+        ["ins_phone_needed"] = "The phone app has to be installed as well "
+                             + "for this to work.",
         ["ins_partial_desc"] = "The program is installed, but some steps "
                              + "did not succeed.",
         ["uni_partial_desc"] = "The program has been removed, but some steps "

@@ -211,7 +211,6 @@ public sealed partial class PanelWindow : Window
         // points from the Segoe icon font, and a file that travelled through a
         // tool with the wrong encoding would turn them into rubbish silently.
         PauseGlyph.Glyph = paused ? "\uE768" : "\uE769";    // play / pause
-        LockLabel.Text = Texts.Get("act_lock_now");
         SettingsLabel.Text = Texts.Get("act_settings");
     }
 
@@ -232,7 +231,6 @@ public sealed partial class PanelWindow : Window
         LastLock.Text = _host.LastLockedAt is DateTime when
             ? Texts.Get("foot_last_lock", when.ToString("H:mm"))
             : Texts.Get("foot_never_locked");
-        LogLink.Content = Texts.Get("foot_log");
     }
 
     private void OnPause(object sender, RoutedEventArgs e)
@@ -242,12 +240,6 @@ public sealed partial class PanelWindow : Window
         else
             _host.PauseFor(PauseLength);
         Refresh();
-    }
-
-    private void OnLockNow(object sender, RoutedEventArgs e)
-    {
-        Hide();
-        _host.LockNow();
     }
 
     private void OnSettings(object sender, RoutedEventArgs e)
@@ -281,27 +273,6 @@ public sealed partial class PanelWindow : Window
         }
         _host.SaveSettings();
         Refresh();
-    }
-
-    private void OnOpenLog(object sender, RoutedEventArgs e)
-    {
-        Hide();
-        // The FOLDER, not the file: the log rotates, so yesterday evening may
-        // well be in the older half and a link to the file would sometimes open
-        // the empty one.
-        try
-        {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = _host.DataFolder,
-                UseShellExecute = true,
-            });
-        }
-        catch (Exception)
-        {
-            // Nothing to do about it and nowhere useful to say it - the folder
-            // path is also shown on the settings page for exactly this case.
-        }
     }
 
     /// <summary>

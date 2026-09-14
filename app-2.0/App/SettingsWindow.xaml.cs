@@ -79,6 +79,7 @@ public sealed partial class SettingsWindow : Window
         presenter.PreferredMinimumHeight = MinHeightDip;
 
         PaintTitleBar();
+        WindowLayout.SetWindowIcon(Handle);
 
         // Hidden rather than destroyed, so reopening is instant and the page
         // last looked at is still the one showing.
