@@ -3,6 +3,7 @@
 # that does not belong on a public GitHub. Whatever has public value -
 # measurements, technical decisions and their reasons - goes into README.md.
 CLAUDE.md
+CLAUDE-HISTORIE.md
 
 # Android signing key - NEVER commit.
 # Whoever holds it can publish an "update" to your app.
