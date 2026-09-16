@@ -12,6 +12,17 @@
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <!-- A plain build relies on the .NET runtime installed on this machine, so
+         the debugging round (self-check, screenshots) takes seconds instead of
+         a full publish. The installer is still self-contained: the publish
+         profile sets this back to true.
+
+         Written here rather than passed on the command line, so a build cannot
+         differ by what somebody remembered to type. A runtime left in the
+         output folder makes the executable look for .NET beside itself and ask
+         the user to install it; that is why the publish also gets folders of
+         its own (Directory.Build.props). -->
+    <SelfContained>false</SelfContained>
     <OutputType>WinExe</OutputType>
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>

@@ -13,9 +13,23 @@
        The folder is an approved write location (additionalDirectories in
        ~/.claude/settings.json) - without that the write guard refuses. -->
 
+  <!-- A publish through a profile gets a tree of its own.
+
+       The self-contained publish for the installer builds into bin\Release as
+       well, and leaves a .NET runtime there (hostfxr, hostpolicy, coreclr).
+       From then on the plain build's executable looks for .NET beside itself,
+       finds nothing and asks the user to install .NET - measured 16.09.2026,
+       and "dotnet clean" does not take those files away. Kept apart, the
+       debugging build stays runnable whatever was published before it.
+
+       Keyed on PublishProfile because it comes from the command line and is
+       known this early; SelfContained is set inside the profile, which is read
+       too late to move the output folders. -->
   <PropertyGroup>
-    <BaseOutputPath>$(LOCALAPPDATA)\da-bt-dynamic-lock-build\$(MSBuildProjectName)\bin\</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(LOCALAPPDATA)\da-bt-dynamic-lock-build\$(MSBuildProjectName)\obj\</BaseIntermediateOutputPath>
+    <DdlBuildRoot>$(LOCALAPPDATA)\da-bt-dynamic-lock-build\</DdlBuildRoot>
+    <DdlBuildRoot Condition="'$(PublishProfile)' != ''">$(DdlBuildRoot)_publish-$(PublishProfile)\</DdlBuildRoot>
+    <BaseOutputPath>$(DdlBuildRoot)$(MSBuildProjectName)\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(DdlBuildRoot)$(MSBuildProjectName)\obj\</BaseIntermediateOutputPath>
   </PropertyGroup>
 
 </Project>
