@@ -130,6 +130,18 @@ internal static class EngineChecks
         try { hopeless.Write("this cannot be written anywhere"); }
         catch (Exception) { threw = true; }
         Check("a log that cannot be written does not throw", false, threw);
+
+        // The uninstaller removes the settings folder and then goes on logging.
+        // Each line used to make the folder again, so "remove the settings as
+        // well" left a folder with a log in it.
+        string removed = Path.Combine(scratch, "removed");
+        var leaving = new Log(Path.Combine(removed, "dyn_lock.log"), () => true);
+        leaving.Write("before the folder goes");
+        Directory.Delete(removed, true);
+        leaving.StopWritingFile();
+        leaving.Write("after the folder has gone");
+        Check("a log told to stop writing does not bring its folder back", false,
+            Directory.Exists(removed));
     }
 
     // ------------------------------------------------------------ the loop

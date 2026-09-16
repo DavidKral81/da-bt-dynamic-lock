@@ -33,12 +33,22 @@ public sealed class Log
         _clock = clock ?? (() => DateTime.Now);
     }
 
+    /// <summary>Set once the folder the log lives in has been removed on purpose.</summary>
+    private volatile bool _fileStopped;
+
+    /// <summary>
+    /// From now on lines go to the console only. For the uninstaller after it
+    /// has removed the settings folder: writing on would make the folder again,
+    /// with a log in it, right after it was asked to be gone.
+    /// </summary>
+    public void StopWritingFile() => _fileStopped = true;
+
     /// <summary>Writes one line. Swallows nothing silently, raises nothing either.</summary>
     public void Write(string message)
     {
         string line = $"{_clock():dd.MM.yyyy HH:mm:ss}  {message}";
         Console.WriteLine(line);        // visible when run from a console
-        if (!_enabled())
+        if (!_enabled() || _fileStopped)
             return;
 
         lock (_gate)

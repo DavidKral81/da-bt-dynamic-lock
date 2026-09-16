@@ -37,6 +37,14 @@ public sealed record Options
     /// </summary>
     public string? ScreenshotFolder { get; init; }
 
+    /// <summary>
+    /// Photograph every language, not only Czech. Czech is the longer one and
+    /// is what gets cut off first, so it catches a layout fault on its own;
+    /// the full set is for before a release. Every picture looked at is paid
+    /// for again on each later step, so half the pictures is half that cost.
+    /// </summary>
+    public bool AllLanguages { get; init; }
+
     /// <summary>Where settings, the log and the history live for this run.</summary>
     public string DataFolder { get; init; } = AppInfo.DataFolder;
 
@@ -99,6 +107,7 @@ public sealed record Options
             DryRun = dryRun || selfCheck || shots is not null,
             QuitAfterSeconds = quitAfter,
             ScreenshotFolder = shots,
+            AllLanguages = argv.Contains("--all-languages"),
             SelfCheck = selfCheck,
             // A test run must never write into the installed app's settings or
             // log: the shipped copy is somebody's working setup, and its config

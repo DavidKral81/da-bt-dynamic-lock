@@ -286,7 +286,8 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         }
 
         Texts.Language = SetupLanguage(role);
-        var window = new InstallerWindow(role == SetupRole.Uninstall, _log.Write);
+        var window = new InstallerWindow(role == SetupRole.Uninstall, _log.Write,
+            _log.StopWritingFile);
         window.ShowWindow();
     }
 
@@ -391,7 +392,10 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             FillSampleHistory();
             _loop.Tick();
 
-            foreach (string language in new[] { "cs", "en" })
+            string[] languages = _options.AllLanguages ? new[] { "cs", "en" } : new[] { "cs" };
+            if (!_options.AllLanguages)
+                _log.Write("Pictures in Czech only - add --all-languages for the full set.");
+            foreach (string language in languages)
             {
                 Texts.Language = language;
                 // Not just the field: windows already built keep the labels

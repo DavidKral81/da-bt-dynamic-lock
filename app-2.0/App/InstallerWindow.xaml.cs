@@ -46,10 +46,14 @@ public sealed partial class InstallerWindow : Window
 
     public nint Handle { get; }
 
-    public InstallerWindow(bool uninstall, Action<string> log)
+    /// <summary>Stops the log writing into the settings folder once it is removed.</summary>
+    private readonly Action? _stopLogFile;
+
+    public InstallerWindow(bool uninstall, Action<string> log, Action? stopLogFile = null)
     {
         _uninstall = uninstall;
         _log = log;
+        _stopLogFile = stopLogFile;
 
         InitializeComponent();
         _ui = DispatcherQueue.GetForCurrentThread();
@@ -280,6 +284,12 @@ public sealed partial class InstallerWindow : Window
                 return new SetupReport(new[] { ex.Message });
             }
         });
+
+        // The settings folder is where the log lives. Once it is really gone,
+        // the lines that follow go to the console only - written to the file,
+        // each would make the folder again.
+        if (_uninstall && alsoData && !Directory.Exists(Where().DataDir))
+            _stopLogFile?.Invoke();
 
         Busy.IsActive = false;
         Busy.Visibility = Visibility.Collapsed;
