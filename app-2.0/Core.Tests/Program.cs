@@ -342,13 +342,23 @@ Check("the last hour is left alone", 30,
 
 // Merging per pixel column - what keeps the chart from drawing a hundred
 // thousand objects and freezing, as the Python one did before it.
-var column = SignalHistory.Merge(
-    new[] { new Sample(5, -70), new Sample(6, -50), new Sample(9, -60) }, 5, 10);
-Check("a column knows how many readings fell into it", 3, column?.Count);
-Check("...and the weakest of them", -70, column?.Weakest);
-Check("...and the strongest", -50, column?.Strongest);
-Check("a column with no reading is nothing to draw", null,
-    SignalHistory.Merge(new[] { new Sample(5, -70) }, 10, 20));
+var merged = SignalHistory.Columns(
+    new[] { new Sample(5, -70), new Sample(6, -50), new Sample(9, -60) }, 5, 5, 2);
+Check("a column knows how many readings fell into it", 3, merged[0]?.Count);
+Check("...and the weakest of them", -70, merged[0]?.Weakest);
+Check("...and the strongest", -50, merged[0]?.Strongest);
+Check("a column with no reading is nothing to draw", null, merged[1]);
+
+// The column edges belong to the CLOCK, not to the left edge of the chart. The
+// left edge moves on every refresh; columns counted from it moved too, readings
+// hopped between neighbouring columns and the line flickered - fixed once in
+// 1.x and lost again when the chart was rewritten. Two refreshes a second
+// apart must put the same two readings in the same column.
+var pair = new[] { new Sample(10, -70), new Sample(11, -50) };
+var earlier = SignalHistory.Columns(pair, 8.5, 2, 3);
+var later = SignalHistory.Columns(pair, 9.5, 2, 3);
+Check("readings share a column however far the chart has scrolled", "2|2",
+    $"{earlier.Max(c => c?.Count ?? 0)}|{later.Max(c => c?.Count ?? 0)}");
 
 Console.WriteLine("\nWhere things go in the chart:");
 

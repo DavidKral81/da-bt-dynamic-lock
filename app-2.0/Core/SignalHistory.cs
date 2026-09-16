@@ -144,25 +144,45 @@ public sealed class SignalHistory
     }
 
     /// <summary>
-    /// What to draw for one pixel column of the chart, or null when that column
-    /// holds no reading at all.
+    /// What to draw in each pixel column of the chart; null where a column holds
+    /// no reading at all.
     ///
     /// The chart merges samples per PIXEL rather than drawing them all: without
     /// it a day's worth meant drawing hundreds of thousands of objects, which in
     /// the Python version froze the window and took half a gigabyte of memory.
+    ///
+    /// ⚠ The column edges are whole multiples of the column width in ABSOLUTE
+    /// time, not offsets from `from`. `from` is "now minus the range" and moves
+    /// on every refresh; edges counted from it moved with it, readings hopped
+    /// between neighbouring columns and the line flickered. 1.x fixed exactly
+    /// that, and the first chart of 2.0 brought it back by merging from the edge.
+    ///
+    /// One pass over the samples, not one per column: that was width × samples
+    /// on every refresh.
     /// </summary>
-    public static Column? Merge(IReadOnlyList<Sample> samples, double from, double to)
+    public static Column?[] Columns(IReadOnlyList<Sample> samples, double from,
+        double secondsPerColumn, int count)
     {
-        int count = 0, weakest = int.MaxValue, strongest = int.MinValue;
+        var result = new Column?[Math.Max(count, 0)];
+        if (count <= 0 || secondsPerColumn <= 0)
+            return result;
+
+        double first = Math.Floor(from / secondsPerColumn);
         foreach (var sample in samples)
         {
-            if (sample.At < from || sample.At >= to)
+            double index = Math.Floor(sample.At / secondsPerColumn) - first;
+            if (index < 0)
                 continue;
-            count++;
-            weakest = Math.Min(weakest, sample.Rssi);
-            strongest = Math.Max(strongest, sample.Rssi);
+            // The newest reading may fall one column past the last whole one -
+            // the plot is rarely a whole number of columns wide. It belongs at
+            // the right edge, not nowhere.
+            int i = index >= count ? count - 1 : (int)index;
+            result[i] = result[i] is Column c
+                ? new Column(c.Count + 1, Math.Min(c.Weakest, sample.Rssi),
+                    Math.Max(c.Strongest, sample.Rssi))
+                : new Column(1, sample.Rssi, sample.Rssi);
         }
-        return count == 0 ? null : new Column(count, weakest, strongest);
+        return result;
     }
 }
 

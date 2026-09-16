@@ -275,6 +275,8 @@ public sealed partial class SettingsWindow
         var current = new PointCollection();
         bool currentCounts = true;
         double secondsPerPixel = _range / plotWidth;
+        // Edges on the clock, not on the chart's left edge - see Columns.
+        var columns = SignalHistory.Columns(inView, fromMono, secondsPerPixel, (int)plotWidth);
 
         void Finish()
         {
@@ -283,11 +285,9 @@ public sealed partial class SettingsWindow
             current = new PointCollection();
         }
 
-        for (int column = 0; column < (int)plotWidth; column++)
+        for (int column = 0; column < columns.Length; column++)
         {
-            double from = fromMono + column * secondsPerPixel;
-            var merged = SignalHistory.Merge(inView, from, from + secondsPerPixel);
-            if (merged is not Column cell)
+            if (columns[column] is not Column cell)
             {
                 Finish();
                 continue;
