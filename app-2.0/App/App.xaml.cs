@@ -355,15 +355,6 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         var prints = new SortedDictionary<string, string>(StringComparer.Ordinal);
         try
         {
-            // A check nobody calls is worse than none - it only buys false
-            // calm. The phone app once carried exactly this check with no
-            // caller at all, so it runs here, in the pass made before a
-            // release, where its answer is actually read.
-            var missing = Texts.Missing().ToList();
-            if (missing.Count > 0)
-                problems.Add("these texts exist in one language only: "
-                    + string.Join(", ", missing));
-
             await Task.Delay(TimeSpan.FromSeconds(1));      // let the first tick run
 
             // The loop is stopped for the rest of this. It ticks twice a second
@@ -584,6 +575,16 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             lines.Add(shown is null
                 ? "  OK    Windows accepted the warning notification"
                 : $"  FAIL  {shown}");
+
+            // A check nobody calls is worse than none - it only buys false
+            // calm. The phone app once carried exactly this check with no
+            // caller at all. It used to run only with the pictures, which are
+            // taken now and then; the self-check runs on every setup build, so
+            // a text missing in one language cannot ship unnoticed.
+            var missing = Texts.Missing().ToList();
+            lines.Add(missing.Count == 0
+                ? "  OK    every text exists in both languages"
+                : "  FAIL  these texts exist in one language only: " + string.Join(", ", missing));
 
             _log.Write($"Self-check of the settings window ({lines.Count} checks):");
             foreach (string line in lines)

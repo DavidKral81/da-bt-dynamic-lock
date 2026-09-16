@@ -113,12 +113,27 @@ $item = Get-Item $setup
 $hash = (Get-FileHash -Algorithm SHA256 $setup).Hash
 $version = (Get-Item $setup).VersionInfo.FileVersion
 
+# Checked, not only printed. 1.x once built both executables with empty file
+# properties - the build reported success, nothing complained, and it nearly
+# went out that way.
+#
+# And compared with the number the app shows, read from the one place it is
+# written: properties that exist but say something else are the same fault.
+$appInfo = Get-Content (Join-Path $base "App\AppInfo.cs") -Raw
+$shown = [regex]::Match($appInfo, '(?m)^\s*public const string Version = "([^"]+)";').Groups[1].Value
+if ([string]::IsNullOrWhiteSpace($shown) -or $version -ne "$shown.0.0" -or
+    $item.VersionInfo.ProductName -ne "Da BT Dynamic Lock") {
+    Write-Host "The file properties do not match the app: file version '$version', product '$($item.VersionInfo.ProductName)', AppInfo.Version '$shown'." -ForegroundColor Red
+    exit 1
+}
+
 Write-Host ""
 Write-Host "Done." -ForegroundColor Green
 Write-Host "  file:    $setup"
 Write-Host "  size:    $('{0:N0}' -f $item.Length) B"
 Write-Host "  written: $($item.LastWriteTime.ToString('dd.MM.yyyy HH:mm:ss'))"
 Write-Host "  SHA-256: $hash"
+Write-Host "  version: $version"
 Write-Host ""
 Write-Host "Record the time, size and hash in CLAUDE.md - it is the only thing"
 Write-Host "that tells two builds of the same version number apart."

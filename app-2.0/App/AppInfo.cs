@@ -12,10 +12,11 @@ public static class AppInfo
     /// <summary>
     /// The version, and the ONLY place it is written down.
     ///
-    /// ⚠ 1.5 keeps this in windows/version.py, which the build scripts read.
-    /// When 2.0 first gets built into an installer, that file stops being the
-    /// source and this one takes over - and whatever generates the file
-    /// properties has to read it from here, or two numbers will drift apart.
+    /// ⚠ App.csproj READS this line to fill the file properties, and
+    /// build-setup.ps1 checks the finished file against it. Keep the line
+    /// below exactly in its present form - both find it by that text, at the
+    /// start of a line.
+    /// (1.5 keeps its own number in windows/version.py.)
     /// </summary>
     public const string Version = "2.0";
 
