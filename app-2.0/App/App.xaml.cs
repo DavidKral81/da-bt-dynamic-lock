@@ -131,10 +131,8 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             return;
         }
 
-        // One instance only. The installer looks for this name too, so it is a
-        // constant rather than a literal - a renamed mutex once left the
-        // installer unable to notice the app was running. A dry run uses its
-        // own name, so it can be started beside the installed copy.
+        // One instance per signed-in user (see AppInfo.MutexName). A dry run
+        // uses its own name, so it can be started beside the installed copy.
         _onlyInstance = new Mutex(true, _options.MutexName, out bool mine);
         if (!mine)
         {
@@ -474,6 +472,9 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                         + "to photograph");
                 for (int i = 0; i < _boxes.Count; i++)
                 {
+                    if (CatchesClicks(_boxes[i]))
+                        problems.Add($"countdown box {i + 1} catches clicks meant for the "
+                            + "window underneath");
                     string to = Path.Combine(folder, $"countdown-{language}-{i + 1}.png");
                     Note(problems, Screenshot.Save(_boxes[i].Handle, to, prints));
                     // Checked rather than assumed: a save that reports success
@@ -511,7 +512,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             _log.Write(problems.Count == 0
                 ? $"Pictures saved to {folder}."
                 : $"Pictures finished with {problems.Count} problem(s).");
-            Shutdown();
+            Shutdown(problems.Count == 0 ? 0 : 1);
         }
     }
 
@@ -581,6 +582,12 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             // caller at all. It used to run only with the pictures, which are
             // taken now and then; the self-check runs on every setup build, so
             // a text missing in one language cannot ship unnoticed.
+            // Per user, not per machine - a Global\ name shut out a second
+            // signed-in user. Checked on the name this run really holds.
+            lines.Add(!_options.MutexName.StartsWith(@"Global\", StringComparison.OrdinalIgnoreCase)
+                ? "  OK    one copy per signed-in user, not per machine"
+                : $"  FAIL  the single-instance lock is machine-wide ({_options.MutexName})");
+
             var missing = Texts.Missing().ToList();
             lines.Add(missing.Count == 0
                 ? "  OK    every text exists in both languages"
@@ -638,11 +645,16 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     ///
     /// The wall clock is a fixed morning, not today: the axis labels would
     /// otherwise move with the hour the pictures happened to be taken at.
+    ///
+    /// The monotonic clock is a fixed number too, not "how long this computer
+    /// has been up": the chart's pixel columns sit on whole multiples of that
+    /// clock, so a real uptime moved them by a fraction of a pixel from run to
+    /// run and the signal page came out different every time.
     /// </summary>
     private void FreezeClockForPictures()
     {
         var at = new DateTime(2026, 9, 16, 9, 51, 0) - TimeSpan.FromSeconds(PictureSilence);
-        _frozenMono = PhoneWatch.MonotonicSeconds();
+        _frozenMono = 1_000_000;
         _frozenWall = new DateTimeOffset(at, TimeZoneInfo.Local.GetUtcOffset(at))
             .ToUnixTimeMilliseconds() / 1000.0;
     }
@@ -660,7 +672,10 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             _log.Write(problem);
     }
 
-    private void Shutdown()
+    /// <param name="exitCode">What a batch run ends with. A picture run that
+    /// reported problems used to end with 0, so a script waiting on it saw
+    /// success.</param>
+    private void Shutdown(int exitCode = 0)
     {
         // Written before anything is torn down: without this the last stretch
         // since the previous save would be lost on every ordinary quit, and the
@@ -682,7 +697,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         // hang, and a hang is what leaves windows on somebody's screen, so the
         // process is ended outright. An interactive session never reaches this.
         if (_options.ScreenshotFolder is not null || _options.QuitAfterSeconds > 0)
-            Environment.Exit(0);
+            Environment.Exit(exitCode);
     }
 
     // ------------------------------------------------------------ IWatcherView
@@ -718,7 +733,8 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                     & Native.WS_EX_TOPMOST) != 0;
                 _log.Write($"Countdown box {_boxes.Count}/{screens.Count} at {where}, "
                     + $"{(visible ? "visible" : "NOT VISIBLE")}, "
-                    + $"{(topmost ? "topmost" : "NOT TOPMOST")}, on a work area of "
+                    + $"{(topmost ? "topmost" : "NOT TOPMOST")}, "
+                    + $"{(CatchesClicks(box) ? "CATCHES CLICKS" : "clicks pass through")}, on a work area of "
                     + $"{screen.Width}x{screen.Height} at {screen.Left},{screen.Top}.");
             }
             return;
@@ -726,6 +742,20 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
 
         foreach (var box in _boxes)
             box.Update(text);
+    }
+
+    /// <summary>
+    /// Whether a click in the middle of the box would land on the box. It must
+    /// not: the box appears over whatever the user is working in, and 1.x made
+    /// clicks go through it to the window underneath. Asked of Windows the way
+    /// a click is routed, so it is measured without clicking anything.
+    /// </summary>
+    private static bool CatchesClicks(CountdownWindow box)
+    {
+        Native.GetWindowRect(box.Handle, out Native.RECT r);
+        var middle = new Native.POINT { X = r.Left + r.Width / 2, Y = r.Top + r.Height / 2 };
+        nint hit = Native.WindowFromPoint(middle);
+        return hit != 0 && Native.GetAncestor(hit, Native.GA_ROOT) == box.Handle;
     }
 
     public void HideCountdown()

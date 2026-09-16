@@ -38,6 +38,22 @@ public sealed partial class CountdownWindow : Window
         presenter.IsMinimizable = false;
         AppWindow.IsShownInSwitchers = false;
 
+        // Clicks go THROUGH the box to the window underneath, and even a click
+        // on it cannot take the keyboard. Show(false) alone only keeps it from
+        // activating when it appears; the box sits mid-screen over whatever is
+        // being worked in, so a click there would otherwise be swallowed. The
+        // same three styles 1.x put on its box - the first 2.0 had lost them.
+        //
+        // Plus LAYERED, which 1.x did not need: measured, a WinUI window with
+        // TRANSPARENT alone still took the click. Windows only lets a click
+        // through a window that is both. A layered window stays invisible until
+        // it is given an opacity, hence the full 255 straight after.
+        int style = Native.GetWindowLongW(_handle, Native.GWL_EXSTYLE);
+        Native.SetWindowLongW(_handle, Native.GWL_EXSTYLE, style
+            | Native.WS_EX_NOACTIVATE | Native.WS_EX_TRANSPARENT | Native.WS_EX_TOOLWINDOW
+            | Native.WS_EX_LAYERED);
+        Native.SetLayeredWindowAttributes(_handle, 0, 255, Native.LWA_ALPHA);
+
         AppWindow.Closing += (_, e) => { e.Cancel = true; AppWindow.Hide(); };
     }
 

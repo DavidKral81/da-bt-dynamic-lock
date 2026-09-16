@@ -23,10 +23,14 @@ public static class AppInfo
     public const string ProjectUrl = "https://github.com/DavidKral81/da-bt-dynamic-lock";
 
     /// <summary>
-    /// Agreed with the shipped version and NOT to be renamed lightly: the
-    /// installer looks for this to tell whether the app is running.
+    /// One copy PER SIGNED-IN USER, not per machine - so no "Global\" prefix.
+    /// Each user watches their own session; with the prefix, a second person
+    /// signed in on the same computer found "already running" and went
+    /// unprotected. 1.x chose this on purpose and said why; the first 2.0 had
+    /// the prefix. (The installer does not look for this name: it finds a
+    /// running copy by its path.)
     /// </summary>
-    public const string MutexName = @"Global\DaBTDynamicLock";
+    public const string MutexName = "DaBTDynamicLock.SingleInstance";
 
     /// <summary>
     /// The folder the running .exe actually sits in.

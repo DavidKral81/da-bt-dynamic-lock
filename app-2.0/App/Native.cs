@@ -298,8 +298,28 @@ internal static class Native
     [DllImport("user32.dll", SetLastError = true)]
     public static extern int GetWindowLongW(nint hWnd, int nIndex);
 
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern int SetWindowLongW(nint hWnd, int nIndex, int dwNewLong);
+
     public const int GWL_EXSTYLE = -20;
     public const int WS_EX_TOPMOST = 0x00000008;
+    public const int WS_EX_TRANSPARENT = 0x00000020;
+    public const int WS_EX_LAYERED = 0x00080000;
+    public const uint LWA_ALPHA = 0x2;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetLayeredWindowAttributes(nint hwnd, uint crKey, byte bAlpha, uint dwFlags);
+    public const int WS_EX_TOOLWINDOW = 0x00000080;
+    public const int WS_EX_NOACTIVATE = 0x08000000;
+
+    [DllImport("user32.dll")]
+    public static extern nint WindowFromPoint(POINT point);
+
+    [DllImport("user32.dll")]
+    public static extern nint GetAncestor(nint hwnd, uint gaFlags);
+
+    public const uint GA_ROOT = 2;
 
     [DllImport("user32.dll")]
     public static extern nint GetForegroundWindow();
