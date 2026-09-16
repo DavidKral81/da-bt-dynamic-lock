@@ -93,19 +93,23 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         // Nobody has chosen a language yet - follow Windows. Written back so
         // the file says what the app is actually doing rather than leaving the
         // answer to be worked out again on every start.
+        string? saveProblem = null;
         if (string.IsNullOrEmpty(_settings.Language))
         {
             _settings.Language = Texts.SystemLanguage();
-            _settings.Save(_options.SettingsPath);
+            saveProblem = _settings.Save(_options.SettingsPath);
         }
         Texts.Language = _settings.Language;
 
         _log = new Log(_options.LogPath, () => _settings.Log);
         // Written now rather than swallowed: whether to log at all is one of
         // the settings, so a damaged file cannot report itself while it is
-        // being read.
+        // being read. The same for a write that failed before the log existed -
+        // 1.x once let exactly that pass unnoticed.
         if (problem is not null)
             _log.Write(problem);
+        if (saveProblem is not null)
+            _log.Write(saveProblem);
 
         // Setup, if that is what this copy was started as. Before the
         // single-copy check on purpose: the installer's whole job is to replace
