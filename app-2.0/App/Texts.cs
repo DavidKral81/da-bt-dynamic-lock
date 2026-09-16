@@ -123,7 +123,6 @@ public static class Texts
 
         ["act_pause"] = "Pauza 15 min",
         ["act_resume"] = "Pokračovat",
-        ["act_lock_now"] = "Zamknout teď",
         ["act_settings"] = "Nastavení",
 
         ["net_this"] = "Tato síť",
@@ -369,7 +368,6 @@ public static class Texts
 
         ["act_pause"] = "Pause 15 min",
         ["act_resume"] = "Resume",
-        ["act_lock_now"] = "Lock now",
         ["act_settings"] = "Settings",
 
         ["net_this"] = "This network",

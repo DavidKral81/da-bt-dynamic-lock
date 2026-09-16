@@ -768,16 +768,6 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         _log.Write("Pause ended by the user.");
     }
 
-    public void LockNow()
-    {
-        _log.Write("Locking now, asked for by the user.");
-        var locked = ScreenLock.Lock();
-        if (locked.Problem is not null)
-            _log.Write(locked.Problem);
-        else
-            _watch.Disarm();
-    }
-
     public string DataFolder => _options.DataFolder;
 
     public SignalHistory History => _history;
@@ -949,7 +939,8 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     // moment the language changes.
     private const int MenuWatching = 1;
     private const int MenuPause = 2;
-    private const int MenuLockNow = 3;
+    // 3 was "Lock now", removed together with the panel's button: locking is
+    // what this program does by itself, and Windows has its own shortcut.
     private const int MenuSettings = 4;
     private const int MenuQuit = 5;
 
@@ -971,7 +962,6 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         {
             new(MenuWatching, Texts.Get("sw_active"), Ticked: _settings.Active),
             new(MenuPause, Texts.Get(paused ? "act_resume" : "act_pause")),
-            new(MenuLockNow, Texts.Get("act_lock_now")),
             new(0, null),
             new(MenuSettings, Texts.Get("act_settings")),
             new(MenuQuit, Texts.Get("btn_quit")),
@@ -994,10 +984,6 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                 else
                     PauseFor(TimeSpan.FromMinutes(15));
                 RefreshMenu();
-                break;
-
-            case MenuLockNow:
-                LockNow();
                 break;
 
             case MenuSettings:

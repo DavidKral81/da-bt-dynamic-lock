@@ -32,7 +32,6 @@ public interface IAppHost
     void SaveSettings();
     void PauseFor(TimeSpan how);
     void ResumePausing();
-    void LockNow();
     void OpenSettingsWindow();
 
     /// <summary>Redraw everything that carries text - the tray tip, the panel.</summary>

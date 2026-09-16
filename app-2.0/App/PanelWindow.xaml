@@ -54,9 +54,9 @@
         </Grid>
 
         <!-- actions.
-             Two, not three. "Lock now" was here and is gone: locking is what
-             this program does by itself, and Windows has had its own shortcut
-             for doing it by hand since forever. -->
+             Two, not three. "Lock now" was here and is gone, from the tray menu
+             too: locking is what this program does by itself, and Windows has
+             had its own shortcut for doing it by hand since forever. -->
         <Grid Grid.Row="1" ColumnSpacing="8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
