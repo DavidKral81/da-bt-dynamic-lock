@@ -34,6 +34,8 @@ internal static class InstallerChecks
             CheckInstall(root, source, target, withRegistry);
             CheckUninstall(root, target, withRegistry);
             CheckSingleFileInstall(root, withRegistry);
+            CheckUninstallerSparesItself(root);
+            CheckFolderRemovedAfterExit(root);
         }
         finally
         {
@@ -225,8 +227,18 @@ internal static class InstallerChecks
 
         // Settings are kept unless removal is asked for: somebody reinstalling
         // should not lose the device they watch.
-        var kept = Setup.Uninstall(where, deleteData: false, report: _ => { });
-        Check("removing without the data reports no problems", 0, kept.Problems.Count);
+        var steps = new List<string>();
+        var kept = Setup.Uninstall(where, deleteData: false, report: steps.Add);
+        // The stand-in is ping.exe, which rejects --autostart-off with exit
+        // code 1. That this is REPORTED is the point: the uninstaller used to
+        // ignore the answer. Anything else going wrong still fails here.
+        Check("removing without the data reports only the stand-in's refusal",
+            "start at logon could not be switched off (exit code 1)",
+            string.Join(" | ", kept.Problems));
+        // Start at logon BEFORE stopping: the task restarts a killed app.
+        Check("...and start at logon is switched off before the app is stopped",
+            "autostart,stopping,shortcuts,registry,files", string.Join(",", steps));
+        Check("...and the program folder is gone", false, Directory.Exists(target));
         foreach (var problem in kept.Problems)
             Console.WriteLine($"        ({problem})");
         Check("...and the settings folder is still there", true,
@@ -243,10 +255,79 @@ internal static class InstallerChecks
         Check("removing with the data reports no problems", 0, all.Problems.Count);
         Check("...and the settings folder is gone", false, Directory.Exists(where.DataDir));
 
-        // The program folder itself is deleted by the caller after the
-        // uninstaller has quit - it is running from inside it. What is checked
-        // here is that everything else is already gone.
         Check("the shortcuts are gone", false,
             File.Exists(where.StartMenuLink) || File.Exists(where.DesktopLink));
     }
+
+    /// <summary>
+    /// The uninstaller of 2.0 is the installed program itself. It used to stop
+    /// "every copy running from the program folder" - itself included - and the
+    /// window closed with nothing removed.
+    ///
+    /// This process is not in that folder, so a running stand-in plays the
+    /// uninstaller: it has to survive being spared and go when it is not.
+    /// </summary>
+    static void CheckUninstallerSparesItself(string root)
+    {
+        Console.WriteLine("\nThe uninstaller running from the program folder:");
+        string folder = Path.Combine(root, "Program Files", "running");
+        Directory.CreateDirectory(folder);
+        string program = Path.Combine(folder, Setup.ProgramName);
+        File.Copy(Path.Combine(Environment.SystemDirectory, "PING.EXE"), program);
+
+        using var uninstaller = StartQuietly(program, "-n 30 127.0.0.1");
+        try
+        {
+            Setup.StopRunningApp(folder, spare: uninstaller.Id);
+            Check("the process doing the setup is not stopped", false,
+                uninstaller.WaitForExit(1500));
+
+            Setup.StopRunningApp(folder);
+            Check("...while any other copy from that folder is", true,
+                uninstaller.WaitForExit(10_000));
+        }
+        finally
+        {
+            if (!uninstaller.HasExited)
+                uninstaller.Kill();
+        }
+    }
+
+    /// <summary>
+    /// The folder a running program sits in can only go after it has ended. An
+    /// apostrophe in the path, because a quote is what broke the PowerShell
+    /// one-liners this project wrote before.
+    /// </summary>
+    static void CheckFolderRemovedAfterExit(string root)
+    {
+        Console.WriteLine("\nThe program folder once the uninstaller has quit:");
+        string folder = Path.Combine(root, "Program Files", "it's still running");
+        Directory.CreateDirectory(folder);
+        string program = Path.Combine(folder, Setup.ProgramName);
+        File.Copy(Path.Combine(Environment.SystemDirectory, "PING.EXE"), program);
+
+        using var uninstaller = StartQuietly(program, "-n 4 127.0.0.1");
+        using var remover = Setup.RemoveFolderAfterExit(folder, uninstaller.Id);
+        if (remover is null)
+        {
+            Check("the removal was started", true, false);
+            return;
+        }
+
+        Check("the folder is not touched while the program still runs", true,
+            Directory.Exists(folder) && !uninstaller.HasExited);
+        Check("...the removal finishes", true, remover.WaitForExit(60_000));
+        Check("...reporting success", 0, remover.HasExited ? remover.ExitCode : -1);
+        Check("...and the folder is gone", false, Directory.Exists(folder));
+    }
+
+    static System.Diagnostics.Process StartQuietly(string program, string arguments) =>
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = program,
+            Arguments = arguments,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+        })!;
 }

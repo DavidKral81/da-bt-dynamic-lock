@@ -322,6 +322,7 @@ public static class Texts
         ["ins_step_autostart"] = "Nastavuje se spouštění při přihlášení…",
         ["ins_step_checking"] = "Kontroluje se výsledek…",
         ["ins_step_data"] = "Odstraňuje se nastavení a historie…",
+        ["ins_step_files"] = "Odstraňuje se program…",
 
         // The outcome goes into the window's own heading, so it is written as a
         // whole sentence. There is no second heading under it any more.
@@ -556,6 +557,7 @@ public static class Texts
         ["ins_step_autostart"] = "Setting up the start on sign-in…",
         ["ins_step_checking"] = "Checking the result…",
         ["ins_step_data"] = "Removing the settings and history…",
+        ["ins_step_files"] = "Removing the program…",
 
         ["ins_head_installed"] = "{0} has been installed successfully.",
         ["ins_head_uninstalled"] = "{0} has been uninstalled.",

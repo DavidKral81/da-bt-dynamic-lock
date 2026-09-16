@@ -130,22 +130,32 @@ public static class Setup
     }
 
     /// <summary>
-    /// Takes it all out again. The program folder goes last and may still be
-    /// held by the uninstaller running from inside it - the caller says when
-    /// that is the case by passing its own process id.
+    /// Takes it all out again, the program folder included.
+    ///
+    /// In 2.0 the uninstaller IS the installed program, so it normally runs from
+    /// inside the folder it is removing. Everything but its own file goes here;
+    /// that one file and the folder are left to RemoveProgramFolderAfterExit,
+    /// because a running program cannot delete itself.
     /// </summary>
     public static SetupReport Uninstall(SetupPaths where, bool deleteData,
         Action<string> report)
     {
         var problems = new List<string>();
+        string program = Path.Combine(where.TargetDir, ProgramName);
+
+        // Start at logon goes BEFORE the app is stopped. The task restarts the
+        // app when it ends abnormally, and a kill is exactly that: stopped first,
+        // it came back a minute later. 1.5 had this order and wrote down why.
+        report("autostart");
+        if (File.Exists(program))
+        {
+            var off = Run(program, "--autostart-off");
+            if (!off.Ok)
+                problems.Add($"start at logon could not be switched off ({off.Detail})");
+        }
 
         report("stopping");
         StopRunningApp(where.TargetDir);
-
-        report("autostart");
-        string program = Path.Combine(where.TargetDir, ProgramName);
-        if (File.Exists(program))
-            Run(program, "--autostart-off");
 
         report("shortcuts");
         TryDelete(where.StartMenuLink, problems);
@@ -173,7 +183,87 @@ public static class Setup
                 problems.Add("the settings folder could not be removed");
         }
 
+        report("files");
+        string? self = RunningFrom(where.TargetDir);
+        if (self is null)
+        {
+            if (!TryDeleteFolder(where.TargetDir))
+                problems.Add("the program folder could not be removed");
+        }
+        else
+        {
+            // Running from inside: all but our own file now, and whatever does
+            // not go is said here, while there is still a window to say it in.
+            foreach (var file in Directory.EnumerateFiles(where.TargetDir, "*",
+                SearchOption.AllDirectories))
+            {
+                if (!string.Equals(file, self, StringComparison.OrdinalIgnoreCase))
+                    TryDelete(file, problems);
+            }
+        }
+
         return new SetupReport(problems);
+    }
+
+    /// <summary>
+    /// The running program's own path when it lies inside the folder, else null.
+    /// </summary>
+    private static string? RunningFrom(string folder)
+    {
+        string? self = Environment.ProcessPath;
+        if (self is null || !Directory.Exists(folder))
+            return null;
+        string inside = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder))
+            + Path.DirectorySeparatorChar;
+        return Path.GetFullPath(self).StartsWith(inside, StringComparison.OrdinalIgnoreCase)
+            ? self : null;
+    }
+
+    /// <summary>
+    /// Deletes the program folder once the uninstaller running from inside it
+    /// has quit. Does nothing when it is not running from there - Uninstall has
+    /// removed the folder already.
+    /// </summary>
+    public static void RemoveProgramFolderAfterExit(string targetDir) =>
+        RemoveFolderAfterExit(targetDir, Environment.ProcessId,
+            onlyIfRunningFromInside: true);
+
+    /// <summary>
+    /// Hands the folder to a hidden PowerShell that waits for the process to end
+    /// and then deletes the folder, with retries.
+    ///
+    /// Waited for by process id, not by a fixed delay: 1.5 once deleted after a
+    /// flat three seconds while the uninstaller window was still open. The
+    /// command goes in encoded, so no quote or apostrophe in the path can break
+    /// it - the project has that fault written down twice.
+    ///
+    /// What happens after the uninstaller has quit cannot be reported in its
+    /// window any more. That is why Uninstall removes everything else itself and
+    /// reports it; only one file and an empty folder are left to this.
+    /// </summary>
+    public static Process? RemoveFolderAfterExit(string folder, int waitForPid,
+        bool onlyIfRunningFromInside = false)
+    {
+        if (onlyIfRunningFromInside && RunningFrom(folder) is null)
+            return null;
+
+        string literal = folder.Replace("'", "''");
+        string script =
+            $"Wait-Process -Id {waitForPid} -Timeout 120 -ErrorAction SilentlyContinue; "
+            + "foreach ($i in 1..10) { "
+            + $"Remove-Item -LiteralPath '{literal}' -Recurse -Force -ErrorAction SilentlyContinue; "
+            + $"if (-not (Test-Path -LiteralPath '{literal}')) {{ exit 0 }}; "
+            + "Start-Sleep -Seconds 1 }; exit 1";
+        string encoded = Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(script));
+
+        return Process.Start(new ProcessStartInfo
+        {
+            FileName = Path.Combine(Environment.SystemDirectory,
+                @"WindowsPowerShell\v1.0\powershell.exe"),
+            Arguments = $"-NoProfile -NonInteractive -WindowStyle Hidden -EncodedCommand {encoded}",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        });
     }
 
     /// <summary>
@@ -182,12 +272,20 @@ public static class Setup
     /// By path, not by name: a dry run or a copy somebody is testing from
     /// another folder is none of the installer's business. The shipped one
     /// killed every process of that name on the machine.
+    ///
+    /// The process doing the setup is always spared. In 2.0 the uninstaller is
+    /// the installed program itself, so without this it killed itself before
+    /// removing anything - the window closed and nothing happened. `spare` is
+    /// there for the check, which needs another process to stand in for it.
     /// </summary>
-    public static void StopRunningApp(string targetDir)
+    public static void StopRunningApp(string targetDir, int? spare = null)
     {
         string program = Path.Combine(targetDir, ProgramName);
+        int keep = spare ?? Environment.ProcessId;
         foreach (var process in Processes(program))
         {
+            if (process.Id == keep)
+                continue;
             try
             {
                 process.Kill();

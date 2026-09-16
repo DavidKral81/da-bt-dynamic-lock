@@ -369,6 +369,21 @@ public sealed partial class InstallerWindow : Window
         }
 
         _log("Setup closed.");
+
+        // Last, right before quitting: the uninstaller runs from inside the
+        // program folder, so its own file can only go once it has ended.
+        if (_finished && _uninstall)
+        {
+            try
+            {
+                Setup.RemoveProgramFolderAfterExit(Where().TargetDir);
+            }
+            catch (Exception e)
+            {
+                _log($"The program folder could not be handed over for removal ({e.Message}).");
+            }
+        }
+
         Environment.Exit(_report is null || _report.Ok ? 0 : 1);
     }
 
