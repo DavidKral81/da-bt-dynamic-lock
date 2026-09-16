@@ -47,7 +47,13 @@ Write-Host ""
 # A running copy holds its own file and the publish fails on MSB3027 - which
 # looks like "the change did not take effect", because the OLD binary is still
 # there. Said out loud rather than left to be puzzled over.
-$running = @(Get-Process -Name "DaBtDynamicLock" -ErrorAction SilentlyContinue)
+#
+# Only copies started from the BUILD folder count. The installed app in
+# Program Files holds nothing the build writes, and refusing because of it
+# meant switching off the screen lock of whoever is building.
+$buildRoot = Join-Path $env:LOCALAPPDATA "da-bt-dynamic-lock-build"
+$running = @(Get-Process -Name "DaBtDynamicLock" -ErrorAction SilentlyContinue |
+    Where-Object { $_.Path -and $_.Path.StartsWith($buildRoot, [StringComparison]::OrdinalIgnoreCase) })
 if ($running.Count -gt 0) {
     Write-Host "A copy of the application is running (PID $($running.Id -join ', '))." -ForegroundColor Yellow
     Write-Host "Close it first, or the build will fail on a file in use." -ForegroundColor Yellow
@@ -82,6 +88,10 @@ if (-not (Test-Path $setup)) {
     Write-Host "The setup file was not created at $setup." -ForegroundColor Red
     exit 1
 }
+
+# The staging copy is the same 69 MB again and nothing uses it once copied.
+# Left until the next build, it only sat there taking space.
+Remove-Item $staging -Recurse -Force
 
 # Publishing is not running. The finished file is started with the self-check
 # switch, which drives the settings window's controls and reports whether each
