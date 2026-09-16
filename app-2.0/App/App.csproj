@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- The application itself: tray icon, flyout panel, windows.
+  <!-- The application itself: tray icon, settings window, countdown.
 
        Unpackaged (WindowsPackageType None) - a plain .exe, the way the Python
        build is delivered today, so the installer stays the same shape and no

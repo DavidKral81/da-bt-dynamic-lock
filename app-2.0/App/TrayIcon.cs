@@ -240,18 +240,6 @@ internal sealed class TrayIcon : IDisposable
         return data;
     }
 
-    /// <summary>Where the icon sits on screen, so a panel can be anchored to it.</summary>
-    public bool TryGetRect(out Native.RECT rect)
-    {
-        var id = new Native.NOTIFYICONIDENTIFIER
-        {
-            cbSize = (uint)Marshal.SizeOf<Native.NOTIFYICONIDENTIFIER>(),
-            hWnd = _hwnd,
-            uID = IconId,
-        };
-        return Native.Shell_NotifyIconGetRect(ref id, out rect) == 0;   // S_OK
-    }
-
     private Native.NOTIFYICONDATAW NewData() => new()
     {
         cbSize = (uint)Marshal.SizeOf<Native.NOTIFYICONDATAW>(),

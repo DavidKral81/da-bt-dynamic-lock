@@ -229,7 +229,7 @@ public sealed partial class SettingsWindow
     }
 
     /// <summary>Shows the page with this key, the way clicking its topic would.</summary>
-    private void SelectPage(string key)
+    internal void SelectPage(string key)
     {
         var item = Nav.Items.OfType<FrameworkElement>()
             .FirstOrDefault(i => (i.Tag as string) == key);

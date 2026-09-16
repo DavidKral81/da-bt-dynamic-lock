@@ -109,8 +109,7 @@ public sealed partial class SettingsWindow : Window
         }
 
         AppWindow.Show(true);
-        // Without this it can open behind whatever had focus - the panel needed
-        // the same push.
+        // Without this it can open behind whatever had focus.
         Native.SetForegroundWindow(Handle);
         IsShown = true;
     }
@@ -410,7 +409,7 @@ public sealed partial class SettingsWindow : Window
             return;
         }
 
-        // Paused, but by the panel or the tray rather than from here - so the
+        // Paused, but from the tray menu rather than from here - so the
         // list has nothing chosen. The shortest offered length that covers what
         // is left is the closest true thing it can say.
         if (Chosen(Pause) is not double chosen || chosen <= 0)
@@ -663,7 +662,7 @@ public sealed partial class SettingsWindow : Window
         _host.SaveSettings();
 
         // Everything that carries text is redrawn from ONE place - the tray
-        // tooltip, the panel and this window included. Redrawing this window
+        // tooltip and this window included. Redrawing this window
         // here as well would be a second path doing the same job, and the two
         // would drift.
         _host.LanguageChanged();

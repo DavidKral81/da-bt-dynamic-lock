@@ -118,18 +118,12 @@ public static class Texts
         ["st_locked"] = "Zamčeno",
         ["st_lock_failed"] = "Zamknout se nepodařilo",
 
-        ["detail_at_desk"] = "telefon u stolu, {0} dBm",
-        ["detail_no_reading"] = "telefon zatím není slyšet",
-
         ["act_pause"] = "Pauza 15 min",
         ["act_resume"] = "Pokračovat",
         ["act_settings"] = "Nastavení",
 
-        ["net_this"] = "Tato síť",
-        ["net_hint"] = "nezamykat, když jsem na ní",
         ["net_none"] = "žádná Wi-Fi",
 
-        ["foot_last_lock"] = "Naposledy zamčeno {0}",
         ["foot_never_locked"] = "zatím nikdy",
         ["foot_log"] = "Záznam",
 
@@ -364,18 +358,12 @@ public static class Texts
         ["st_locked"] = "Locked",
         ["st_lock_failed"] = "Locking failed",
 
-        ["detail_at_desk"] = "phone at the desk, {0} dBm",
-        ["detail_no_reading"] = "the phone cannot be heard yet",
-
         ["act_pause"] = "Pause 15 min",
         ["act_resume"] = "Resume",
         ["act_settings"] = "Settings",
 
-        ["net_this"] = "This network",
-        ["net_hint"] = "do not lock while I am on it",
         ["net_none"] = "no Wi-Fi",
 
-        ["foot_last_lock"] = "Last locked at {0}",
         ["foot_never_locked"] = "not yet",
         ["foot_log"] = "Log",
 

@@ -31,9 +31,9 @@ public sealed record Options
     public double QuitAfterSeconds { get; init; }
 
     /// <summary>
-    /// Open the panel, save a picture of it here, and quit. This is how the
+    /// Open each window, save a picture of it here, and quit. This is how the
     /// look gets checked - by LOOKING at it. Measuring widths and counting
-    /// controls is what let a cramped panel and faint grey text through before.
+    /// controls is what let a cramped window and faint grey text through before.
     /// </summary>
     public string? ScreenshotFolder { get; init; }
 

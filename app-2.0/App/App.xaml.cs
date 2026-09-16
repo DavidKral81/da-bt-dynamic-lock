@@ -28,7 +28,6 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     private readonly SignalHistory _history = new();
     private DispatcherQueueTimer? _saveTimer;
     private TrayIcon? _tray;
-    private PanelWindow? _panel;
     private SettingsWindow? _settingsWindow;
     private DispatcherQueueTimer? _timer;
     private CancellationTokenSource? _stopping;
@@ -199,14 +198,22 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                 + $"the settings and log used are in {_options.DataFolder}.");
 
         _tray = new TrayIcon(AppInfo.Name + ".TrayWindow");
-        _tray.LeftClicked += TogglePanel;
+        // As in 1.x: a left click opens the chart, a right click the menu. The
+        // flyout panel that stood in between was dropped - what is looked for
+        // on a click is the chart.
+        _tray.LeftClicked += OpenChart;
         _tray.RightClicked += ShowTrayMenu;
         ShowStatus(WatchIcon.Off, new Decision(LockAction.Stop, "waiting", 0, "st_waiting"), null);
 
-        // Created up front and kept hidden: it is what keeps the message loop
-        // alive in an app with no main window, and building it on the first
-        // click would show an empty panel for a moment.
-        _panel = new PanelWindow(this);
+        // The app lives in the tray and usually has no window open at all, so
+        // it ends only when told to - not when its last window goes.
+        //
+        // Said outright rather than left to a hidden window. The flyout panel
+        // used to be built up front "to keep the message loop alive"; measured
+        // 17.09.2026, a run with no window at all and without this line lived
+        // its full 20 s too, so that was never what kept it going. The line is
+        // for the case that was not measured: a window that really closes.
+        DispatcherShutdownMode = DispatcherShutdownMode.OnExplicitShutdown;
 
         _stopping = new CancellationTokenSource();
         // Not for the pictures: whatever the radio hears in the room would be
@@ -396,20 +403,6 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                 // "English" picture of a window that was entirely in Czech.
                 LanguageChanged();
 
-                if (_tray?.TryGetRect(out Native.RECT rect) == true && _panel is not null)
-                {
-                    _panel.ShowAt(rect);
-                    await Task.Delay(600);                  // let it draw
-                    Note(problems, Screenshot.Save(_panel.Handle,
-                        Path.Combine(folder, $"panel-{language}.png"), prints));
-                    _panel.Hide();
-                }
-                else
-                {
-                    problems.Add("the tray icon's rectangle could not be read, "
-                        + "so the panel could not be photographed");
-                }
-
                 // Every page of the settings window, not just the first: the
                 // look is checked by LOOKING, and a page nobody photographs is
                 // a page nobody checks. Czech and English both, because Czech
@@ -586,6 +579,15 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             // caller at all. It used to run only with the pictures, which are
             // taken now and then; the self-check runs on every setup build, so
             // a text missing in one language cannot ship unnoticed.
+            // What a left click on the tray icon does - the same method the
+            // click calls, so this is the wiring and not a copy of it.
+            _settingsWindow?.SelectPage("overview");
+            OpenChart();
+            await Task.Delay(300);
+            lines.Add(_settingsWindow?.PageName == "signal"
+                ? "  OK    a left click on the icon opens the chart"
+                : $"  FAIL  a left click on the icon opened '{_settingsWindow?.PageName}', not the chart");
+
             // Per user, not per machine - a Global\ name shut out a second
             // signed-in user. Checked on the name this run really holds.
             lines.Add(!_options.MutexName.StartsWith(@"Global\", StringComparison.OrdinalIgnoreCase)
@@ -689,7 +691,6 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         _timer?.Stop();
         _stopping?.Cancel();
         HideCountdown();
-        _panel?.Hide();
         _settingsWindow?.HideWindow();
         _tray?.Dispose();
         _log.Write("Stopped.");
@@ -808,8 +809,6 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             }
         }
 
-        if (_panel?.IsShown == true)
-            _panel.Refresh();
         _settingsWindow?.RefreshIfShown();
     }
 
@@ -830,8 +829,6 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
 
     public void RefreshMenu()
     {
-        if (_panel?.IsShown == true)
-            _panel.Refresh();
         _settingsWindow?.RefreshIfShown();
     }
 
@@ -893,7 +890,6 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         _tip = "";
         if (Latest is not null)
             ShowStatus(_icon, Latest, _watch.Rssi);
-        _panel?.Refresh();
         _settingsWindow?.LanguageChanged();
     }
 
@@ -1044,27 +1040,29 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     // moment the language changes.
     private const int MenuWatching = 1;
     private const int MenuPause = 2;
-    // 3 was "Lock now", removed together with the panel's button: locking is
-    // what this program does by itself, and Windows has its own shortcut.
+    // 3 was "Lock now": locking is what this program does by itself, and
+    // Windows has its own shortcut.
     private const int MenuSettings = 4;
     private const int MenuQuit = 5;
+    private const int MenuChart = 6;
 
     /// <summary>
-    /// The menu on a right click. Short on purpose: the panel is where things
-    /// get done, and this is the shortcut for the two or three that are worth
+    /// The menu on a right click. Short on purpose: the settings window is where
+    /// things get done, and this is the shortcut for the few that are worth
     /// reaching without opening anything - plus Quit, which has to be reachable
-    /// from the tray at all.
+    /// from the tray at all. The chart comes first, as it did in 1.x.
     /// </summary>
     private void ShowTrayMenu()
     {
         if (_tray is null)
             return;
 
-        _panel?.Hide();
         bool paused = _watch.PauseLeft > 0;
 
         var items = new List<TrayIcon.MenuItem>
         {
+            new(MenuChart, Texts.Get("nav_signal")),
+            new(0, null),
             new(MenuWatching, Texts.Get("sw_active"), Ticked: _settings.Active),
             new(MenuPause, Texts.Get(paused ? "act_resume" : "act_pause")),
             new(0, null),
@@ -1091,6 +1089,10 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                 RefreshMenu();
                 break;
 
+            case MenuChart:
+                OpenChart();
+                break;
+
             case MenuSettings:
                 OpenSettingsWindow();
                 break;
@@ -1101,28 +1103,15 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         }
     }
 
-    private void TogglePanel()
+    /// <summary>
+    /// The settings window, on the chart. Picked by the page's key, never by
+    /// its position in the list: a check that picked a page by number once
+    /// landed on the wrong one after a page was added.
+    /// </summary>
+    private void OpenChart()
     {
-        if (_panel is null || _tray is null)
-            return;
-
-        if (_panel.IsShown)
-        {
-            _panel.Hide();
-            return;
-        }
-
-        if (_tray.TryGetRect(out Native.RECT rect))
-        {
-            _panel.ShowAt(rect);
-        }
-        else
-        {
-            // Without the icon's rectangle there is nowhere to point at. Said
-            // out loud rather than opening the panel in a corner.
-            _log.Write("The tray icon's position could not be read, "
-                + "so the panel has nowhere to open.");
-        }
+        OpenSettingsWindow();
+        _settingsWindow?.SelectPage("signal");
     }
 
     private IReadOnlyList<WorkArea> ScreensForCountdown()

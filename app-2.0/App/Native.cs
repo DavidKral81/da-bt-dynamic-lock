@@ -5,7 +5,7 @@ namespace DaBtDynamicLock.App;
 
 /// <summary>
 /// Raw Win32 the interface needs. WinUI 3 has no tray API at all, so the icon,
-/// its screen rectangle and the panel placement all come from here.
+/// its menu and its notifications all come from here.
 ///
 /// Every function that returns or takes a handle is typed as nint. The
 /// Python app had the same class of bug (ctypes reading a HWND as a 32bit
@@ -100,19 +100,6 @@ internal static class Native
     [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool Shell_NotifyIconW(uint dwMessage, ref NOTIFYICONDATAW lpData);
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct NOTIFYICONIDENTIFIER
-    {
-        public uint cbSize;
-        public nint hWnd;
-        public uint uID;
-        public Guid guidItem;
-    }
-
-    /// <summary>Where the tray icon actually sits, so the panel can point at it.</summary>
-    [DllImport("shell32.dll")]
-    public static extern int Shell_NotifyIconGetRect(ref NOTIFYICONIDENTIFIER identifier, out RECT iconLocation);
 
     // ---- message box ------------------------------------------------------
     //
@@ -328,26 +315,12 @@ internal static class Native
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool SetForegroundWindow(nint hWnd);
 
-    // ---- monitor the tray lives on ---------------------------------------
+    // ---- which monitor, at what scale ------------------------------------
 
     public const uint MONITOR_DEFAULTTONEAREST = 2;
 
     [DllImport("user32.dll")]
     public static extern nint MonitorFromRect(ref RECT lprc, uint dwFlags);
-
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct MONITORINFOEXW
-    {
-        public uint cbSize;
-        public RECT rcMonitor;
-        public RECT rcWork;
-        public uint dwFlags;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string szDevice;
-    }
-
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    public static extern bool GetMonitorInfoW(nint hMonitor, ref MONITORINFOEXW lpmi);
 
     [DllImport("shcore.dll")]
     public static extern int GetDpiForMonitor(nint hmonitor, int dpiType, out uint dpiX, out uint dpiY);

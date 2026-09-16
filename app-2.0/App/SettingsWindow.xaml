@@ -445,7 +445,7 @@
                         </Grid>
                     </Border>
 
-                    <!-- The panel and the tray menu pause for fifteen minutes,
+                    <!-- The tray menu pauses for fifteen minutes,
                          which covers most of it; the whole range from five
                          minutes to two days lives here, as it does in 1.5. -->
                     <Border Style="{StaticResource Card}">
