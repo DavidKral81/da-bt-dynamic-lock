@@ -99,8 +99,8 @@ public sealed partial class SettingsWindow
         // The samples carry monotonic seconds; the grid has to be anchored to
         // the clock on the wall. Both are needed, so both are taken at the same
         // instant and everything is converted between them from here.
-        double nowMono = PhoneWatch.MonotonicSeconds();
-        double nowWall = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
+        double nowMono = _host.NowMonotonic();
+        double nowWall = _host.NowWall();
         double fromMono = nowMono - _range;
 
         var all = _host.History.Samples();
@@ -155,7 +155,11 @@ public sealed partial class SettingsWindow
     private void DrawTimeAxis(double nowMono, double nowWall, double plotWidth,
         double plotHeight)
     {
-        double offset = TimeZoneInfo.Local.GetUtcOffset(DateTimeOffset.Now).TotalSeconds;
+        // The offset at the instant drawn, not at the system's now: the two are
+        // the same in a normal run, and only the first is right for a picture
+        // taken at a fixed moment.
+        double offset = TimeZoneInfo.Local.GetUtcOffset(
+            DateTimeOffset.FromUnixTimeMilliseconds((long)(nowWall * 1000))).TotalSeconds;
         double fromWall = nowWall - _range;
 
         // Where the last label ended, so the next one can be left out rather

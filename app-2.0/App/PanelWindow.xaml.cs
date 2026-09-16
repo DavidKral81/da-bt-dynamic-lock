@@ -23,6 +23,14 @@ public interface IAppHost
     DateTime? LastLockedAt { get; }
 
     /// <summary>
+    /// Now, on the clock the readings carry and on the wall. Asked for rather
+    /// than read from the system, so the picture run can stop time and every
+    /// picture of an unchanged build comes out the same.
+    /// </summary>
+    double NowMonotonic();
+    double NowWall();
+
+    /// <summary>
     /// Where THIS run keeps its settings and log. Asked for rather than taken
     /// from AppInfo, so a dry run opens its own folder and not the installed
     /// app's - the same split the settings file has to make.

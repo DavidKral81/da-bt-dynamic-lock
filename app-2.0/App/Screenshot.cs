@@ -19,8 +19,14 @@ namespace DaBtDynamicLock.App;
 /// </summary>
 internal static class Screenshot
 {
-    /// <summary>Writes a PNG of the window. Returns what went wrong, or null.</summary>
-    public static string? Save(nint window, string path)
+    /// <summary>
+    /// Writes a PNG of the window. Returns what went wrong, or null.
+    ///
+    /// With <paramref name="fingerprints"/> it also notes a fingerprint of the
+    /// picture under the file's name. See <see cref="Fingerprint"/>.
+    /// </summary>
+    public static string? Save(nint window, string path,
+        IDictionary<string, string>? fingerprints = null)
     {
         // The size comes from GetWindowRect, not from the client area:
         // PrintWindow draws the frame too, and measuring the inside once cut
@@ -62,6 +68,15 @@ internal static class Screenshot
             var pixels = new byte[w * h * 4];
             Marshal.Copy(bits, pixels, 0, pixels.Length);
             WritePng(path, pixels, w, h);
+
+            if (fingerprints is not null)
+            {
+                string? print = Fingerprint(window, rect, pixels, out string? why);
+                if (print is null)
+                    return $"{Path.GetFileName(path)} was saved, but its fingerprint "
+                        + $"could not be taken ({why})";
+                fingerprints[Path.GetFileName(path)] = print;
+            }
             return null;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
@@ -74,6 +89,56 @@ internal static class Screenshot
             Native.DeleteDC(memDc);
             Native.ReleaseDC(0, screenDc);
         }
+    }
+
+    /// <summary>
+    /// SHA-256 of the inside of the window only, without the frame and title
+    /// bar. The title bar is drawn by Windows and changes with whether the
+    /// window happened to be the active one - measured 16.09.2026, it alone
+    /// made pictures of an unchanged build differ. What the app draws is what
+    /// is compared, so an unchanged fingerprint means an unchanged picture.
+    /// </summary>
+    private static string? Fingerprint(nint window, Native.RECT rect, byte[] bgra,
+        out string? why)
+    {
+        why = null;
+        var origin = new Native.POINT();
+        if (!Native.GetClientRect(window, out Native.RECT client)
+            || !Native.ClientToScreen(window, ref origin))
+        {
+            why = $"the inside of the window could not be measured ({Marshal.GetLastWin32Error()})";
+            return null;
+        }
+
+        int left = origin.X - rect.Left, top = origin.Y - rect.Top;
+        int cw = Math.Min(client.Width, rect.Width - left);
+        int ch = Math.Min(client.Height, rect.Height - top);
+        if (left < 0 || top < 0 || cw <= 0 || ch <= 0)
+        {
+            why = $"the inside of the window lies outside the picture ({left},{top} {cw}x{ch})";
+            return null;
+        }
+
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        var row = new byte[cw * 3];
+        // The size goes in too: two insides that only differ in size would
+        // otherwise be free to collide.
+        var size = BitConverter.GetBytes(((long)cw << 32) | (uint)ch);
+        sha.TransformBlock(size, 0, size.Length, null, 0);
+        for (int y = 0; y < ch; y++)
+        {
+            int at = 0;
+            for (int x = 0; x < cw; x++)
+            {
+                int from = ((top + y) * rect.Width + left + x) * 4;
+                row[at++] = bgra[from];
+                row[at++] = bgra[from + 1];
+                row[at++] = bgra[from + 2];
+            }
+            sha.TransformBlock(row, 0, row.Length, null, 0);
+        }
+        sha.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+        return Convert.ToHexString(sha.Hash!);
     }
 
     /// <summary>

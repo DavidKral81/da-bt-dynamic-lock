@@ -156,7 +156,11 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
 
         _log.Write($"{AppInfo.Name} {AppInfo.Version} starting.");
 
-        _watch = new PhoneWatch();
+        // The picture run draws everything at one frozen instant. See
+        // FreezeClockForPictures for why.
+        if (_options.ScreenshotFolder is not null)
+            FreezeClockForPictures();
+        _watch = new PhoneWatch(NowMonotonic);
 
         // The previous run's chart, and the gap while the app was not running.
         //
@@ -203,7 +207,14 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         _panel = new PanelWindow(this);
 
         _stopping = new CancellationTokenSource();
-        _ = _scanner.RunAsync(_stopping.Token);
+        // Not for the pictures: whatever the radio hears in the room would be
+        // mixed into the made-up readings, so two runs of the same build drew
+        // different pictures - and a real phone's signal has no business in a
+        // picture anyway.
+        if (_options.ScreenshotFolder is null)
+            _ = _scanner.RunAsync(_stopping.Token);
+        else
+            _log.Write("Taking pictures - the radio is not listened to.");
 
         // The loop ticks on the UI thread, so everything it shows is already on
         // the right thread. The radio runs on its own and only ever touches
@@ -340,6 +351,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     private async Task TakePicturesAsync(string folder)
     {
         var problems = new List<string>();
+        var prints = new SortedDictionary<string, string>(StringComparer.Ordinal);
         try
         {
             // A check nobody calls is worse than none - it only buys false
@@ -364,7 +376,14 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             // rather than "waiting for the phone". Made up, like the network
             // above - a picture must not carry anybody's real device either.
             _watch.Record(-62, _settings.ForWatching());
-            LastLockedAt = DateTime.Today.AddHours(9).AddMinutes(41);
+            // Heard a moment ago rather than this very instant, so the silence
+            // ring shows something - the same 12 s in every picture.
+            _frozenMono += PictureSilence;
+            _frozenWall += PictureSilence;
+            // The same lock the chart marks (FillSampleHistory), so the footer
+            // and the chart cannot disagree about when it was.
+            LastLockedAt = DateTimeOffset.FromUnixTimeMilliseconds(
+                (long)((NowWall() - PictureLockAgo) * 1000)).LocalDateTime;
             // A made-up device to be watching, so the overview shows a working
             // setup rather than "none chosen". It goes into the dry run's own
             // settings file, never the installed app's.
@@ -385,7 +404,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                     _panel.ShowAt(rect);
                     await Task.Delay(600);                  // let it draw
                     Note(problems, Screenshot.Save(_panel.Handle,
-                        Path.Combine(folder, $"panel-{language}.png")));
+                        Path.Combine(folder, $"panel-{language}.png"), prints));
                     _panel.Hide();
                 }
                 else
@@ -404,10 +423,14 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                     for (int page = 0; page < _settingsWindow.PageCount; page++)
                     {
                         _settingsWindow.ShowPage(page);
-                        await Task.Delay(400);
+                        // Longer for the first page of a freshly opened window:
+                        // the selection highlight is still fading in after
+                        // 400 ms, and two runs of the same build then differed
+                        // in that one picture (measured 16.09.2026).
+                        await Task.Delay(page == 0 ? 1200 : 400);
                         string name = $"settings-{page + 1}-{_settingsWindow.PageName}-{language}";
                         Note(problems, Screenshot.Save(_settingsWindow.Handle,
-                            Path.Combine(folder, name + ".png")));
+                            Path.Combine(folder, name + ".png"), prints));
 
                         // A page taller than the window gets a second picture,
                         // scrolled down. Without it the lower half is never
@@ -418,7 +441,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                             _settingsWindow.ScrollPage(toBottom: true);
                             await Task.Delay(400);
                             Note(problems, Screenshot.Save(_settingsWindow.Handle,
-                                Path.Combine(folder, name + "-bottom.png")));
+                                Path.Combine(folder, name + "-bottom.png"), prints));
                             _settingsWindow.ScrollPage(toBottom: false);
                             await Task.Delay(200);
                         }
@@ -440,12 +463,12 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                     setup.ShowWindow();
                     await Task.Delay(600);
                     Note(problems, Screenshot.Save(setup.Handle,
-                        Path.Combine(folder, $"setup-{role}-{language}.png")));
+                        Path.Combine(folder, $"setup-{role}-{language}.png"), prints));
 
                     setup.ShowSampleResult(withProblems: uninstall);
                     await Task.Delay(400);
                     Note(problems, Screenshot.Save(setup.Handle,
-                        Path.Combine(folder, $"setup-{role}-done-{language}.png")));
+                        Path.Combine(folder, $"setup-{role}-done-{language}.png"), prints));
                     setup.HideWindow();
                 }
 
@@ -457,7 +480,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                 for (int i = 0; i < _boxes.Count; i++)
                 {
                     string to = Path.Combine(folder, $"countdown-{language}-{i + 1}.png");
-                    Note(problems, Screenshot.Save(_boxes[i].Handle, to));
+                    Note(problems, Screenshot.Save(_boxes[i].Handle, to, prints));
                     // Checked rather than assumed: a save that reports success
                     // and leaves no file is the kind of quiet failure this
                     // project keeps a list of.
@@ -474,6 +497,20 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         }
         finally
         {
+            // One line per picture, sorted, so the file of one run can be
+            // compared with the file of another and only the pictures that
+            // actually changed need looking at. Looking at all of them after
+            // every small change costs far more than it finds.
+            try
+            {
+                File.WriteAllLines(Path.Combine(folder, "_fingerprints.txt"),
+                    prints.Select(p => $"{p.Value}  {p.Key}"));
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                problems.Add($"the fingerprints could not be written ({e.Message})");
+            }
+
             foreach (string p in problems)
                 _log.Write(p);
             _log.Write(problems.Count == 0
@@ -576,6 +613,35 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     /// <summary>Seconds since 1970, the clock the history file is written in.</summary>
     private static double Wall() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
 
+    // Set only for the picture run; null means the real clocks.
+    private double? _frozenMono;
+    private double? _frozenWall;
+
+    private const double PictureSilence = 12;
+    private const double PictureLockAgo = 600;
+
+    public double NowMonotonic() => _frozenMono ?? PhoneWatch.MonotonicSeconds();
+
+    public double NowWall() => _frozenWall ?? Wall();
+
+    /// <summary>
+    /// Stops time for the picture run. Everything drawn from the clock - the
+    /// silence, the chart's time axis, how long ago a reading was - otherwise
+    /// comes out different in every run: measured 16.09.2026, two runs of the
+    /// same build a minute apart differed in 16 of 26 pictures. A picture that
+    /// changes when nothing changed cannot tell anybody what did.
+    ///
+    /// The wall clock is a fixed morning, not today: the axis labels would
+    /// otherwise move with the hour the pictures happened to be taken at.
+    /// </summary>
+    private void FreezeClockForPictures()
+    {
+        var at = new DateTime(2026, 9, 16, 9, 51, 0) - TimeSpan.FromSeconds(PictureSilence);
+        _frozenMono = PhoneWatch.MonotonicSeconds();
+        _frozenWall = new DateTimeOffset(at, TimeZoneInfo.Local.GetUtcOffset(at))
+            .ToUnixTimeMilliseconds() / 1000.0;
+    }
+
     private void SaveHistory()
     {
         // Made-up readings must not end up in the file a later run reads back:
@@ -676,7 +742,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         {
             LastLockedAt = DateTime.Now;
             // Reported exactly once per lock, so this cannot pile up duplicates.
-            _history.Locked(PhoneWatch.MonotonicSeconds());
+            _history.Locked(NowMonotonic());
         }
 
         // Only when something actually changed: rebuilding the icon twice a
@@ -874,7 +940,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     /// </summary>
     private void FillSampleHistory()
     {
-        double now = PhoneWatch.MonotonicSeconds();
+        double now = NowMonotonic();
         var wobble = new Random(1);     // fixed seed: the same picture every time
 
         // The settings the pictures are taken with, so what they show does not
@@ -912,7 +978,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                 : -65 + wobble.Next(-9, 9);
             _history.Add(at, rssi);
         }
-        _history.Locked(now - 600);
+        _history.Locked(now - PictureLockAgo);
         _history.NotRunning(now - downFrom, now - downTo);
     }
 
