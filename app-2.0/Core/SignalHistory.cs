@@ -179,12 +179,14 @@ public sealed class SignalHistory
             int i = index >= count ? count - 1 : (int)index;
             result[i] = result[i] is Column c
                 ? new Column(c.Count + 1, Math.Min(c.Weakest, sample.Rssi),
-                    Math.Max(c.Strongest, sample.Rssi))
-                : new Column(1, sample.Rssi, sample.Rssi);
+                    Math.Max(c.Strongest, sample.Rssi), Math.Max(c.LastAt, sample.At))
+                : new Column(1, sample.Rssi, sample.Rssi, sample.At);
         }
         return result;
     }
 }
 
 /// <summary>What one pixel column of the chart shows.</summary>
-public readonly record struct Column(int Count, int Weakest, int Strongest);
+/// <param name="LastAt">When the newest reading in the column arrived - what
+/// decides whether the line joins it to the column before.</param>
+public readonly record struct Column(int Count, int Weakest, int Strongest, double LastAt);

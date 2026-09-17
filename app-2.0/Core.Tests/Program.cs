@@ -347,6 +347,7 @@ var merged = SignalHistory.Columns(
 Check("a column knows how many readings fell into it", 3, merged[0]?.Count);
 Check("...and the weakest of them", -70, merged[0]?.Weakest);
 Check("...and the strongest", -50, merged[0]?.Strongest);
+Check("...and when its newest reading arrived", 9.0, merged[0]?.LastAt);
 Check("a column with no reading is nothing to draw", null, merged[1]);
 
 // The column edges belong to the CLOCK, not to the left edge of the chart. The

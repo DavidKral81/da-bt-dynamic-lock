@@ -240,7 +240,6 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <TextBlock x:Name="TitleSignal" Text="" FontSize="24" FontWeight="SemiBold"/>
@@ -250,6 +249,7 @@
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
@@ -279,12 +279,15 @@
 
                             <TextBlock x:Name="ChartSummary" Grid.Row="2" Text=""
                                        Style="{StaticResource CardHint}"/>
+
+                            <!-- Built in code: the swatches have to be the very
+                                 brushes the chart draws with, not a second set of
+                                 colours. Inside the card, on the chart's own
+                                 background: the bands are see-through, and below
+                                 the card they sat on a darker one and vanished. -->
+                            <Grid x:Name="ChartLegend" Grid.Row="3" Margin="0,4,0,0"/>
                         </Grid>
                     </Border>
-
-                    <!-- Built in code: the swatches have to be the very brushes
-                         the chart draws with, not a second set of colours. -->
-                    <Grid x:Name="ChartLegend" Grid.Row="2"/>
                 </Grid>
 
                 <!-- ======== phone -->

@@ -374,8 +374,9 @@ public sealed partial class SettingsWindow : Window
             FillNetworks(cfg);
 
             // Only while its page is showing: redrawing a chart nobody is
-            // looking at, twice a second, is work for nothing.
-            if (PageSignal.Visibility == Visibility.Visible)
+            // looking at is work for nothing. And not on every tick - see
+            // ChartDue.
+            if (PageSignal.Visibility == Visibility.Visible && ChartDue())
                 DrawChart();
         }
         finally

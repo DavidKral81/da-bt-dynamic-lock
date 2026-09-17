@@ -49,6 +49,13 @@
     <AssemblyVersion>$(AppVersion).0.0</AssemblyVersion>
     <InformationalVersion>$(AppVersion)</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <!-- The icon INSIDE the .exe, which is what Installed apps, Explorer and
+         shortcuts show. The tray and window icons are drawn at runtime
+         (IconArt), and without this the file had none: Installed apps showed a
+         blank. The same file 1.x built into its executable, same picture as
+         IconArt draws. ⚠ It lives in windows\icons - move it before that
+         folder is deleted. -->
+    <ApplicationIcon>..\..\windows\icons\dyn_lock_tray.ico</ApplicationIcon>
     <Product>Da BT Dynamic Lock</Product>
     <AssemblyTitle>Da BT Dynamic Lock</AssemblyTitle>
     <Company>David Kral</Company>

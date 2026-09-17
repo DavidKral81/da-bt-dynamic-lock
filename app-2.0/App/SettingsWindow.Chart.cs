@@ -75,6 +75,23 @@ public sealed partial class SettingsWindow
 
     private void OnPlotResized(object sender, SizeChangedEventArgs e) => DrawChart();
 
+    /// <summary>When the chart was last drawn, on the monotonic clock.</summary>
+    private double _chartDrawnAt = double.NegativeInfinity;
+
+    /// <summary>
+    /// Whether the regular refresh should redraw the chart now. At the pace
+    /// 1.5 used - every second up to a quarter of an hour, every three up to an
+    /// hour, every ten beyond - rather than twice a second: on a long range a
+    /// column is minutes wide and nothing visible changes in between, and on a
+    /// short one a redraw every half second only made the line twitch.
+    /// A range picked, a resize or a language switch still redraw at once.
+    /// </summary>
+    private bool ChartDue()
+    {
+        double every = _range <= 900 ? 1 : _range <= 3600 ? 3 : 10;
+        return _host.NowMonotonic() - _chartDrawnAt >= every;
+    }
+
     /// <summary>
     /// Draws the chart. Called on every refresh while its page is showing, so
     /// it has to be cheap: the samples are merged one per PIXEL COLUMN rather
@@ -83,6 +100,7 @@ public sealed partial class SettingsWindow
     /// </summary>
     private void DrawChart()
     {
+        _chartDrawnAt = _host.NowMonotonic();
         Plot.Children.Clear();
 
         double width = Plot.ActualWidth;
@@ -263,65 +281,84 @@ public sealed partial class SettingsWindow
         if (inView.Count == 0)
             return;
 
-        // One point per pixel column. Where a column holds no reading the line
-        // is broken rather than bridged - a bridge over a gap would draw a
-        // signal that was never there, and the gaps are the whole point.
+        // Drawn the way 1.5 drew it, which David preferred (17.09.2026): in each
+        // pixel column ONE THIN UPRIGHT STROKE from the weakest reading to the
+        // strongest, and a thin line joining it to the column before. The first
+        // 2.0 drew a thicker polyline through the strongest reading only, and
+        // broke it at every empty column - that hid how much the signal spreads
+        // and turned a short range into dashes.
         //
-        // The line also changes colour where the readings stop counting: with a
-        // threshold set, a weak packet is drawn but did NOT count as the phone
-        // being here. One colour for both would show a solid line through a
-        // stretch the app itself treated as silence.
-        var runs = new List<(PointCollection Points, bool Counts)>();
-        var current = new PointCollection();
-        bool currentCounts = true;
+        // Whether the line is joined is decided by TIME, not by whether the
+        // columns are neighbours: on a short range a column is a fraction of a
+        // second, so only every few columns holds a reading. An empty column
+        // does not break the line; a spacing longer than ordinary does.
+        //
+        // Grey where the readings do not count: with a threshold set, a weak
+        // packet is drawn but did NOT count as the phone being here.
         double secondsPerPixel = _range / plotWidth;
         // Edges on the clock, not on the chart's left edge - see Columns.
         var columns = SignalHistory.Columns(inView, fromMono, secondsPerPixel, (int)plotWidth);
 
-        void Finish()
-        {
-            if (current.Count > 1)
-                runs.Add((current, currentCounts));
-            current = new PointCollection();
-        }
+        var strokes = new PathGeometry();
+        var weakStrokes = new PathGeometry();
+        var joins = new PathGeometry();
+        var weakJoins = new PathGeometry();
+        (double X, double Mid, double LastAt)? previous = null;
 
         for (int column = 0; column < columns.Length; column++)
         {
             if (columns[column] is not Column cell)
-            {
-                Finish();
                 continue;
+
+            double x = AxisLeft + column + 0.5;
+            double top = AxisTop + ChartLayout.Y(cell.Strongest, plotHeight);
+            double bottom = AxisTop + ChartLayout.Y(cell.Weakest, plotHeight);
+            // A single reading still has to show - 1.5 drew a two-pixel dot.
+            if (bottom - top < 1)
+            {
+                top -= 1;
+                bottom += 1;
             }
 
-            // The strongest reading of the column: the axis is labelled "higher
-            // is better", and the strongest is what decided whether the phone
-            // counted as near.
+            // The strongest reading decides: it is what counted the phone near.
             bool counts = threshold is null || cell.Strongest >= threshold;
-            var point = new Point(AxisLeft + column,
-                AxisTop + ChartLayout.Y(cell.Strongest, plotHeight));
+            Segment(counts ? strokes : weakStrokes, x, top, x, bottom);
 
-            if (current.Count > 0 && counts != currentCounts)
-            {
-                // The point where it changes belongs to both runs, so the line
-                // stays joined instead of showing a one-pixel hole.
-                current.Add(point);
-                Finish();
-            }
-            currentCounts = counts;
-            current.Add(point);
+            double mid = (top + bottom) / 2;
+            if (previous is var (px, pmid, pAt)
+                && cell.LastAt - pAt <= Silences.Spacing(pAt, nowMono))
+                Segment(counts ? joins : weakJoins, px, pmid, x, mid);
+            previous = (x, mid, cell.LastAt);
         }
-        Finish();
 
-        foreach (var (points, counts) in runs)
+        // The joins underneath, the strokes on top - the same order as 1.5.
+        AddPath(joins, SignalJoinBrush);
+        AddPath(weakJoins, WeakJoinBrush);
+        AddPath(strokes, SignalBrush);
+        AddPath(weakStrokes, WeakBrush);
+    }
+
+    /// <summary>
+    /// One path per colour rather than a shape per stroke: a day's range is
+    /// well over a thousand strokes, redrawn every few seconds.
+    /// </summary>
+    private static void Segment(PathGeometry into, double x1, double y1, double x2, double y2)
+    {
+        var figure = new PathFigure { StartPoint = new Point(x1, y1), IsClosed = false };
+        figure.Segments.Add(new LineSegment { Point = new Point(x2, y2) });
+        into.Figures.Add(figure);
+    }
+
+    private void AddPath(PathGeometry geometry, Brush brush)
+    {
+        if (geometry.Figures.Count == 0)
+            return;
+        Plot.Children.Add(new Microsoft.UI.Xaml.Shapes.Path
         {
-            Plot.Children.Add(new Polyline
-            {
-                Points = points,
-                Stroke = counts ? SignalBrush : WeakBrush,
-                StrokeThickness = 1.8,
-                StrokeLineJoin = PenLineJoin.Round,
-            });
-        }
+            Data = geometry,
+            Stroke = brush,
+            StrokeThickness = 1,
+        });
     }
 
     private void DrawLocks(double fromMono, double nowMono, double plotWidth,
@@ -343,10 +380,15 @@ public sealed partial class SettingsWindow
     // same brushes rather than from copies of the values: a legend that can
     // disagree with the picture is worse than none, and two lists of colours
     // drift apart the first time one of them is adjusted.
+    // The signal colours are 1.5's, to the digit.
     private static readonly Brush SignalBrush =
-        new SolidColorBrush(Color.FromArgb(255, 0x57, 0xD3, 0x8C));
+        new SolidColorBrush(Color.FromArgb(255, 0x7C, 0xC0, 0xFF));
+    private static readonly Brush SignalJoinBrush =
+        new SolidColorBrush(Color.FromArgb(255, 0x4E, 0xA3, 0xFF));
     private static readonly Brush WeakBrush =
-        new SolidColorBrush(Color.FromArgb(255, 0x8A, 0x93, 0xA0));
+        new SolidColorBrush(Color.FromArgb(255, 0x79, 0x82, 0x8F));
+    private static readonly Brush WeakJoinBrush =
+        new SolidColorBrush(Color.FromArgb(255, 0x5C, 0x64, 0x70));
     private static readonly Brush SilenceBrush =
         new SolidColorBrush(Color.FromArgb(46, 0xE8, 0xA3, 0x3D));
     private static readonly Brush SilenceLockBrush =
@@ -419,11 +461,17 @@ public sealed partial class SettingsWindow
 
     private static FrameworkElement Swatch(string shape, Brush brush) => shape switch
     {
+        // The fill is the chart's own see-through brush, so the swatch looks
+        // like the band. The outline is the same colour at nearly full
+        // strength: without it the faint fills vanished into the background
+        // and could not be told apart (David, 17.09.2026).
         "band" => new Rectangle
         {
-            Width = 16,
-            Height = 12,
+            Width = 22,
+            Height = 14,
             Fill = brush,
+            Stroke = Outline(brush),
+            StrokeThickness = 1.2,
             VerticalAlignment = VerticalAlignment.Center,
         },
         "upright" => new Rectangle
@@ -431,14 +479,14 @@ public sealed partial class SettingsWindow
             Width = 2,
             Height = 14,
             Fill = brush,
-            Margin = new Thickness(7, 0, 7, 0),
+            Margin = new Thickness(10, 0, 10, 0),
             VerticalAlignment = VerticalAlignment.Center,
         },
         "dashed" => new Line
         {
             X1 = 0,
             Y1 = 6,
-            X2 = 16,
+            X2 = 22,
             Y2 = 6,
             Stroke = brush,
             StrokeThickness = 1.6,
@@ -447,12 +495,16 @@ public sealed partial class SettingsWindow
         },
         _ => new Rectangle
         {
-            Width = 16,
+            Width = 22,
             Height = 2,
             Fill = brush,
             VerticalAlignment = VerticalAlignment.Center,
         },
     };
+
+    private static Brush Outline(Brush fill) => fill is SolidColorBrush solid
+        ? new SolidColorBrush(Color.FromArgb(210, solid.Color.R, solid.Color.G, solid.Color.B))
+        : fill;
 
     // ------------------------------------------------------------- helpers
 

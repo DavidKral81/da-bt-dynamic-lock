@@ -77,7 +77,7 @@ public static class Silences
     /// thinned to one per ten seconds, so measuring them against five seconds
     /// would paint the whole of yesterday as one long dropout.
     /// </summary>
-    private static double Spacing(double at, double now) =>
+    public static double Spacing(double at, double now) =>
         now - at <= SignalHistory.DetailedSeconds
             ? OrdinarySpacingSeconds
             : SignalHistory.ThinnedStepSeconds * 2;
