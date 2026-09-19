@@ -141,6 +141,12 @@ internal static class Native
     public const uint MF_CHECKED = 0x00000008;
     public const uint MF_GRAYED = 0x00000001;
 
+    /// <summary>
+    /// This line opens a submenu. ⚠ With it, AppendMenu takes the SUBMENU
+    /// HANDLE where the item id normally goes.
+    /// </summary>
+    public const uint MF_POPUP = 0x00000010;
+
     public const uint TPM_RETURNCMD = 0x0100;
     public const uint TPM_RIGHTBUTTON = 0x0002;
     public const uint TPM_NONOTIFY = 0x0080;
@@ -365,4 +371,11 @@ internal static class Native
 
     [DllImport("shcore.dll")]
     public static extern int GetDpiForMonitor(nint hmonitor, int dpiType, out uint dpiX, out uint dpiY);
+
+    /// <summary>
+    /// The scale of the screen a window is actually on. 0 if Windows will not
+    /// say, which the caller has to treat as "assume 100 %".
+    /// </summary>
+    [DllImport("user32.dll")]
+    public static extern uint GetDpiForWindow(nint hwnd);
 }

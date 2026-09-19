@@ -209,9 +209,12 @@ internal sealed partial class TrayIcon : IDisposable
         }
     }
 
-    /// <summary>One line of the tray menu. A separator is a null label.</summary>
+    /// <summary>
+    /// One line of the tray menu. A separator is a null label; an item with
+    /// Children opens a submenu instead of returning an id.
+    /// </summary>
     internal sealed record MenuItem(int Id, string? Label, bool Ticked = false,
-        bool Enabled = true);
+        bool Enabled = true, IReadOnlyList<MenuItem>? Children = null);
 
     /// <summary>
     /// Shows the menu at the mouse and returns the chosen Id, or 0.
@@ -223,25 +226,12 @@ internal sealed partial class TrayIcon : IDisposable
     /// </summary>
     public int ShowMenu(IReadOnlyList<MenuItem> items)
     {
-        nint menu = Native.CreatePopupMenu();
+        nint menu = Build(items);
         if (menu == 0)
             return 0;
 
         try
         {
-            foreach (var item in items)
-            {
-                if (item.Label is null)
-                {
-                    Native.AppendMenuW(menu, Native.MF_SEPARATOR, 0, null);
-                    continue;
-                }
-                uint flags = Native.MF_STRING
-                    | (item.Ticked ? Native.MF_CHECKED : 0)
-                    | (item.Enabled ? 0 : Native.MF_GRAYED);
-                Native.AppendMenuW(menu, flags, (nuint)item.Id, item.Label);
-            }
-
             if (!Native.GetCursorPos(out Native.POINT where))
                 return 0;
 
@@ -259,8 +249,49 @@ internal sealed partial class TrayIcon : IDisposable
         }
         finally
         {
+            // Destroying the top menu takes its submenus with it - documented,
+            // and the reason Build can hand them over without keeping a list.
             Native.DestroyMenu(menu);
         }
+    }
+
+    /// <summary>
+    /// Builds a menu, submenus and all. Returns 0 if Windows would not give one.
+    /// </summary>
+    private static nint Build(IReadOnlyList<MenuItem> items)
+    {
+        nint menu = Native.CreatePopupMenu();
+        if (menu == 0)
+            return 0;
+
+        foreach (var item in items)
+        {
+            if (item.Label is null)
+            {
+                Native.AppendMenuW(menu, Native.MF_SEPARATOR, 0, null);
+                continue;
+            }
+
+            uint flags = Native.MF_STRING
+                | (item.Ticked ? Native.MF_CHECKED : 0)
+                | (item.Enabled ? 0 : Native.MF_GRAYED);
+
+            if (item.Children is { Count: > 0 } children)
+            {
+                nint sub = Build(children);
+                if (sub == 0)
+                    continue;       // no submenu is better than an empty line
+                // ⚠ A submenu is passed WHERE THE ID GOES. Windows then never
+                // returns an id for this line - it opens the submenu instead -
+                // so the item's own Id is meaningless and must not be relied on.
+                Native.AppendMenuW(menu, flags | Native.MF_POPUP, (nuint)sub, item.Label);
+                continue;
+            }
+
+            Native.AppendMenuW(menu, flags, (nuint)item.Id, item.Label);
+        }
+
+        return menu;
     }
 
     /// <summary>

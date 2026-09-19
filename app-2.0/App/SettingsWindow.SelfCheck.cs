@@ -1,4 +1,5 @@
 using DaBtDynamicLock.Engine;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -158,22 +159,22 @@ public sealed partial class SettingsWindow
         // place to look - nothing about that window was broken.
         SelectPage("app");
         lines.Add(PageApp.Visibility == Visibility.Visible
-                && PageOverview.Visibility == Visibility.Collapsed
+                && PageSignal.Visibility == Visibility.Collapsed
             ? "  OK    choosing a topic shows that page and hides the others"
             : "  FAIL  choosing a topic did not switch the page");
-        SelectPage("overview");
+        SelectPage("signal");
 
         // Now an ordinary drop-down, so it is worked the way every other choice
         // here is: setting the item raises the same event a person's click
         // does. Stronger than what this used to do, which was call the handler
         // directly because a flag has no property to set.
-        string before = NavOverview.Text;
+        string before = NavSignal.Text;
         SelectPage("app");
         LanguageChoice.SelectedItem = Texts.Languages.First(l => l.Code == "en");
-        lines.Add(NavOverview.Text != before && Texts.Language == "en"
+        lines.Add(NavSignal.Text != before && Texts.Language == "en"
             ? "  OK    the flag switches the language and redraws the labels"
             : $"  FAIL  the language did not redraw: \"{before}\" -> "
-                + $"\"{NavOverview.Text}\" ({Texts.Language})");
+                + $"\"{NavSignal.Text}\" ({Texts.Language})");
         Check("the chosen language is saved", "en", s => s.Language);
 
         LanguageChoice.SelectedItem = Texts.Languages.First(l => l.Code == "cs");
@@ -221,9 +222,56 @@ public sealed partial class SettingsWindow
         Role("a dry run of a downloaded copy stays a dry run",
             @"C:\Users\Someone\Downloads\DaBtDynamicLock.exe",
             new[] { "--dry-run" }, null);
-        lines.Add(NavOverview.Text == before
+
+        // The switch the repeating task starts the app with. If it stopped
+        // being recognised, every scheduled start would read as a start by
+        // hand and would tear up the note saying the user switched the app off
+        // - so a deliberate quit would undo itself five minutes later.
+        var scheduled = Options.Parse(new[] { "--scheduled" },
+            installed + @"\DaBtDynamicLock.exe", installed);
+        lines.Add(scheduled.Scheduled && scheduled.Setup is null
+            ? "  OK    a start by the schedule is told apart from one by hand"
+            : "  FAIL  --scheduled was not recognised, so a deliberate quit would be undone");
+        lines.Add(NavSignal.Text == before
             ? "  OK    switching back restores the first language"
-            : $"  FAIL  switching back left \"{NavOverview.Text}\"");
+            : $"  FAIL  switching back left \"{NavSignal.Text}\"");
+
+        // ---- the size the window is left at ------------------------------
+        // Closing it used to throw away whatever the person had done to it
+        // (David, 19.09.2026). Checked through HideWindow/ShowWindow, the very
+        // pair that does it, rather than by calling the saving method on its
+        // own - the wiring is the half that breaks.
+        var presenter = (OverlappedPresenter)AppWindow.Presenter;
+        presenter.Restore();
+        double scale = WindowLayout.ScaleOf(Handle);
+        int wantWide = MinWidthDip + 140;
+        AppWindow.Resize(new Windows.Graphics.SizeInt32(
+            (int)Math.Round(wantWide * scale),
+            (int)Math.Round((MinHeightDip + 80) * scale)));
+
+        HideWindow();
+        Check("the width the window was left at is saved", wantWide,
+            s => s.WindowWidth);
+        Check("...and it was not left marked as maximised", false,
+            s => s.WindowMaximized);
+
+        ShowWindow();
+        int cameBack = (int)Math.Round(AppWindow.Size.Width / WindowLayout.ScaleOf(Handle));
+        lines.Add(Math.Abs(cameBack - wantWide) <= 2
+            ? "  OK    ...and the window opens that wide again"
+            : $"  FAIL  the window was left {wantWide} wide and opened {cameBack}");
+
+        // Maximised is remembered as a FLAG, and the ordinary size is left
+        // alone - otherwise un-maximising would fill the screen just the same.
+        presenter.Maximize();
+        HideWindow();
+        Check("a maximised window is remembered as maximised", true,
+            s => s.WindowMaximized);
+        Check("...without overwriting the ordinary size", wantWide,
+            s => s.WindowWidth);
+
+        presenter.Restore();
+        ShowWindow();
 
         return lines;
     }

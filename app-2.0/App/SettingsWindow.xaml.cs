@@ -31,20 +31,22 @@ public sealed partial class SettingsWindow : Window
     private const int WidthDip = 920;
     private const int HeightDip = 700;
 
-    // The smallest it may be shrunk to still shows the navigation and a usable
-    // page - the cards shrink with it, they are not fixed at 640.
-    private const int MinWidthDip = 212 + 380 + 60;
+    // The smallest it may be shrunk to. 900 DIP, set by David on 19.09.2026:
+    // the chart is the page that matters and a narrow one says nothing, so the
+    // window is not allowed to be squeezed below a width that can show it.
+    private const int MinWidthDip = 900;
     private const int MinHeightDip = 520;
 
-    // The choices are the ones the shipped 1.5 offers, value for value
-    // (dyn_lock.py, the settings cards). Inventing different ones here would
-    // leave a settings file that one version writes and the other cannot show.
-    private static readonly double[] SilenceChoices = { 12, 15, 20, 30, 45, 60, 90, 120 };
-    private static readonly double[] RangeChoices =
-        { -100, -95, -90, -85, -80, -75, -70, -65, -60 };
-    private static readonly int[] CountdownChoices = { 0, 5, 10, 15, 20, 30 };
-    private static readonly int[] PositionChoices = { 10, 20, 30, 40, 50, 60, 70, 80, 90 };
-    private static readonly int[] WarnChoices = { 0, 1, 2, 5, 10, 20, 30, 60 };
+    // The values themselves live in Choices, because the tray menu offers the
+    // same settings and two lists of the same numbers would drift apart.
+    // They are the ones the shipped 1.5 offers, value for value (dyn_lock.py,
+    // the settings cards): a settings file one version writes and the other
+    // cannot show would be the price of inventing new ones.
+    private static double[] SilenceChoices => Choices.Silence;
+    private static double[] RangeChoices => Choices.Range;
+    private static int[] CountdownChoices => Choices.Countdown;
+    private static int[] PositionChoices => Choices.Position;
+    private static int[] WarnChoices => Choices.Warn;
 
     private static readonly TimeSpan ShortPause = TimeSpan.FromMinutes(15);
     private static readonly TimeSpan LongPause = TimeSpan.FromHours(1);
@@ -106,6 +108,12 @@ public sealed partial class SettingsWindow : Window
         {
             var (x, y, w, h) = Placement();
             AppWindow.MoveAndResize(new RectInt32(x, y, w, h));
+
+            // Maximised AFTER the size is set, not instead of it: the size
+            // above is what the window goes back to when it is un-maximised.
+            if (_host.Settings.WindowMaximized
+                && AppWindow.Presenter is OverlappedPresenter presenter)
+                presenter.Maximize();
         }
 
         AppWindow.Show(true);
@@ -116,8 +124,47 @@ public sealed partial class SettingsWindow : Window
 
     public void HideWindow()
     {
+        RememberSize();
         IsShown = false;
         AppWindow.Hide();
+    }
+
+    /// <summary>
+    /// Keeps the size the window was left at, so reopening it does not undo
+    /// what the person did to it (David, 19.09.2026).
+    ///
+    /// ⚠ A MAXIMISED window's size is never stored as the ordinary one. Windows
+    /// reports the full screen while it is maximised, and storing that would
+    /// make the restored window fill the screen too - the maximise button would
+    /// then do nothing visible. Only the flag is kept, and the last size the
+    /// window had before it was maximised stays as it was.
+    /// </summary>
+    private void RememberSize()
+    {
+        if (AppWindow.Presenter is not OverlappedPresenter presenter)
+            return;
+
+        var state = presenter.State;
+        // Minimised says nothing about how big the window should open: it is
+        // not a size the person chose.
+        if (state == OverlappedPresenterState.Minimized)
+            return;
+
+        var cfg = _host.Settings;
+        bool maximised = state == OverlappedPresenterState.Maximized;
+        cfg.WindowMaximized = maximised;
+
+        if (!maximised)
+        {
+            // Back into DIPs, the unit the stored numbers and the minimum are
+            // in - AppWindow counts in physical pixels, so a window sized on a
+            // 150 % display would otherwise reopen half as big again.
+            double scale = WindowLayout.ScaleOf(Handle);
+            cfg.WindowWidth = (int)Math.Round(AppWindow.Size.Width / scale);
+            cfg.WindowHeight = (int)Math.Round(AppWindow.Size.Height / scale);
+        }
+
+        _host.SaveSettings();
     }
 
     /// <summary>
@@ -164,8 +211,21 @@ public sealed partial class SettingsWindow : Window
     internal string PageName =>
         (Nav.SelectedItem as FrameworkElement)?.Tag as string ?? "page";
 
-    private static (int X, int Y, int W, int H) Placement() =>
-        WindowLayout.Centred(WidthDip, HeightDip);
+    /// <summary>
+    /// Where and how big the window opens: the size it was left at, or the one
+    /// it was designed for when nobody has resized it yet.
+    ///
+    /// Never smaller than the minimum, whatever the settings file says - a
+    /// hand-edited or older file must not be able to produce a window that
+    /// cannot show its own content.
+    /// </summary>
+    private (int X, int Y, int W, int H) Placement()
+    {
+        var cfg = _host.Settings;
+        int w = cfg.WindowWidth > 0 ? Math.Max(cfg.WindowWidth, MinWidthDip) : WidthDip;
+        int h = cfg.WindowHeight > 0 ? Math.Max(cfg.WindowHeight, MinHeightDip) : HeightDip;
+        return WindowLayout.Centred(w, h);
+    }
 
     // --------------------------------------------------------------- texts
 
@@ -186,14 +246,11 @@ public sealed partial class SettingsWindow : Window
             AppName.Text = AppInfo.Name;
             NavFoot.Text = Texts.Get("app_version", AppInfo.Version);
 
-            NavOverview.Text = Texts.Get("nav_overview");
             NavSignal.Text = Texts.Get("nav_signal");
             NavPhone.Text = Texts.Get("nav_phone");
             NavLocking.Text = Texts.Get("nav_locking");
-            NavNetworks.Text = Texts.Get("nav_networks");
             NavApp.Text = Texts.Get("nav_app");
 
-            TitleOverview.Text = Texts.Get("nav_overview");
             TitleSignal.Text = Texts.Get("nav_signal");
             TitlePhone.Text = Texts.Get("nav_phone");
             ChartTitle.Text = Texts.Get("chart_title");
@@ -202,17 +259,7 @@ public sealed partial class SettingsWindow : Window
             // the language rebuilds it there.
             BuildRangeButtons();
             TitleLocking.Text = Texts.Get("nav_locking");
-            TitleNetworks.Text = Texts.Get("nav_networks");
             TitleApp.Text = Texts.Get("nav_app");
-
-            // overview
-            KeyPhone.Text = Texts.Get("key_phone");
-            KeySignal.Text = Texts.Get("key_signal");
-            KeyNetwork.Text = Texts.Get("key_network");
-            KeyLastLock.Text = Texts.Get("key_last_lock");
-            LogLink.Content = Texts.Get("foot_log");
-            Pause15.Content = Texts.Get("act_pause_15");
-            Pause60.Content = Texts.Get("act_pause_60");
 
             // phone
             CardPhone.Text = Texts.Get("card_phone");
@@ -280,64 +327,27 @@ public sealed partial class SettingsWindow : Window
     private void FillChoices()
     {
         Silence.ItemsSource = SilenceChoices
-            .Select(s => new Choice(Texts.Get("opt_seconds", (int)s), s)).ToList();
+            .Select(s => new Choice(Choices.SilenceLabel(s), s)).ToList();
 
         Range.ItemsSource = new[] { new Choice(Texts.Get("opt_range_max"), (double?)null) }
             .Concat(RangeChoices.Select(v => new Choice(RangeLabel(v), v))).ToList();
 
         CountdownFrom.ItemsSource = CountdownChoices
-            .Select(s => new Choice(
-                s == 0 ? Texts.Get("opt_countdown_off") : Texts.Get("opt_countdown_from", s),
-                (double?)s))
-            .ToList();
+            .Select(s => new Choice(Choices.CountdownLabel(s), (double?)s)).ToList();
 
         Position.ItemsSource = PositionChoices
             .Select(p => new Choice(Texts.Get("opt_from_top", p), (double?)p)).ToList();
 
         WarnAfter.ItemsSource = WarnChoices
-            .Select(m => new Choice(
-                m == 0 ? Texts.Get("opt_no_warning") : Texts.Get("opt_after_minutes", m),
-                (double?)m))
-            .ToList();
+            .Select(m => new Choice(Choices.WarnLabel(m), (double?)m)).ToList();
 
         Pause.ItemsSource = PauseChoices
-            .Select(m => new Choice(Texts.Get(PauseKey(m)), (double?)m)).ToList();
+            .Select(m => new Choice(Choices.PauseLabel(m), (double?)m)).ToList();
     }
 
-    /// <summary>
-    /// How long a pause can be. The same range the shipped version offers -
-    /// five minutes for stepping out, two days for going away.
-    /// </summary>
-    private static readonly double[] PauseChoices =
-        { 0, 5, 15, 30, 60, 120, 240, 720, 1440, 2880 };
+    private static double[] PauseChoices => Choices.Pause;
 
-    private static string PauseKey(double minutes) => minutes switch
-    {
-        0 => "opt_not_paused",
-        5 => "opt_5_min",
-        15 => "opt_15_min",
-        30 => "opt_30_min",
-        60 => "opt_1_hour",
-        120 => "opt_2_hours",
-        240 => "opt_4_hours",
-        720 => "opt_12_hours",
-        1440 => "opt_1_day",
-        _ => "opt_2_days",
-    };
-
-    /// <summary>
-    /// The sensitivity entries say what the number MEANS where it is worth
-    /// saying. -80 dBm is called out because a phone in a pocket measures about
-    /// that - which is the whole reason this setting cannot be guessed at.
-    /// </summary>
-    private static string RangeLabel(double v)
-    {
-        int dbm = (int)v;
-        if (v == RangeChoices[0]) return Texts.Get("opt_range_longest", dbm);
-        if (v == RangeChoices[^1]) return Texts.Get("opt_range_shortest", dbm);
-        if (v == -80) return Texts.Get("opt_range_edge", dbm);
-        return Texts.Get("opt_range_plain", dbm);
-    }
+    private static string RangeLabel(double v) => Choices.RangeLabel(v);
 
     // -------------------------------------------------------------- filling
 
@@ -348,8 +358,6 @@ public sealed partial class SettingsWindow : Window
         try
         {
             var cfg = _host.Settings;
-
-            FillOverview(cfg);
 
             Select(Silence, cfg.SilenceSeconds);
             Select(Range, cfg.RssiThreshold);
@@ -418,69 +426,6 @@ public sealed partial class SettingsWindow : Window
                 PauseChoices[^1]));
     }
 
-    private void FillOverview(Settings cfg)
-    {
-        var decision = _host.Latest;
-
-        StateLine.Text = decision is null
-            ? Texts.Get("st_waiting")
-            : Texts.Get(decision.LabelKey,
-                (object?)decision.LabelSeconds ?? decision.LabelMinutes);
-        StateWhy.Text = WhyText(decision, cfg);
-
-        double? silence = _host.Watch.Silence();
-        RingValue.Text = silence is double s ? Texts.Get("ring_seconds", (int)s) : "–";
-        RingOf.Text = Texts.Get("ring_of", (int)cfg.SilenceSeconds);
-
-        double share = silence is double sec && cfg.SilenceSeconds > 0
-            ? Math.Clamp(sec / cfg.SilenceSeconds, 0, 1)
-            : 0;
-        // StrokeDashArray counts in multiples of the stroke thickness, not in
-        // pixels: a 104 px circle with an 8 px stroke is about 327 px round, so
-        // a full ring is roughly 41 units.
-        const double units = 41;
-        double on = share * units;
-        Ring.StrokeDashArray = new Microsoft.UI.Xaml.Media.DoubleCollection
-            { on, Math.Max(units - on, 0.001) };
-
-        ValPhone.Text = cfg.Target.Length > 0 ? cfg.Target : Texts.Get("val_no_phone");
-        ValSignal.Text = _host.Watch.Rssi is int dbm
-            ? Texts.Get("val_dbm", dbm)
-            : Texts.Get("val_no_reading");
-
-        var here = _host.CurrentNetwork();
-        ValNetwork.Text = here is null
-            ? Texts.Get("net_none")
-            : Texts.Get(IsTrusted(cfg, here) ? "val_net_trusted" : "val_net_locking", here.Ssid);
-
-        ValLastLock.Text = _host.LastLockedAt is DateTime when
-            ? when.ToString("H:mm")
-            : Texts.Get("foot_never_locked");
-
-        // One button for "stop watching now", whichever way it is stopped -
-        // and it always offers the way back, so the overview can never show a
-        // state it cannot undo.
-        bool paused = _host.Watch.PauseLeft > 0;
-        PauseStop.Content = Texts.Get(paused ? "act_end_pause"
-            : cfg.Active ? "act_switch_off" : "act_switch_on");
-    }
-
-    /// <summary>
-    /// One sentence saying what happens next. The overview answers "is it
-    /// watching?", and the follow-up is always "why not" or "when will it
-    /// lock" - worth a line rather than a number to work out.
-    /// </summary>
-    private static string WhyText(Decision? decision, Settings cfg) => decision?.Reason switch
-    {
-        "off" => Texts.Get("why_off"),
-        "screen_locked" => Texts.Get("why_screen_locked"),
-        "paused" => Texts.Get("why_paused"),
-        "trusted_network" => Texts.Get("why_trusted_network"),
-        "waiting" => Texts.Get("why_waiting"),
-        "locked" => Texts.Get("why_locked"),
-        "idle_guard" => Texts.Get("why_idle_guard"),
-        _ => Texts.Get("why_watching", (int)cfg.SilenceSeconds),
-    };
 
     private static bool IsTrusted(Settings cfg, WifiConnection here) =>
         cfg.TrustedNetworks.Any(n => n.Ssid == here.Ssid && n.Bssid == here.Bssid);
@@ -630,13 +575,11 @@ public sealed partial class SettingsWindow : Window
     {
         // Read from the Tag, never from the label on screen: branching on
         // displayed text breaks the moment the language changes.
-        string page = (Nav.SelectedItem as FrameworkElement)?.Tag as string ?? "overview";
+        string page = (Nav.SelectedItem as FrameworkElement)?.Tag as string ?? "signal";
 
-        PageOverview.Visibility = Shown(page == "overview");
         PageSignal.Visibility = Shown(page == "signal");
         PagePhone.Visibility = Shown(page == "phone");
         PageLocking.Visibility = Shown(page == "locking");
-        PageNetworks.Visibility = Shown(page == "networks");
         PageApp.Visibility = Shown(page == "app");
 
         if (page == "signal")

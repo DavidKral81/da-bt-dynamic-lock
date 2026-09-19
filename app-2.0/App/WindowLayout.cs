@@ -53,6 +53,19 @@ public static class WindowLayout
     }
 
     /// <summary>
+    /// How many physical pixels one DIP is for the screen this window is on.
+    ///
+    /// Asked of the WINDOW rather than of the primary monitor, because a window
+    /// dragged onto a second screen with a different scale has to be measured
+    /// where it actually is. 1.0 if Windows will not say.
+    /// </summary>
+    public static double ScaleOf(nint hwnd)
+    {
+        uint dpi = Native.GetDpiForWindow(hwnd);
+        return dpi > 0 ? dpi / 96.0 : 1.0;
+    }
+
+    /// <summary>
     /// Gives a window the application's own icon.
     ///
     /// Drawn by the same code that draws the tray icon, so there is one picture

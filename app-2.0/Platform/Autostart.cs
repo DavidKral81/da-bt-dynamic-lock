@@ -179,6 +179,10 @@ public static class Autostart
                   <Enabled>true</Enabled>
                   <UserId>{SecurityElement.Escape(user)}</UserId>
                   <Delay>PT30S</Delay>
+                  <Repetition>
+                    <Interval>PT5M</Interval>
+                    <StopAtDurationEnd>false</StopAtDurationEnd>
+                  </Repetition>
                 </LogonTrigger>
               </Triggers>
               <Principals>
@@ -189,6 +193,9 @@ public static class Autostart
                 </Principal>
               </Principals>
               <Settings>
+                <!-- Carries the repeat above: a five minute repeat while a copy
+                     is already running must do nothing at all. Without this,
+                     every repeat would start a second watcher. -->
                 <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
                 <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
                 <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>

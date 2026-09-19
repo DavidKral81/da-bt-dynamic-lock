@@ -31,6 +31,7 @@ internal static class EngineChecks
             CheckNoSignalWarning(scratch);
             CheckTrustedNetwork(scratch);
             CheckHistoryStore(scratch);
+            CheckQuitMarker(scratch);
         }
         finally
         {
@@ -547,5 +548,58 @@ internal static class EngineChecks
         var (_, complaint) = HistoryStore.Load(damaged, path, laterMono, laterWall);
         Check("a damaged file is reported, not thrown", true, complaint is not null);
         Check("...and the app carries on with an empty chart", 0, damaged.Count);
+    }
+
+    /// <summary>
+    /// The note that says the USER switched the app off, which a scheduled
+    /// start has to respect. The scheduled task exists to undo crashes, and it
+    /// would otherwise switch the app back on a few minutes after every
+    /// deliberate quit.
+    /// </summary>
+    static void CheckQuitMarker(string scratch)
+    {
+        Console.WriteLine("\nThe note left when the user switches the app off");
+        string folder = Path.Combine(scratch, "quit-marker");
+
+        Check("no note, so a scheduled start may run", false,
+            QuitMarker.Applies(folder, uptimeMs: 500_000));
+
+        const long switchedOffAt = 500_000;     // the machine had been up 500 s
+        Check("writing the note reports no problem", null,
+            QuitMarker.Write(folder, DateTime.Now, switchedOffAt));
+
+        Check("a scheduled start minutes later stays away", true,
+            QuitMarker.Applies(folder, switchedOffAt + 300_000));
+
+        // Sleep does not move the counter on, so the same reading comes back.
+        // Closing the lid is not a restart and must not switch watching on.
+        Check("...and still stays away after sleep", true,
+            QuitMarker.Applies(folder, switchedOffAt));
+
+        // A restart puts the counter back to zero. That, and only that, is what
+        // makes the note expire (David chose this of the two on 19.09.2026).
+        Check("after a restart the note has expired", false,
+            QuitMarker.Applies(folder, uptimeMs: 12_000));
+
+        // Starting the app by hand means what it says.
+        QuitMarker.Clear(folder);
+        Check("starting by hand tears the note up", false,
+            QuitMarker.Applies(folder, switchedOffAt + 300_000));
+        Check("...and tearing up a note that is not there is quiet", true,
+            Quiet(() => QuitMarker.Clear(folder)));
+
+        // Rubbish reads as "no note": watching more than asked is a nuisance,
+        // watching less is the failure that matters.
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, QuitMarker.FileName), "not a note at all");
+        Check("a note that makes no sense is ignored", false,
+            QuitMarker.Applies(folder, switchedOffAt));
+    }
+
+    /// <summary>Did this run without throwing?</summary>
+    static bool Quiet(Action what)
+    {
+        try { what(); return true; }
+        catch { return false; }
     }
 }

@@ -36,6 +36,12 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     private WatchIcon _icon = WatchIcon.Ok;
     private string _tip = "";
 
+    /// <summary>
+    /// The last trouble the tray icon reported, so the same one is not written
+    /// twice a minute for as long as it lasts. Null means the icon is fine.
+    /// </summary>
+    private string? _iconTrouble;
+
     public App() => InitializeComponent();
 
     public Settings Settings => _settings;
@@ -153,6 +159,35 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             // would hold the very mutex it just complained about.
             Environment.Exit(0);
             return;
+        }
+
+        // The scheduled task repeats every few minutes so a crash cannot leave
+        // the computer unwatched - but it cannot tell a crash from "I switched
+        // it off". The app can, and left a note saying so.
+        //
+        // A dry run is exempt: it never writes the note and must not read the
+        // installed copy's either.
+        if (!_options.DryRun)
+        {
+            if (_options.Scheduled)
+            {
+                if (QuitMarker.Applies(_options.DataFolder, Environment.TickCount64))
+                {
+                    _log.Write("Started by the schedule, but the user switched the app "
+                        + "off since the computer started - stopping again.");
+                    Exit();
+                    Environment.Exit(0);
+                    return;
+                }
+                _log.Write("Started by the schedule - the app was not running.");
+            }
+            else
+            {
+                // Started by hand (or at logon), which says the opposite of the
+                // note. Torn up here rather than when quitting, so a note left
+                // by a copy that crashed mid-quit cannot outlive its meaning.
+                QuitMarker.Clear(_options.DataFolder);
+            }
         }
 
         _log.Write($"{AppInfo.Name} {AppInfo.Version} starting.");
@@ -570,10 +605,19 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                 ? "  OK    the notification really carries text to display"
                 : "  FAIL  the notification would be sent with nothing to display");
 
+            // Skipped with the screen locked, for the same measured reason the
+            // tray icon check skips: Windows lets nothing into the tray then,
+            // so this would report a fault that is not the app's.
+            // Skipped when there is no icon in the tray to show it from - the
+            // screen being locked, or the shell restarting. Both are the
+            // machine's doing, not the app's, and a check that blames the app
+            // for them sends the next person hunting a fault that is not there.
             string? shown = _tray?.Notify(AppInfo.Name, warning);
             lines.Add(shown is null
                 ? "  OK    Windows accepted the warning notification"
-                : $"  FAIL  {shown}");
+                : shown.Contains("not in the tray")
+                    ? $"  SKIP  the warning notification: {shown}"
+                    : $"  FAIL  {shown}");
 
             // A check nobody calls is worse than none - it only buys false
             // calm. The phone app once carried exactly this check with no
@@ -582,7 +626,9 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             // a text missing in one language cannot ship unnoticed.
             // What a left click on the tray icon does - the same method the
             // click calls, so this is the wiring and not a copy of it.
-            _settingsWindow?.SelectPage("overview");
+            // Parked on another page first, so "the chart is showing" cannot
+            // pass just because it already was.
+            _settingsWindow?.SelectPage("app");
             OpenChart();
             await Task.Delay(300);
             lines.Add(_settingsWindow?.PageName == "signal"
@@ -599,6 +645,8 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             // killed the app on 18.09.2026, so it is staged here rather than
             // waited for. Its own file says how.
             lines.AddRange(TrayIcon.SelfCheck());
+
+            lines.AddRange(CheckTrayMenu());
 
             var missing = Texts.Missing().ToList();
             lines.Add(missing.Count == 0
@@ -793,7 +841,14 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
 
         // Only when something actually changed: rebuilding the icon twice a
         // second would be a lot of work for a picture nobody watches.
-        if (_tray is not null && (icon != _icon || tip != _tip))
+        //
+        // ...unless the last attempt failed, and then on every tick until it
+        // works. ⚠ These failures are TEMPORARY and measured: the shell answers
+        // ERROR_TIMEOUT (1460) or ERROR_NO_TOKEN (1008) while it is restarting,
+        // and refuses everything with 0x80004005 while the screen is locked.
+        // Trying once and giving up leaves no icon at all until the state
+        // happens to change - which, on a locked screen, it does not.
+        if (_tray is not null && (icon != _icon || tip != _tip || _iconTrouble is not null))
         {
             _icon = icon;
             _tip = tip;
@@ -806,12 +861,29 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             try
             {
                 _tray.Show(TrayIcon.MakeIcon(32, colour), $"{AppInfo.Name} - {tip}");
+                if (_iconTrouble is not null)
+                {
+                    _log.Write("The tray icon can be updated again.");
+                    _iconTrouble = null;
+                }
             }
             catch (Exception e)
             {
                 // The icon is how the app is reached at all, so this must not
                 // pass unnoticed - but it must not stop the watching either.
-                _log.Write($"The tray icon could not be updated ({e.Message}).");
+                //
+                // ⚠ SAID ONCE, not on every attempt. Measured 19.09.2026: with
+                // the screen locked Windows refuses to update a tray icon at
+                // all, and the app kept saying so twice a minute - 37 identical
+                // lines in five minutes, and a night would have rotated the log
+                // away. The line that matters is the first one and the one
+                // saying it works again.
+                if (_iconTrouble != e.Message)
+                {
+                    _log.Write($"The tray icon could not be updated ({e.Message}). "
+                        + "Repeats of this are not logged.");
+                    _iconTrouble = e.Message;
+                }
             }
         }
 
@@ -904,6 +976,19 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     public void QuitApp()
     {
         _log.Write("Quitting, asked for by the user.");
+
+        // Left BEFORE the process goes, so the repeating task knows this was
+        // meant. It lasts until the computer restarts - switching the app off
+        // now is not the same as never again, and "never again" is what the
+        // start-at-logon switch is for.
+        if (!_options.DryRun)
+        {
+            string? trouble = QuitMarker.Write(
+                _options.DataFolder, DateTime.Now, Environment.TickCount64);
+            if (trouble is not null)
+                _log.Write($"The app will be started again by the schedule: {trouble}");
+        }
+
         Shutdown();
         // Shutdown() only ends the message loop for an interactive run, which
         // is not enough when the user asked the app to go away: the process has
@@ -938,7 +1023,10 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         TaskName: AppInfo.Name,
         Program: Environment.ProcessPath
             ?? Path.Combine(AppInfo.ProgramFolder, AppInfo.Name + ".exe"),
-        Arguments: "",
+        // Tells the copy the task starts that it was the SCHEDULE, not a
+        // person - so it respects the note left when the user switched the app
+        // off, instead of undoing it every five minutes.
+        Arguments: "--scheduled",
         // Where the .exe is, never AppContext.BaseDirectory: in a single-file
         // build that is a temporary unpack folder, so the logon task would name
         // a working directory that is gone by the next sign-in.
@@ -1051,32 +1139,162 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     private const int MenuSettings = 4;
     private const int MenuQuit = 5;
     private const int MenuChart = 6;
+    private const int MenuIdleGuard = 7;
+    private const int MenuAutostart = 8;
+    private const int MenuEndPause = 9;
+
+    // Submenu entries are numbered by BLOCK plus the position in their list,
+    // so one comparison says both which setting was chosen and which value.
+    // Ids, never the displayed text: the menu is translated, and branching on
+    // a label breaks the moment the language changes.
+    private const int MenuDeviceBase = 100;
+    private const int MenuSilenceBase = 200;
+    private const int MenuCountdownBase = 300;
+    private const int MenuRangeBase = 400;
+    private const int MenuWarnBase = 500;
+    private const int MenuPauseBase = 600;
+    private const int BlockSize = 100;
 
     /// <summary>
-    /// The menu on a right click. Short on purpose: the settings window is where
-    /// things get done, and this is the shortcut for the few that are worth
-    /// reaching without opening anything - plus Quit, which has to be reachable
-    /// from the tray at all. The chart comes first, as it did in 1.x.
+    /// The menu on a right click - the one 1.5 had, item for item (David,
+    /// 19.09.2026), so everything reachable there is reachable here.
+    ///
+    /// The labels come from the SAME keys as the settings window. 1.5 learned
+    /// why: its menu said "Active" where the window said "Automatic locking
+    /// active", and one thing with two names is one thing too many. The values
+    /// come from Choices for the same reason.
     /// </summary>
     private void ShowTrayMenu()
     {
         if (_tray is null)
             return;
 
+        int chosen = _tray.ShowMenu(TrayMenuItems());
+
+        // Submenus first: their ids carry a value, so they are read as a block
+        // plus a position rather than matched one by one.
+        if (chosen >= MenuDeviceBase)
+        {
+            ChooseFromSubmenu(chosen);
+            return;
+        }
+
+        ChooseFromMenu(chosen);
+    }
+
+    /// <summary>
+    /// What the menu holds. Built apart from showing it, because showing it
+    /// waits for a click and a run with nobody at the keyboard would hang -
+    /// so this is the half a check can look at.
+    /// </summary>
+    internal IReadOnlyList<TrayIcon.MenuItem> TrayMenuItems()
+    {
         bool paused = _watch.PauseLeft > 0;
 
         var items = new List<TrayIcon.MenuItem>
         {
             new(MenuChart, Texts.Get("nav_signal")),
+            new(MenuDeviceBase, Texts.Get("card_phone"), Children: DeviceItems()),
             new(0, null),
             new(MenuWatching, Texts.Get("sw_active"), Ticked: _settings.Active),
-            new(MenuPause, Texts.Get(paused ? "act_resume" : "act_pause")),
+            new(MenuIdleGuard, Texts.Get("sw_idle_guard"), Ticked: _settings.IdleGuard),
+            new(MenuAutostart, Texts.Get("sw_autostart"), Ticked: AutostartOn()),
             new(0, null),
-            new(MenuSettings, Texts.Get("act_settings")),
-            new(MenuQuit, Texts.Get("btn_quit")),
+            new(MenuSilenceBase, Texts.Get("lbl_silence"), Children: Pick(
+                Choices.Silence, MenuSilenceBase, Choices.SilenceLabel,
+                v => v == _settings.SilenceSeconds)),
+            new(MenuCountdownBase, Texts.Get("lbl_countdown"), Children: Pick(
+                Choices.Countdown, MenuCountdownBase, Choices.CountdownLabel,
+                v => v == 0 ? !_settings.Countdown
+                            : _settings.Countdown && v == _settings.CountdownFromSeconds)),
+            new(MenuRangeBase, Texts.Get("lbl_range"), Children: RangeItems()),
+            new(MenuWarnBase, Texts.Get("card_gone"), Children: Pick(
+                Choices.Warn, MenuWarnBase, Choices.WarnLabel,
+                m => m == (int)_settings.AlertNoSignalMinutes)),
+            new(0, null),
+            new(MenuPauseBase, Texts.Get("card_pause"), Children: Pick(
+                Choices.Pause.Where(m => m > 0).ToArray(), MenuPauseBase,
+                Choices.PauseLabel, _ => false)),
         };
 
-        switch (_tray.ShowMenu(items))
+        // Only while a pause is running: an item that does nothing is worse
+        // than no item, and 1.5 hid it the same way.
+        if (paused)
+            items.Add(new(MenuEndPause, Texts.Get("act_end_pause")));
+
+        items.Add(new(0, null));
+        items.Add(new(MenuSettings, Texts.Get("act_settings")));
+        items.Add(new(MenuQuit, Texts.Get("btn_quit")));
+        return items;
+    }
+
+    /// <summary>
+    /// The tray menu, checked without a click. Showing it waits for one, so a
+    /// run with nobody at the keyboard can only look at what it holds and at
+    /// what choosing a line does - which is the half that breaks.
+    ///
+    /// ⚠ A picture proves a menu line is drawn; it never proves that choosing
+    /// it saves anything. That exact fault shipped in 1.4, where a switch
+    /// moved and the file did not - so every value here is read back OUT OF
+    /// THE SETTINGS FILE.
+    /// </summary>
+    private IReadOnlyList<string> CheckTrayMenu()
+    {
+        var lines = new List<string>();
+        var items = TrayMenuItems();
+
+        void Check(string what, bool ok, string wrong) =>
+            lines.Add(ok ? $"  OK    {what}" : $"  FAIL  {wrong}");
+
+        // Every setting 1.5 could reach from the tray is reachable here.
+        int[] wanted = { MenuDeviceBase, MenuSilenceBase, MenuCountdownBase,
+                         MenuRangeBase, MenuWarnBase, MenuPauseBase };
+        var withChildren = items
+            .Where(i => i.Children is { Count: > 0 })
+            .Select(i => i.Id).ToList();
+        Check("the tray menu offers the same six submenus 1.5 had",
+            wanted.All(withChildren.Contains),
+            "the tray menu is missing a submenu: "
+                + string.Join(", ", wanted.Except(withChildren)));
+
+        // Ids that collide would send one line's job to another line.
+        var ids = items.SelectMany(i => i.Children ?? new[] { i })
+            .Where(i => i.Id != 0).Select(i => i.Id).ToList();
+        Check("...with no two lines sharing an id",
+            ids.Count == ids.Distinct().Count(),
+            "two tray menu lines share an id, so one would do the other's job");
+
+        // Choosing a value has to reach the file, not just the object.
+        double wasSilence = _settings.SilenceSeconds;
+        int pick = Choices.Silence[0] == wasSilence ? 1 : 0;
+        ChooseFromSubmenu(MenuSilenceBase + pick);
+        double saved = Settings.Load(_options.SettingsPath).Value.SilenceSeconds;
+        Check("choosing a silence from the tray menu is saved",
+            saved == Choices.Silence[pick],
+            $"the tray menu chose {Choices.Silence[pick]} s, the file says {saved} s");
+
+        // ...and the sensitivity, which is the one with "no limit" in front of
+        // the numbers - so its positions are shifted and easy to get wrong.
+        ChooseFromSubmenu(MenuRangeBase + 1);
+        double? threshold = Settings.Load(_options.SettingsPath).Value.RssiThreshold;
+        Check("...and so is a sensitivity, shifted position and all",
+            threshold == Choices.Range[0],
+            $"the tray menu chose {Choices.Range[0]} dBm, the file says {threshold?.ToString() ?? "no limit"}");
+
+        ChooseFromSubmenu(MenuRangeBase);
+        Check("...and \"no limit\" saves no threshold at all",
+            Settings.Load(_options.SettingsPath).Value.RssiThreshold is null,
+            "choosing no limit from the tray menu left a threshold behind");
+
+        return lines;
+    }
+
+    /// <summary>What a top-level menu line does. Apart, so a check can call it.</summary>
+    internal void ChooseFromMenu(int chosen)
+    {
+        bool paused = _watch.PauseLeft > 0;
+
+        switch (chosen)
         {
             case MenuWatching:
                 _settings.Active = !_settings.Active;
@@ -1103,10 +1321,140 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                 OpenSettingsWindow();
                 break;
 
+            case MenuIdleGuard:
+                _settings.IdleGuard = !_settings.IdleGuard;
+                SaveSettings();
+                RefreshMenu();
+                break;
+
+            case MenuAutostart:
+                // Through the app's own method, the same one the switch in the
+                // window calls - so the menu and the window cannot register two
+                // different tasks. 1.5 chose this and said why.
+                var done = SetAutostart(!AutostartOn());
+                if (!done.Ok)
+                    _log.Write($"Start at logon: {done.Problem}");
+                RefreshMenu();
+                break;
+
+            case MenuEndPause:
+                ResumePausing();
+                RefreshMenu();
+                break;
+
             case MenuQuit:
                 QuitApp();
                 break;
         }
+    }
+
+    /// <summary>
+    /// One submenu line per value, ticked where it is the one in force.
+    /// </summary>
+    private static IReadOnlyList<TrayIcon.MenuItem> Pick<T>(
+        IReadOnlyList<T> values, int block, Func<T, string> label, Func<T, bool> inForce) =>
+        values.Select((v, i) =>
+            new TrayIcon.MenuItem(block + i, label(v), Ticked: inForce(v))).ToList();
+
+    /// <summary>
+    /// Sensitivity, which has "no limit" in front of the numbers - so its
+    /// positions are one further along than the value list.
+    /// </summary>
+    private IReadOnlyList<TrayIcon.MenuItem> RangeItems()
+    {
+        var items = new List<TrayIcon.MenuItem>
+        {
+            new(MenuRangeBase, Texts.Get("opt_range_max"),
+                Ticked: _settings.RssiThreshold is null),
+        };
+        items.AddRange(Choices.Range.Select((v, i) => new TrayIcon.MenuItem(
+            MenuRangeBase + 1 + i, Choices.RangeLabel(v),
+            Ticked: _settings.RssiThreshold == v)));
+        return items;
+    }
+
+    /// <summary>
+    /// What the radio can hear, to pick the watched device from. Only named
+    /// devices, as in 1.5: an address alone tells nobody anything, and it can
+    /// still be typed into the settings file.
+    /// </summary>
+    private IReadOnlyList<TrayIcon.MenuItem> DeviceItems()
+    {
+        var seen = ((IAppHost)this).NearbyDevices();
+        if (seen.Count == 0)
+            return new List<TrayIcon.MenuItem>
+            {
+                new(0, Texts.Get("dev_none_heard"), Enabled: false),
+            };
+
+        return seen.Select((d, i) => new TrayIcon.MenuItem(
+            MenuDeviceBase + i, d.Name,
+            Ticked: d.Name == _settings.Target)).ToList();
+    }
+
+    /// <summary>
+    /// A value chosen from one of the submenus. The id says which setting and
+    /// which value in one number.
+    /// </summary>
+    internal void ChooseFromSubmenu(int chosen)
+    {
+        int block = chosen / BlockSize * BlockSize;
+        int at = chosen - block;
+
+        switch (block)
+        {
+            case MenuDeviceBase:
+                var seen = ((IAppHost)this).NearbyDevices();
+                if (at >= seen.Count)
+                    return;
+                _settings.Target = seen[at].Name;
+                // The same call the window makes when the target changes:
+                // silence measured against the old device says nothing about
+                // the new one.
+                _watch.TargetChanged();
+                break;
+
+            case MenuSilenceBase:
+                if (at >= Choices.Silence.Length) return;
+                _settings.SilenceSeconds = Choices.Silence[at];
+                break;
+
+            case MenuCountdownBase:
+                if (at >= Choices.Countdown.Length) return;
+                int seconds = Choices.Countdown[at];
+                _settings.Countdown = seconds > 0;
+                if (seconds > 0)
+                    _settings.CountdownFromSeconds = seconds;
+                else
+                    HideCountdown();
+                break;
+
+            case MenuRangeBase:
+                // Position 0 is "no limit"; the numbers start one along.
+                if (at > Choices.Range.Length) return;
+                _settings.RssiThreshold = at == 0 ? null : Choices.Range[at - 1];
+                break;
+
+            case MenuWarnBase:
+                if (at >= Choices.Warn.Length) return;
+                _settings.AlertNoSignalMinutes = Choices.Warn[at];
+                break;
+
+            case MenuPauseBase:
+                // The pause submenu leaves out "not paused", so its positions
+                // run along the list of real lengths.
+                var lengths = Choices.Pause.Where(m => m > 0).ToArray();
+                if (at >= lengths.Length) return;
+                PauseFor(TimeSpan.FromMinutes(lengths[at]));
+                RefreshMenu();
+                return;         // a pause is not a setting to save
+
+            default:
+                return;
+        }
+
+        SaveSettings();
+        RefreshMenu();
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DaBtDynamicLock.Platform;
 
 namespace DaBtDynamicLock.App;
 
@@ -37,7 +38,38 @@ internal sealed partial class TrayIcon
         try
         {
             tray = new TrayIcon(AppInfo.Name + ".SelfCheckTrayWindow");
-            tray.Show(MakeIcon(32, IconArt.Off), "self-check");
+
+            // ⚠ With the screen LOCKED, Windows refuses to put an icon in the
+            // tray at all - measured 19.09.2026, when this check failed while
+            // nothing was wrong with it. Said out loud and skipped, never
+            // passed quietly: a check that depends on the state of the machine
+            // around it has to say so, or an hour goes into hunting a
+            // regression that does not exist (1.5 lost one that way).
+            if (SessionState.IsLocked() is { Ok: true, Value: true })
+            {
+                lines.Add("  SKIP  the tray icon: the screen is locked, and Windows "
+                    + "lets nothing into the tray while it is");
+                return lines;
+            }
+
+            // ⚠ The FIRST add is allowed to fail without failing the check, and
+            // that is not leniency. Measured 20.09.2026: while the shell is
+            // restarting it answers ERROR_TIMEOUT (1460) or ERROR_NO_TOKEN
+            // (1008) to everything, and the machine this runs on is somebody's
+            // working desktop. What is being checked is what the app does when
+            // an icon is TAKEN AWAY, and that needs one in the tray to start
+            // with - so if the shell will not give one, there is nothing here
+            // to check yet, and saying so is the honest answer.
+            try
+            {
+                tray.Show(MakeIcon(32, IconArt.Off), "self-check");
+            }
+            catch (InvalidOperationException e)
+            {
+                lines.Add($"  SKIP  the tray icon: the shell would not accept one "
+                    + $"just now ({e.Message}) - it is most likely restarting");
+                return lines;
+            }
 
             // The real situation, not an imitation of it: the icon is deleted
             // from the tray without telling the TrayIcon, which is exactly what

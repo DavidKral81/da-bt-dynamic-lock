@@ -64,6 +64,17 @@ public sealed record Options
     /// </summary>
     public bool? Autostart { get; init; }
 
+    /// <summary>
+    /// Started by the scheduled task rather than by a person.
+    ///
+    /// The task repeats so a crash cannot leave the computer unwatched, and
+    /// Task Scheduler cannot tell a crash from a deliberate quit. This run
+    /// therefore respects the note the app leaves when the user switches it
+    /// off (see QuitMarker) and goes away again if it is there; a start by
+    /// hand tears that note up, because it says the opposite.
+    /// </summary>
+    public bool Scheduled { get; init; }
+
     /// <param name="processPath">The file this is running from. Handed in
     /// rather than read here, so the rule that decides the role can be checked
     /// without moving or renaming an executable.</param>
@@ -104,6 +115,7 @@ public sealed record Options
         {
             Setup = role,
             Autostart = autostart,
+            Scheduled = argv.Contains("--scheduled"),
             DryRun = dryRun || selfCheck || shots is not null,
             QuitAfterSeconds = quitAfter,
             ScreenshotFolder = shots,

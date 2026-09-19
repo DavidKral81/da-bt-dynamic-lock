@@ -124,7 +124,6 @@ public static class Texts
 
         ["net_none"] = "žádná Wi-Fi",
 
-        ["foot_never_locked"] = "zatím nikdy",
         ["foot_log"] = "Záznam",
 
         ["msg_no_signal"] = "Telefon se {0} min neozval – hlídání nefunguje.",
@@ -134,51 +133,25 @@ public static class Texts
 
         // --- settings window: navigation ---------------------------------
         ["app_version"] = "verze {0}",
-        ["nav_overview"] = "Přehled",
-        ["nav_signal"] = "Signál",
-        ["nav_phone"] = "Telefon",
+        ["nav_signal"] = "Monitor signálu",
+        ["nav_phone"] = "Telefon a Wi-Fi",
         ["nav_locking"] = "Zamykání",
-        ["nav_networks"] = "Wi-Fi sítě",
         ["nav_app"] = "Aplikace",
 
         // --- settings window: overview -----------------------------------
-        ["ring_seconds"] = "{0} s",
-        ["ring_of"] = "ticho z {0}",
-        ["key_phone"] = "Telefon",
-        ["key_signal"] = "Síla signálu",
-        ["key_network"] = "Síť",
-        ["key_last_lock"] = "Naposledy zamčeno",
-        ["val_no_phone"] = "není vybraný",
-        ["val_dbm"] = "{0} dBm",
-        ["val_no_reading"] = "není slyšet",
-        ["val_net_trusted"] = "{0} – nezamyká se",
-        ["val_net_locking"] = "{0} – zamyká se",
-        ["act_pause_15"] = "Pozastavit 15 min",
-        ["act_pause_60"] = "Pozastavit 1 hodinu",
         ["act_end_pause"] = "Ukončit pozastavení",
-        ["act_switch_off"] = "Vypnout hlídání",
-        ["act_switch_on"] = "Zapnout hlídání",
 
-        ["why_off"] = "Hlídání je vypnuté. Počítač se sám nezamkne.",
-        ["why_screen_locked"] = "Za zamčenou obrazovkou se nic nerozhoduje. "
-                              + "Hlídání pokračuje po odemknutí.",
-        ["why_paused"] = "Až pozastavení skončí, hlídání se samo zapne.",
-        ["why_trusted_network"] = "Tato síť je uložená mezi sítěmi bez zamykání.",
-        ["why_waiting"] = "Telefon ještě nebyl slyšet. V telefonu musí běžet "
-                        + "aplikace Da BT Dynamic Lock.",
-        ["why_locked"] = "Zamčeno. Hlídání začne znovu, až bude telefon zase slyšet.",
-        ["why_idle_guard"] = "Na počítači se právě pracuje, takže se nezamyká, "
-                           + "i když telefon není slyšet.",
-        ["why_watching"] = "Počítač se zamkne {0} s poté, co telefon přestane být slyšet.",
 
         // --- settings window: the chart ----------------------------------
-        ["chart_title"] = "Síla signálu telefonu",
-        ["range_2min"] = "2 min",
-        ["range_5min"] = "5 min",
-        ["range_15min"] = "15 min",
-        ["range_1h"] = "1 h",
-        ["range_8h"] = "8 h",
-        ["range_1day"] = "1 den",
+        ["chart_title"] = "dB",
+        // Short forms on purpose: they sit in a row of small buttons, where a
+        // word would push the row wider than the card.
+        ["range_2min"] = "2m",
+        ["range_5min"] = "5m",
+        ["range_15min"] = "15m",
+        ["range_1h"] = "1h",
+        ["range_8h"] = "8h",
+        ["range_1day"] = "1D",
         // The numbers are rounded HERE, in the text, not by the caller: a
         // caller that hands over a ready-made string formats it with the
         // machine's culture and the decimal mark stops following the language.
@@ -203,9 +176,10 @@ public static class Texts
         ["dev_dbm"] = "{0} ({1} dBm)",
         ["dev_last_heard"] = "{0} (naposledy před {1} s)",
         ["card_gone"] = "Když telefon zmizí",
-        ["card_gone_hint"] = "Vybitý nebo vypnutý telefon není slyšet, takže se "
-                           + "počítač jednou zamkne a dál už nehlídá. Tato volba "
-                           + "na takový stav upozorní.",
+        ["card_gone_hint"] = "Po vybití/vypnutí telefonu nebo ukončení aplikace "
+                           + "v telefonu se počítač zamkne a po opětovném "
+                           + "přihlášení již nehlídá/nezamyká. Tato volba na "
+                           + "„mlčící“ telefon upozorní.",
         ["opt_no_warning"] = "Neupozorňovat",
         ["opt_after_minutes"] = "Po {0} minutách bez signálu",
 
@@ -220,7 +194,7 @@ public static class Texts
                            + "za neslyšitelný.",
         // Short on purpose: it shares a fixed width with the other entries in
         // the list, and the card's own line underneath says what it means.
-        ["opt_range_max"] = "Bez omezení",
+        ["opt_range_max"] = "Telefon neslyšitelný",
         ["opt_range_longest"] = "{0} dBm – největší dosah",
         ["opt_range_shortest"] = "{0} dBm – nejmenší dosah",
         // Short because it has to fit the box. The longer wording came out cut
@@ -274,13 +248,13 @@ public static class Texts
         ["sw_autostart_hint"] = "Bez toho se hlídání po restartu samo nezapne.",
         ["sw_autostart_failed"] = "Spuštění po přihlášení se nepodařilo nastavit "
                                 + "— podrobnosti jsou v záznamu o běhu.",
-        ["sw_log"] = "Zapisovat záznam o běhu",
+        ["sw_log"] = "Zapisovat záznam o běhu - Log",
         ["sw_log_hint"] = "Podle záznamu lze zjistit, proč se počítač zamkl. "
                         + "Vhodné přiložit k hlášení chyby.",
         // Back after being dropped for the flags. A drop-down needs saying what
         // it is; a flag did not.
         ["lbl_language"] = "Jazyk",
-        ["lbl_folder"] = "Kde záznam leží",
+        ["lbl_folder"] = "Umístění logu",
         ["act_open_folder"] = "Otevřít složku",
         ["lbl_version"] = "Verze {0}",
         ["link_updates"] = "Stránka vydání",
@@ -364,7 +338,6 @@ public static class Texts
 
         ["net_none"] = "no Wi-Fi",
 
-        ["foot_never_locked"] = "not yet",
         ["foot_log"] = "Log",
 
         ["msg_no_signal"] = "The phone has not been heard for {0} min - watching is not working.",
@@ -375,52 +348,23 @@ public static class Texts
 
         // --- settings window: navigation ---------------------------------
         ["app_version"] = "version {0}",
-        ["nav_overview"] = "Overview",
-        ["nav_signal"] = "Signal",
-        ["nav_phone"] = "Phone",
+        ["nav_signal"] = "Signal monitor",
+        ["nav_phone"] = "Phone and Wi-Fi",
         ["nav_locking"] = "Locking",
-        ["nav_networks"] = "Wi-Fi networks",
         ["nav_app"] = "Application",
 
         // --- settings window: overview -----------------------------------
-        ["ring_seconds"] = "{0} s",
-        ["ring_of"] = "silence of {0}",
-        ["key_phone"] = "Phone",
-        ["key_signal"] = "Signal",
-        ["key_network"] = "Network",
-        ["key_last_lock"] = "Last locked",
-        ["val_no_phone"] = "none chosen",
-        ["val_dbm"] = "{0} dBm",
-        ["val_no_reading"] = "not heard",
-        ["val_net_trusted"] = "{0} - not locking",
-        ["val_net_locking"] = "{0} - locking",
-        ["act_pause_15"] = "Pause for 15 min",
-        ["act_pause_60"] = "Pause for 1 hour",
         ["act_end_pause"] = "End the pause",
-        ["act_switch_off"] = "Switch watching off",
-        ["act_switch_on"] = "Switch watching on",
 
-        ["why_off"] = "Watching is off. The computer will not lock itself.",
-        ["why_screen_locked"] = "Nothing is decided behind a locked screen. "
-                              + "Watching resumes once the screen is unlocked.",
-        ["why_paused"] = "When the pause ends, watching switches itself back on.",
-        ["why_trusted_network"] = "This network is saved among the networks "
-                                + "without locking.",
-        ["why_waiting"] = "The phone has not been heard yet. The Da BT Dynamic "
-                        + "Lock app has to be running on it.",
-        ["why_locked"] = "Locked. Watching starts again once the phone is heard.",
-        ["why_idle_guard"] = "The computer is in use, so it will not lock even "
-                           + "though the phone cannot be heard.",
-        ["why_watching"] = "The computer locks {0} s after the phone stops being heard.",
 
         // --- settings window: the chart ----------------------------------
-        ["chart_title"] = "The phone's signal strength",
-        ["range_2min"] = "2 min",
-        ["range_5min"] = "5 min",
-        ["range_15min"] = "15 min",
-        ["range_1h"] = "1 h",
-        ["range_8h"] = "8 h",
-        ["range_1day"] = "1 day",
+        ["chart_title"] = "dB",
+        ["range_2min"] = "2m",
+        ["range_5min"] = "5m",
+        ["range_15min"] = "15m",
+        ["range_1h"] = "1h",
+        ["range_8h"] = "8h",
+        ["range_1day"] = "1D",
         ["chart_summary"] = "{0} signals · {1:F1}/min · median {2} dBm · "
                           + "longest silence {3:F0} s",
         ["chart_no_signal"] = "No signal at all in this range.",
@@ -442,9 +386,10 @@ public static class Texts
         ["dev_dbm"] = "{0} ({1} dBm)",
         ["dev_last_heard"] = "{0} (last heard {1} s ago)",
         ["card_gone"] = "When the phone disappears",
-        ["card_gone_hint"] = "A flat or switched-off phone cannot be heard, so the "
-                           + "computer locks once and then stops watching. This "
-                           + "option gives warning of that.",
+        ["card_gone_hint"] = "If the phone goes flat, is switched off, or its app "
+                           + "is closed, the computer locks - and after signing "
+                           + "back in it no longer watches or locks. This option "
+                           + "gives warning of a phone that has gone quiet.",
         ["opt_no_warning"] = "Do not warn",
         ["opt_after_minutes"] = "After {0} minutes without a signal",
 
@@ -457,7 +402,7 @@ public static class Texts
         ["lbl_range"] = "Range",
         ["lbl_range_hint"] = "A signal weaker than the one chosen counts as the "
                            + "phone not being heard.",
-        ["opt_range_max"] = "No limit",
+        ["opt_range_max"] = "Phone inaudible",
         ["opt_range_longest"] = "{0} dBm - longest range",
         ["opt_range_shortest"] = "{0} dBm - shortest range",
         // Kept short because it has to fit the box: the longer wording
@@ -511,11 +456,11 @@ public static class Texts
                               + "a restart.",
         ["sw_autostart_failed"] = "Start at logon could not be set - the log says "
                                 + "what went wrong.",
-        ["sw_log"] = "Keep a log of what happens",
+        ["sw_log"] = "Keep a log of what happens - Log",
         ["sw_log_hint"] = "The log is what shows why the computer locked. "
                         + "Worth attaching to a fault report.",
         ["lbl_language"] = "Language",
-        ["lbl_folder"] = "Where the log is kept",
+        ["lbl_folder"] = "Log location",
         ["act_open_folder"] = "Open the folder",
         ["lbl_version"] = "Version {0}",
         ["link_updates"] = "Releases page",

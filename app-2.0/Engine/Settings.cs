@@ -54,6 +54,19 @@ public sealed record Settings
     [JsonPropertyName("log")] public bool Log { get; set; } = true;
 
     /// <summary>
+    /// The size the settings window was left at, and whether it was left
+    /// maximised. 0 means "never sized by hand", so the window opens at the
+    /// size it was designed for.
+    ///
+    /// ⚠ The size stored is always the RESTORED one, never the maximised one.
+    /// Saving how big a maximised window is would make an ordinary window that
+    /// big the next time it was un-maximised.
+    /// </summary>
+    [JsonPropertyName("window_w")] public int WindowWidth { get; set; }
+    [JsonPropertyName("window_h")] public int WindowHeight { get; set; }
+    [JsonPropertyName("window_maximized")] public bool WindowMaximized { get; set; }
+
+    /// <summary>
     /// Keys this version does not know: the "_name" lines that document the
     /// file for whoever opens it, and anything a newer version might add.
     /// Kept so that saving does not quietly throw them away - a settings file

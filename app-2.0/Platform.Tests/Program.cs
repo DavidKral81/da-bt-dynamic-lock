@@ -60,6 +60,13 @@ internal static class PlatformChecks
         _skipped++;
     }
 
+    /// <summary>Did this run without throwing?</summary>
+    static bool Quiet(Action what)
+    {
+        try { what(); return true; }
+        catch { return false; }
+    }
+
     // ------------------------------------------------------------ autostart
 
     static void CheckAutostart()
@@ -87,6 +94,26 @@ internal static class PlatformChecks
             xml.Contains("<RestartOnFailure>"));
         Check("...and starts the program it was given", true,
             xml.Contains($"<Command>{target.Program}</Command>"));
+
+        // Restarting after a crash is NOT what RestartOnFailure does - measured
+        // 19.09.2026, after the app died and was never put back: Task Scheduler
+        // recorded the failing exit code (0xC00001AD) and still did nothing,
+        // because that setting covers a task that cannot be STARTED. A repeat
+        // is what actually brings a crashed app back.
+        Check("the task repeats, so a crash cannot leave the computer unwatched", true,
+            xml.Contains("<Interval>PT5M</Interval>"));
+        Check("...without piling up copies when one is already running", true,
+            xml.Contains("<MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>"));
+        // A repeat with an end would stop watching after that long.
+        Check("...and the repeat never runs out", false,
+            xml.Contains("<Duration>"));
+
+        // Valid XML is not a detail here: Task Scheduler rejects the whole file
+        // over one duplicated element, and the task would simply not exist.
+        Check("the task is valid XML", true,
+            Quiet(() => System.Xml.Linq.XDocument.Parse(xml)));
+        Check("...with one instance policy, not two", 1,
+            xml.Split("<MultipleInstancesPolicy>").Length - 1);
 
         // A path with an ampersand in it is valid on Windows and would tear the
         // XML in half unescaped. Task Scheduler would reject the lot.
