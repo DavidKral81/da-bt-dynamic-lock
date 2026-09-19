@@ -11,7 +11,7 @@ namespace DaBtDynamicLock.App;
 /// Proven by the throwaway prototype before this was written: the icon appears,
 /// swaps while the app runs, and its screen rectangle can be asked for.
 /// </summary>
-internal sealed class TrayIcon : IDisposable
+internal sealed partial class TrayIcon : IDisposable
 {
     private const uint IconId = 1;
 
@@ -19,11 +19,20 @@ internal sealed class TrayIcon : IDisposable
                                                 // delegate is collected, the
                                                 // callback crashes at random
     private readonly nint _hwnd;
+    private readonly uint _taskbarCreated;
     private nint _hIcon;
+    private string _tip = string.Empty;
     private bool _added;
 
     public event Action? LeftClicked;
     public event Action? RightClicked;
+
+    /// <summary>
+    /// Said when the icon has to look after itself - putting itself back after
+    /// the shell rebuilt the tray. Nobody is calling in at that moment, so
+    /// there is no return value to report through.
+    /// </summary>
+    public event Action<string>? Trouble;
 
     public nint WindowHandle => _hwnd;
 
@@ -49,10 +58,45 @@ internal sealed class TrayIcon : IDisposable
 
         if (_hwnd == 0)
             throw new InvalidOperationException($"CreateWindowExW failed: {Marshal.GetLastWin32Error()}");
+
+        // Asked for AFTER the window exists, so the message can never arrive
+        // before there is somewhere to receive it.
+        _taskbarCreated = Native.RegisterWindowMessageW("TaskbarCreated");
     }
 
     private nint WindowProc(nint hWnd, uint msg, nint wParam, nint lParam)
     {
+        // The tray was rebuilt (the shell restarted, most often), so the icon
+        // that was in it is gone and only this app can put it back. Nothing
+        // listened for this before, and the app measured on 18.09.2026 what
+        // that costs: every update afterwards talked to an icon that no longer
+        // existed, failed, and left one more icon behind - 3305 of them, until
+        // Windows would hand out no more handles and the app died.
+        //
+        // _taskbarCreated is 0 until the constructor has asked for the number,
+        // and no real message is 0, so the check cannot match by accident.
+        if (msg != 0 && msg == _taskbarCreated)
+        {
+            _added = false;                 // next Show() adds rather than modifies
+            try
+            {
+                // Put back at once, with the icon already in hand. Waiting for
+                // the next status change would leave the tray empty for as
+                // long as nothing happens - and the icon is how the app is
+                // reached at all.
+                if (_hIcon != 0)
+                    Show(_hIcon, _tip);
+            }
+            catch (Exception e)
+            {
+                // Never let this out: an exception thrown from a window
+                // procedure crosses back into Windows and takes the process
+                // with it. Reported instead, so the log says the icon is gone.
+                Trouble?.Invoke($"The tray icon could not be put back after the tray was rebuilt ({e.Message}).");
+            }
+            return 0;
+        }
+
         if (msg == Native.WM_TRAYCALLBACK)
         {
             // With NOTIFYICON_VERSION_4 the event is in the low word of lParam.
@@ -117,32 +161,52 @@ internal sealed class TrayIcon : IDisposable
         return icon;
     }
 
+    /// <summary>
+    /// Hands Windows the icon to show. Takes ownership of it: the icon it
+    /// replaces is destroyed here.
+    ///
+    /// ⚠ THE OLD ICON IS RELEASED IN A finally, and that is the whole point.
+    /// It used to be released on the last line, after the calls that can throw
+    /// - so every failed update leaked one icon. Measured on 18.09.2026 in the
+    /// worst possible way: 3305 failures in under three hours, and then a
+    /// process with no handles left to open a window with. Whatever happens in
+    /// between, the icon being replaced has to go.
+    /// </summary>
     public void Show(nint icon, string tip)
     {
         nint old = _hIcon;
         _hIcon = icon;
+        _tip = tip;
 
-        var data = NewData();
-        data.uFlags = Native.NIF_MESSAGE | Native.NIF_ICON | Native.NIF_TIP | Native.NIF_SHOWTIP;
-        data.uCallbackMessage = Native.WM_TRAYCALLBACK;
-        data.hIcon = icon;
-        data.szTip = tip.Length > 127 ? tip[..127] : tip;
-
-        bool ok = Native.Shell_NotifyIconW(_added ? Native.NIM_MODIFY : Native.NIM_ADD, ref data);
-        if (!ok)
-            throw new InvalidOperationException(
-                $"Shell_NotifyIconW({(_added ? "MODIFY" : "ADD")}) failed: {Marshal.GetLastWin32Error()}");
-
-        if (!_added)
+        try
         {
-            _added = true;
-            var version = NewData();
-            version.uVersion = Native.NOTIFYICON_VERSION_4;
-            if (!Native.Shell_NotifyIconW(Native.NIM_SETVERSION, ref version))
-                throw new InvalidOperationException($"NIM_SETVERSION failed: {Marshal.GetLastWin32Error()}");
-        }
+            var data = NewData();
+            data.uFlags = Native.NIF_MESSAGE | Native.NIF_ICON | Native.NIF_TIP | Native.NIF_SHOWTIP;
+            data.uCallbackMessage = Native.WM_TRAYCALLBACK;
+            data.hIcon = icon;
+            data.szTip = tip.Length > 127 ? tip[..127] : tip;
 
-        if (old != 0) Native.DestroyIcon(old);
+            bool ok = Native.Shell_NotifyIconW(_added ? Native.NIM_MODIFY : Native.NIM_ADD, ref data);
+            if (!ok)
+                throw new InvalidOperationException(
+                    $"Shell_NotifyIconW({(_added ? "MODIFY" : "ADD")}) failed: {Marshal.GetLastWin32Error()}");
+
+            if (!_added)
+            {
+                _added = true;
+                var version = NewData();
+                version.uVersion = Native.NOTIFYICON_VERSION_4;
+                if (!Native.Shell_NotifyIconW(Native.NIM_SETVERSION, ref version))
+                    throw new InvalidOperationException($"NIM_SETVERSION failed: {Marshal.GetLastWin32Error()}");
+            }
+        }
+        finally
+        {
+            // Never the icon just handed over: putting the icon back after the
+            // tray is rebuilt passes the one already held, and destroying it
+            // would hand Windows a dead handle to draw.
+            if (old != 0 && old != icon) Native.DestroyIcon(old);
+        }
     }
 
     /// <summary>One line of the tray menu. A separator is a null label.</summary>
@@ -240,7 +304,7 @@ internal sealed class TrayIcon : IDisposable
         return data;
     }
 
-    private Native.NOTIFYICONDATAW NewData() => new()
+    internal Native.NOTIFYICONDATAW NewData() => new()
     {
         cbSize = (uint)Marshal.SizeOf<Native.NOTIFYICONDATAW>(),
         hWnd = _hwnd,

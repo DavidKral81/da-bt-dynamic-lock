@@ -203,6 +203,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         // on a click is the chart.
         _tray.LeftClicked += OpenChart;
         _tray.RightClicked += ShowTrayMenu;
+        _tray.Trouble += _log.Write;
         ShowStatus(WatchIcon.Off, new Decision(LockAction.Stop, "waiting", 0, "st_waiting"), null);
 
         // The app lives in the tray and usually has no window open at all, so
@@ -593,6 +594,11 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             lines.Add(!_options.MutexName.StartsWith(@"Global\", StringComparison.OrdinalIgnoreCase)
                 ? "  OK    one copy per signed-in user, not per machine"
                 : $"  FAIL  the single-instance lock is machine-wide ({_options.MutexName})");
+
+            // The tray icon losing its place in the notification area is what
+            // killed the app on 18.09.2026, so it is staged here rather than
+            // waited for. Its own file says how.
+            lines.AddRange(TrayIcon.SelfCheck());
 
             var missing = Texts.Missing().ToList();
             lines.Add(missing.Count == 0

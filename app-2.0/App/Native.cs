@@ -101,6 +101,17 @@ internal static class Native
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool Shell_NotifyIconW(uint dwMessage, ref NOTIFYICONDATAW lpData);
 
+    /// <summary>
+    /// How the shell announces that the notification area has been rebuilt -
+    /// the message every tray icon has to listen for, because its icon is gone
+    /// and only the app can put it back.
+    ///
+    /// It has no fixed number: Windows hands out one per message NAME, the same
+    /// number to everyone who asks for that name.
+    /// </summary>
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern uint RegisterWindowMessageW(string lpString);
+
     // ---- message box ------------------------------------------------------
     //
     // The one place this app shows a modal dialog: when a second copy will not
@@ -199,6 +210,36 @@ internal static class Native
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool DestroyIcon(nint hIcon);
+
+    /// <summary>
+    /// How many USER or GDI objects this process is holding. Windows allows
+    /// 10 000 of each per process and then hands out nothing more - which is
+    /// exactly how 2.0 died on 18.09.2026, one leaked icon at a time.
+    ///
+    /// Used by the self-check to measure that leak instead of reasoning about
+    /// it: a count that keeps climbing is the failure, whatever the cause.
+    /// </summary>
+    public const uint GR_GDIOBJECTS = 0;
+    public const uint GR_USEROBJECTS = 1;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern uint GetGuiResources(nint hProcess, uint uiFlags);
+
+    /// <summary>
+    /// Asks Windows about an icon - and so answers whether the handle is still
+    /// a live icon at all, which nothing else will say: handing a destroyed
+    /// icon to the tray is accepted without complaint and only shows as a
+    /// broken picture next to the clock.
+    ///
+    /// ⚠ It hands back two BITMAPS the caller owns. Not deleting them turns a
+    /// check for leaks into a leak.
+    /// </summary>
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetIconInfo(nint hIcon, out ICONINFO piconinfo);
+
+    [DllImport("kernel32.dll")]
+    public static extern nint GetCurrentProcess();
 
     [StructLayout(LayoutKind.Sequential)]
     public struct BITMAPINFOHEADER
