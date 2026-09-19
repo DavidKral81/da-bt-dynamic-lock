@@ -11,7 +11,7 @@ using WinRT.Interop;
 namespace DaBtDynamicLock.App;
 
 /// <summary>
-/// The settings window: an overview page and one page per topic.
+/// The settings window: one page per topic, the signal monitor first.
 ///
 /// Everything is saved the moment it is flipped, the way the shipped version
 /// does it - there is no OK button to forget to press. The values offered are

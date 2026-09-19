@@ -17,12 +17,19 @@ namespace DaBtDynamicLock.Engine;
 /// for. Restarting therefore brings the watching back.
 ///
 /// How the restart is spotted without asking Windows anything: the note carries
-/// the machine's uptime counter as it stood when the app was switched off. That
-/// counter only ever climbs while a Windows session lives and starts from zero
-/// after a restart - so a counter now LOWER than the one in the note means the
-/// computer has been restarted since, and the note no longer applies. Sleep and
-/// hibernation leave it untouched, which is exactly right: closing the lid is
-/// not a restart, and the app must stay off over it.
+/// the moment THIS Windows session started, worked out as "now minus how long
+/// the machine has been up". That moment stays the same for as long as the
+/// session lives and becomes a different one after a restart - so a note whose
+/// session start no longer matches belongs to a session that is over. Sleep and
+/// hibernation do not move the counter on, which is exactly right: closing the
+/// lid is not a restart, and the app must stay off over it.
+///
+/// ⚠ NOT the uptime on its own, which is what this did until review caught it
+/// on 20.09.2026. A note written after eight hours of running came back to life
+/// once the NEW session had also been up eight hours - so an app that crashed
+/// that evening would not have been restarted, and the log would have said the
+/// user switched it off. A note has to die with its session, not go quiet for a
+/// while.
 /// </summary>
 public static class QuitMarker
 {
@@ -44,7 +51,7 @@ public static class QuitMarker
             File.WriteAllLines(PathIn(dataFolder), new[]
             {
                 when.ToString("o", CultureInfo.InvariantCulture),
-                uptimeMs.ToString(CultureInfo.InvariantCulture),
+                SessionStart(when, uptimeMs).ToString("o", CultureInfo.InvariantCulture),
             });
             return null;
         }
@@ -65,19 +72,28 @@ public static class QuitMarker
     /// lead to MORE watching, never to a computer left unguarded. The same way
     /// round as an unreadable Wi-Fi network.
     /// </summary>
-    public static bool Applies(string dataFolder, long uptimeMs)
+    public static bool Applies(string dataFolder, long uptimeMs) =>
+        Applies(dataFolder, DateTime.Now, uptimeMs);
+
+    /// <param name="now">The clock, handed in so a test can play a restart.</param>
+    public static bool Applies(string dataFolder, DateTime now, long uptimeMs)
     {
         try
         {
             string[] lines = File.ReadAllLines(PathIn(dataFolder));
             if (lines.Length < 2
-                || !long.TryParse(lines[1], NumberStyles.Integer,
-                                  CultureInfo.InvariantCulture, out long wasUp))
+                || !DateTime.TryParse(lines[1], CultureInfo.InvariantCulture,
+                                      DateTimeStyles.RoundtripKind, out DateTime was))
                 return false;
 
-            // Lower than when it was written: the counter went back to zero,
-            // so the computer has restarted and the note has had its day.
-            return uptimeMs >= wasUp;
+            // A different session start means the computer has restarted since,
+            // and the note went with the session that wrote it.
+            //
+            // A minute of slack, because "now minus uptime" is not exact to the
+            // millisecond: the counter and the clock are read a moment apart,
+            // and the clock itself can be nudged by time synchronisation. Well
+            // inside that, and far short of any real restart.
+            return Math.Abs((SessionStart(now, uptimeMs) - was).TotalSeconds) < 60;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException
                                     or FileNotFoundException or DirectoryNotFoundException)
@@ -95,4 +111,8 @@ public static class QuitMarker
         try { File.Delete(PathIn(dataFolder)); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
     }
+
+    /// <summary>When this Windows session began.</summary>
+    private static DateTime SessionStart(DateTime now, long uptimeMs) =>
+        now.AddMilliseconds(-uptimeMs);
 }

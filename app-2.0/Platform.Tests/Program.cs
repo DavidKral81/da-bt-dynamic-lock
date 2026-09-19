@@ -167,10 +167,19 @@ internal static class PlatformChecks
         Console.WriteLine("Session state (WTS):");
         var locked = SessionState.IsLocked();
         Check("the query succeeds", true, locked.Ok);
-        // Whoever runs this is looking at the screen, so it cannot be locked.
-        // If this ever fails on a machine where it IS locked, that is the answer
-        // being right, not the test.
-        Check("and says the screen is not locked", false, locked.Value);
+
+        // ⚠ SKIPPED, not failed, when the screen really is locked. The answer
+        // is then RIGHT and the test has nothing to compare it against - it
+        // can only tell a working reading from a broken one while somebody is
+        // looking at the screen. Reported as a failure (as it was until
+        // 20.09.2026, when a run with the machine locked did exactly this), it
+        // reads like a regression in the very layer being checked, and this
+        // project has already lost an hour to that once.
+        if (locked.Ok && locked.Value)
+            Skip("whether the screen reads as unlocked",
+                "the screen IS locked just now, so there is nothing to compare against");
+        else
+            Check("and says the screen is not locked", false, locked.Value);
 
         // The layout is what breaks silently: a shifted field returns
         // plausible-looking rubbish instead of an error. Compared against the

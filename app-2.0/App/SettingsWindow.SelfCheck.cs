@@ -1,4 +1,5 @@
 using DaBtDynamicLock.Engine;
+using DaBtDynamicLock.Platform;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -257,9 +258,18 @@ public sealed partial class SettingsWindow
 
         ShowWindow();
         int cameBack = (int)Math.Round(AppWindow.Size.Width / WindowLayout.ScaleOf(Handle));
-        lines.Add(Math.Abs(cameBack - wantWide) <= 2
-            ? "  OK    ...and the window opens that wide again"
-            : $"  FAIL  the window was left {wantWide} wide and opened {cameBack}");
+        // A screen narrower than the size asked for makes Centred() trim the
+        // window to fit, which is right and would look like a failure here.
+        // Skipped rather than failed: the machine's doing, not the app's.
+        int roomDip = (int)Math.Round(
+            (Monitors.WorkAreas().Value.FirstOrDefault(s => s.Primary)?.Width ?? 0)
+            / WindowLayout.ScaleOf(Handle));
+        lines.Add(roomDip > 0 && roomDip < wantWide
+            ? $"  SKIP  reopening at the size it was left: this screen is only "
+                + $"{roomDip} wide, less than the {wantWide} being checked"
+            : Math.Abs(cameBack - wantWide) <= 2
+                ? "  OK    ...and the window opens that wide again"
+                : $"  FAIL  the window was left {wantWide} wide and opened {cameBack}");
 
         // Maximised is remembered as a FLAG, and the ordinary size is left
         // alone - otherwise un-maximising would fill the screen just the same.
@@ -272,6 +282,21 @@ public sealed partial class SettingsWindow
 
         presenter.Restore();
         ShowWindow();
+
+        // ⚠ PUT BACK, or this check quietly breaks the pictures. The self-check
+        // and the picture run share one settings file, and Placement() reads
+        // the size from it - so a size left behind here would come out in every
+        // screenshot and change every fingerprint, and "look only at the
+        // pictures that changed" would stop meaning anything (found in review,
+        // 20.09.2026). Cleared rather than restored: nothing about this run
+        // represents a size the user chose.
+        var cfg = _host.Settings;
+        cfg.WindowWidth = 0;
+        cfg.WindowHeight = 0;
+        cfg.WindowMaximized = false;
+        _host.SaveSettings();
+        Check("the check leaves no window size behind for the pictures", 0,
+            s => s.WindowWidth);
 
         return lines;
     }

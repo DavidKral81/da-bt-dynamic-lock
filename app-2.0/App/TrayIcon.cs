@@ -62,9 +62,41 @@ internal sealed partial class TrayIcon : IDisposable
         // Asked for AFTER the window exists, so the message can never arrive
         // before there is somewhere to receive it.
         _taskbarCreated = Native.RegisterWindowMessageW("TaskbarCreated");
+        if (_taskbarCreated == 0)
+            // Never swallowed. Without this number the app is back to the
+            // behaviour of 18.09.2026 - the icon vanishes with the shell and
+            // never returns - and that must not happen in silence.
+            _startupTrouble = "The tray icon will not come back if the taskbar is "
+                + $"rebuilt: RegisterWindowMessage failed ({Marshal.GetLastWin32Error()}).";
     }
 
+    /// <summary>
+    /// Something that went wrong before anyone could be listening. Reported on
+    /// the first Show(), because the log is not wired up in the constructor.
+    /// </summary>
+    private string? _startupTrouble;
+
+    /// <summary>
+    /// ⚠ NOTHING MAY BE THROWN OUT OF HERE. Windows calls this across a native
+    /// boundary, and an exception crossing back takes the whole process with
+    /// it - no window, no log line, nothing to go on. Review found the guard
+    /// on only one branch (20.09.2026), while a click builds a WinUI window
+    /// and another asks Task Scheduler a question; both can throw.
+    /// </summary>
     private nint WindowProc(nint hWnd, uint msg, nint wParam, nint lParam)
+    {
+        try
+        {
+            return HandleMessage(hWnd, msg, wParam, lParam);
+        }
+        catch (Exception e)
+        {
+            Trouble?.Invoke($"The tray icon could not deal with a message ({e.Message}).");
+            return 0;
+        }
+    }
+
+    private nint HandleMessage(nint hWnd, uint msg, nint wParam, nint lParam)
     {
         // The tray was rebuilt (the shell restarted, most often), so the icon
         // that was in it is gone and only this app can put it back. Nothing
@@ -174,6 +206,12 @@ internal sealed partial class TrayIcon : IDisposable
     /// </summary>
     public void Show(nint icon, string tip)
     {
+        if (_startupTrouble is not null)
+        {
+            Trouble?.Invoke(_startupTrouble);
+            _startupTrouble = null;         // said once, not on every update
+        }
+
         nint old = _hIcon;
         _hIcon = icon;
         _tip = tip;

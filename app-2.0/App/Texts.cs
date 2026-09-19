@@ -118,8 +118,6 @@ public static class Texts
         ["st_locked"] = "Zamčeno",
         ["st_lock_failed"] = "Zamknout se nepodařilo",
 
-        ["act_pause"] = "Pauza 15 min",
-        ["act_resume"] = "Pokračovat",
         ["act_settings"] = "Nastavení",
 
         ["net_none"] = "žádná Wi-Fi",
@@ -138,7 +136,7 @@ public static class Texts
         ["nav_locking"] = "Zamykání",
         ["nav_app"] = "Aplikace",
 
-        // --- settings window: overview -----------------------------------
+        // --- pause, offered by both the window and the tray menu ---------
         ["act_end_pause"] = "Ukončit pozastavení",
 
 
@@ -332,8 +330,6 @@ public static class Texts
         ["st_locked"] = "Locked",
         ["st_lock_failed"] = "Locking failed",
 
-        ["act_pause"] = "Pause 15 min",
-        ["act_resume"] = "Resume",
         ["act_settings"] = "Settings",
 
         ["net_none"] = "no Wi-Fi",
@@ -353,7 +349,7 @@ public static class Texts
         ["nav_locking"] = "Locking",
         ["nav_app"] = "Application",
 
-        // --- settings window: overview -----------------------------------
+        // --- pause, offered by both the window and the tray menu ---------
         ["act_end_pause"] = "End the pause",
 
 

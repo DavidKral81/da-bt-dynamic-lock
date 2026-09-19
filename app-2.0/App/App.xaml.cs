@@ -238,7 +238,16 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         // on a click is the chart.
         _tray.LeftClicked += OpenChart;
         _tray.RightClicked += ShowTrayMenu;
-        _tray.Trouble += _log.Write;
+        // Not just written down: the icon putting ITSELF back can fail too (the
+        // shell answers ERROR_TIMEOUT while it restarts), and _iconTrouble is
+        // what makes the next tick try again. Without this the tray would stay
+        // empty until the state happened to change - which, on a locked screen,
+        // it does not.
+        _tray.Trouble += problem =>
+        {
+            _log.Write(problem);
+            _iconTrouble = problem;
+        };
         ShowStatus(WatchIcon.Off, new Decision(LockAction.Stop, "waiting", 0, "st_waiting"), null);
 
         // The app lives in the tray and usually has no window open at all, so
@@ -1133,9 +1142,9 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     // of what was chosen, and branching on displayed text would break the
     // moment the language changes.
     private const int MenuWatching = 1;
-    private const int MenuPause = 2;
-    // 3 was "Lock now": locking is what this program does by itself, and
-    // Windows has its own shortcut.
+    // 2 was a single "Pause 15 min" line; the menu now offers the same lengths
+    // the window does, in a submenu. 3 was "Lock now": locking is what this
+    // program does by itself, and Windows has its own shortcut.
     private const int MenuSettings = 4;
     private const int MenuQuit = 5;
     private const int MenuChart = 6;
@@ -1305,14 +1314,6 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                 RefreshMenu();
                 break;
 
-            case MenuPause:
-                if (paused)
-                    ResumePausing();
-                else
-                    PauseFor(TimeSpan.FromMinutes(15));
-                RefreshMenu();
-                break;
-
             case MenuChart:
                 OpenChart();
                 break;
@@ -1380,7 +1381,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     /// </summary>
     private IReadOnlyList<TrayIcon.MenuItem> DeviceItems()
     {
-        var seen = ((IAppHost)this).NearbyDevices();
+        var seen = NearbyForMenu();
         if (seen.Count == 0)
             return new List<TrayIcon.MenuItem>
             {
@@ -1390,6 +1391,23 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         return seen.Select((d, i) => new TrayIcon.MenuItem(
             MenuDeviceBase + i, d.Name,
             Ticked: d.Name == _settings.Target)).ToList();
+    }
+
+    /// <summary>
+    /// The devices the menu may offer.
+    ///
+    /// ⚠ CAPPED, and not for tidiness. The ids are a block plus a position, so
+    /// the 101st device would come out as MenuSilenceBase and picking it would
+    /// silently change "silence before locking" instead of the watched device.
+    /// A hundred named devices is far-fetched at a desk and perfectly ordinary
+    /// on a train. The full list is on the settings page, which needs no ids.
+    /// </summary>
+    private IReadOnlyList<NearbyDevice> NearbyForMenu()
+    {
+        var seen = ((IAppHost)this).NearbyDevices();
+        return seen.Count <= BlockSize - 1
+            ? seen
+            : seen.Take(BlockSize - 1).ToList();
     }
 
     /// <summary>
@@ -1404,7 +1422,9 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         switch (block)
         {
             case MenuDeviceBase:
-                var seen = ((IAppHost)this).NearbyDevices();
+                // The same capped list the menu was built from, so a position
+                // means the same device on the way back as it did on the way out.
+                var seen = NearbyForMenu();
                 if (at >= seen.Count)
                     return;
                 _settings.Target = seen[at].Name;
