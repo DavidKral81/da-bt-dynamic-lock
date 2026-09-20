@@ -520,6 +520,7 @@
 
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <HyperlinkButton x:Name="ProjectLink" Content="" Click="OnOpenProject"/>
+                        <HyperlinkButton x:Name="ManualLink" Content="" Click="OnOpenManual"/>
                         <HyperlinkButton x:Name="PhoneAppLink" Content="" Click="OnOpenReleases"/>
                     </StackPanel>
 

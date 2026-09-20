@@ -57,7 +57,8 @@ ENGLISH_ONLY = ["README.md", "docs/DESIGN.md", "start.bat", "requirements.txt",
                 ".gitignore", "phone/signing-key-README.txt"]
 
 # Files that must not contain a single accented character - see ascii_findings.
-ASCII_ONLY = ["installer/build_installer.ps1", "phone/build.ps1", "start.bat"]
+ASCII_ONLY = ["installer/build_installer.ps1", "phone/build.ps1", "start.bat",
+              "app-2.0/build-setup.ps1"]
 
 # Czech words that do not occur in English. Deliberately words with no
 # English homograph, so a hit is never a false alarm.
@@ -74,6 +75,11 @@ ALLOWED_MISSING = {
     "dyn_lock.log": "created at runtime",
     "history.json": "created at runtime",
     "DaBTDynamicLock.exe": "built by the installer, not stored in the repo",
+    # 2.0 spells it differently (Setup.ProgramName) and is one file: the
+    # application, its installer and its uninstaller in the same executable.
+    "DaBtDynamicLock.exe": "build output, excluded by .gitignore",
+    "quit-by-user.txt": "written when the user quits the app, never shipped",
+    "dry-run-data": "created beside the program by a test run",
     "DaBTDynamicLock-setup.exe": "build output, excluded by .gitignore",
     "setup.exe": "shorthand for that build output in a comment",
     "DaBTDynamicLock.apk": "build output, excluded by .gitignore",
@@ -237,13 +243,23 @@ def quote_findings(doc, text, source):
 
 
 def load_source():
-    """Everything the programs can print or display, in one haystack."""
-    windows = "\n".join(read(p) for p in ("windows/dyn_lock.py",
-                                          "windows/texts.py",
-                                          "installer/installer.py"))
+    """Everything the programs can print or display, in one haystack.
+
+    Both generations are in here on purpose. 1.5 is what ships today and 2.0 is
+    what the manuals are being rewritten for, so a sentence quoted from either
+    has to be found. When windows/ goes, its three files go with it and the
+    rest keeps working - that is why they are listed rather than walked.
+    """
+    v15 = "\n".join(read(p) for p in ("windows/dyn_lock.py",
+                                      "windows/texts.py",
+                                      "installer/installer.py")
+                    if (ROOT / p).exists())
+    v20 = "\n".join(io.open(p, encoding="utf-8", errors="replace").read()
+                    for p in (ROOT / "app-2.0").rglob("*.cs")
+                    if not any(part in SKIP_DIRS for part in p.parts))
     android = "\n".join(io.open(p, encoding="utf-8", errors="replace").read()
                         for p in (ROOT / "phone/src/java").rglob("*.java"))
-    return windows + "\n" + android
+    return "\n".join((v15, v20, android))
 
 
 # The checker checks itself first. Left column: what must be reported.

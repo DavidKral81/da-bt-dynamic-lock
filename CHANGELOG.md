@@ -4,13 +4,73 @@ What changed between releases, newest first. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project uses
 [Semantic Versioning](https://semver.org/).
 
-The version itself lives in `windows/version.py` — one constant the app, the
-installer, both `.exe` resources and the APK all read. Change it there and
+The version lives in one constant per generation, and everything else reads it:
+`app-2.0/App/AppInfo.cs` for the application and its installer, and
+`windows/version.py` for the 1.x line and the phone app. Change it there and
 nowhere else.
 
-## Unreleased
+## Unreleased — 2.0
+
+The application has been rewritten. What it does has not changed: it listens
+for a phone over Bluetooth Low Energy and locks the screen when the phone stops
+being heard. How it is built, and what it looks like, have.
+
+### Changed
+
+- **Rewritten in C# on WinUI 3.** The 1.x line was Python packaged with
+  PyInstaller: a 31 MB bundle that antivirus software regularly flagged as
+  suspicious for no reason, drawing its own checkboxes and scrollbars because
+  the toolkit's were a few pixels of white. 2.0 is an ordinary Windows
+  application with the system's own controls, and it carries everything it
+  needs, so **nothing has to be installed alongside it**.
+
+- **One window, topics down the left, one page each.** *Signal monitor*,
+  *Application*, *Phone and Wi-Fi*, *Locking* — instead of two tabs with the
+  settings crammed into a two-column grid. The chart is no longer a tab to
+  switch to: it is the first page, it takes the whole width of the window, and
+  a wide or maximised window gives it more of it.
+
+- **The window keeps the size it was left at**, maximised included.
+
+- **The language is chosen from a drop-down** on the *Application* page rather
+  than by clicking a flag. A flag names a country, not a language, and
+  choosing between a British and an American one for "English" has no right
+  answer.
+
+- **The installer is the application itself**, under another name. It asks for
+  administrator rights on its own instead of telling the user to arrange them,
+  and shows what it did in the same window rather than a second one. Nothing
+  on the machine needs a runtime installed for it to run.
+
+### Added
+
+- **The screen is watched again within five minutes of a crash.** The logon
+  task now repeats, because Windows' own "restart the task if it fails" does
+  not cover a program that dies — measured: Task Scheduler recorded the
+  failing exit code and did nothing. Quitting the application deliberately
+  still means what it says: it leaves a note that the repeat respects, so the
+  app stays off until the computer restarts or it is started by hand.
+
+- **The tray menu offers what the 1.x one did**, submenus and all: the watched
+  device, the silence before locking, the countdown, the sensitivity, the
+  warning and the pause, plus the three switches. The values are the same ones
+  the window offers, from one list, so the two cannot drift apart.
 
 ### Fixed
+
+- **The tray icon survives the shell restarting.** If Explorer restarted, the
+  icon vanished with it and never came back — and every attempt to redraw it
+  afterwards left an icon behind in memory. Measured on 18 Sep 2026: 3305 of
+  them in under three hours, after which Windows would hand out nothing more
+  and the application died trying to open a countdown box. It now listens for
+  the taskbar being rebuilt and puts its icon back, and a failed attempt no
+  longer leaks anything.
+
+- **Uninstalling works when started from Installed apps.** 2.0's first build
+  shut down "every copy running from the program folder", which included the
+  uninstaller itself.
+
+### Fixed in 1.x as well
 
 - **The mouse wheel scrolls the settings by one step again.** The wheel was
   bound with `bind_all`, which puts the handler on a tag belonging to the

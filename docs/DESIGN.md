@@ -144,15 +144,39 @@ not ours to hand out.
 on its own and at the chosen height, because a warning drawn on a screen the
 user is not looking at is a warning wasted. The work areas are enumerated at
 every appearance, not cached — a monitor can be unplugged between two
-countdowns. A monitor to the left of the primary one has a negative x
-coordinate, and a bare `-646` in a Tk geometry string means "646 px from the
-RIGHT edge", so the sign has to be written explicitly. Whoever prefers a
-single box can switch the others off.
+countdowns. Whoever prefers a single box can switch the others off. Clicks
+pass through the box to whatever is underneath, so a warning cannot get in
+the way of the work it is warning about.
 
 **Pinning to the taskbar is not possible.** Verified by listing the shell
 verbs of both the shortcut and the executable on Windows 11 build 26200 — the
 verb does not exist; Microsoft blocked it so installers cannot help
 themselves to the taskbar.
+
+**The installer is the application under another name.** Measured before
+deciding: an *empty* window in a supposedly lean toolkit came to 72.6 MB
+self-contained, while the whole finished application came to 68.6 MB — those
+~65 MB are .NET itself and both carry it equally. A separate installer would
+therefore have meant shipping .NET twice. The download is the program, it
+recognises what it is being asked to do from where it is running, and
+installing means putting that one file in place.
+
+**A logon task that repeats, because "restart on failure" does not cover a
+crash.** Measured on 18 Sep 2026, after the application died: Task Scheduler
+recorded the failing exit code and started nothing — that setting is about a
+task that cannot be *started*. A five-minute repeat brings watching back
+instead. Quitting deliberately leaves a note that the repeat respects, so the
+repeat cannot overrule the person; the note carries the moment the Windows
+session began, so it expires with a restart and survives sleep, which moves
+the clock and the uptime counter together.
+
+**The tray icon has to be able to come back.** Windows announces a rebuilt
+notification area, and an application that does not listen for it loses its
+icon for good when the shell restarts. That happened, and the failed redraws
+afterwards leaked one icon each — 3305 of them in under three hours, until
+there were no handles left to open a window with and the process died. The
+icon is now restored on that announcement, and the clean-up happens whether
+the redraw succeeded or not.
 
 ## Limits worth knowing
 

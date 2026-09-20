@@ -47,8 +47,9 @@ CONTENTS
   1. INSTALLATION
 ----------------------------------------------------------------
 
-Download  DaBTDynamicLock-setup.exe  from the GitHub release and run
-it (it asks for administrator rights):
+Download  DaBtDynamicLock.exe  from the GitHub release and run it.
+It asks for administrator rights on its own and offers to install;
+it is the same file that then gets installed:
   https://github.com/DavidKral81/da-bt-dynamic-lock/releases/latest
 
 It offers three options:
@@ -97,9 +98,9 @@ ON THE COMPUTER (Windows)
 
   4. Start Da BT Dynamic Lock. It has no window of its own; it
      runs as a green icon near the clock.
-  5. Click the icon. The app window opens → the "Settings" tab →
-     pick your phone under "Which device to watch".
-     (You can also right-click the icon → "Watched device".)
+  5. Click the icon. The window opens → pick "Phone and Wi-Fi" on
+     the left → choose your phone under "Which device to watch".
+     (You can also right-click the icon → "Which device to watch".)
 
   Done. Walk away with the phone and the computer locks within
   45 seconds.
@@ -107,83 +108,86 @@ ON THE COMPUTER (Windows)
 
 
 ----------------------------------------------------------------
-  3. THE APP WINDOW (CHART AND SETTINGS)
+  3. THE APP WINDOW
 ----------------------------------------------------------------
 
-Click the icon in the notification area. The window has two tabs. In
-the top right corner, beside the tabs, are two small flags - that is
-where the language is switched (Czech / English). It changes at once,
-the icon menu included.
+Click the icon in the notification area. Four pages down the left,
+their contents on the right. The window remembers its size and
+whether it was maximised, so it opens the same way next time.
 
-CHART
-    Signal strength over time, from 2 minutes up to 1 day. The
-    legend is right there in the window. See section 5.
+SIGNAL MONITOR
+    Signal strength over time. See section 5. It opens first, and a
+    left click on the tray icon comes straight here.
 
-SETTINGS
-    Everything you can change, in one place:
+APPLICATION
+    Language                 Czech / English; it changes at once,
+                             the icon menu included
+    Start after signing in to Windows      see section 8
+    Keep a log of what happens - Log       worth attaching to a
+                             fault report
+    Log location             the path to the data folder and an
+                             "Open the folder" button
+    Version                  the version number and a "Releases
+                             page" link
 
+    Below the cards are links to the project, to this manual and to
+    the phone app, and a "Quit application" button.
+
+    The links only open a page in the browser. The app never asks
+    anything by itself and sends nothing anywhere - compare the
+    version in the window with the one on the releases page.
+
+PHONE AND WI-FI
     Which device to watch
         Devices that can be heard right now, with their signal
-        strength. The selected phone is green. If it is out of
-        range at the moment, it stays in the list marked
-        "not heard".
+        strength. The chosen one is ticked. If it goes quiet it
+        stays in the list, saying how long ago it was last heard.
+
+    When the phone disappears   see section 7
+
+    Do not lock on chosen Wi-Fi networks
+                             for wherever you do not need locking.
+                             Off by default.
+
+    Networks without locking tick a network to save it, untick to
+                             forget it; the one you are connected to
+                             is marked. A network is recognised by
+                             its name AND by the access point's
+                             address (MAC), so somebody else's Wi-Fi
+                             with the same name cannot switch the
+                             guarding off. A mesh or a repeater
+                             therefore gets one row per access point.
+                             Only an actual connection counts, not
+                             merely being in range
+
+LOCKING
+    Lock when I walk away with the phone   the main switch
 
     When to lock
-        Automatic locking on           the main switch
-        Lock after                     12 s to 120 s (default 45 s)
-        Range (sensitivity)            see section 6
-        Show a countdown before locking
-                                       a small "Locking in X s"
-                                       window; information only, it
-                                       cannot cancel the lock
-        Where to show the countdown (0 % top, 100 % bottom)
-                                       in tenths of the screen height,
-                                       30 % from the top by default.
-                                       Horizontally the window is
-                                       always centred.
-        Show the countdown on the primary monitor only
-                                       by default the countdown appears
-                                       on every monitor, centred on
-                                       each of the screens
-        Do not lock while the user is active (mouse, keyboard)
+        Silence before locking         12 s to 120 s (default 45 s)
+        Range                          see section 6
+        Do not lock while I am typing or moving the mouse
                                        CAREFUL: anyone at the desk
                                        can postpone locking this
                                        way, so it is off by default
 
-    Application behaviour
-        Start after signing in to Windows   see section 8
+    Countdown before locking
+        When to show the countdown     a small "Locking in X s"
+                                       window; information only, it
+                                       cannot cancel the lock. Clicks
+                                       pass through it to whatever is
+                                       underneath
+        Where the countdown appears    in tenths of the screen height,
+                                       30 % from the top by default.
+                                       Horizontally it is always
+                                       centred
+        On the main monitor only       by default the countdown
+                                       appears on every screen,
+                                       centred on each
 
-    When the phone disappears   see section 7
-    Wi-Fi networks              a list of the Wi-Fi networks where the
-                                screen is not locked - for wherever you
-                                do not need it to be. Tick a network to
-                                add it, untick to remove it; the one
-                                you are connected to is marked in the
-                                list. The whole option is off by
-                                default. Every row also shows the access
-                                point's address (MAC), because a network
-                                is recognised by its name AND by that -
-                                so somebody else's Wi-Fi with the same
-                                name cannot switch the guarding off, and
-                                a mesh or a repeater gets one row per
-                                access point. A network only counts while
-                                you are actually connected to it
-    Pause for a while           watching turns off for the chosen
-                                time and then turns itself back on;
-                                below the menu you can see how much
-                                of it is left
-
-    At the bottom there are links to the phone app, to this manual
-    and to the project, below them the version number with a
-    "Check for updates" link, and a "Quit application" button.
-
-    "Check for updates" only opens the releases page in the
-    browser - compare the version in the window with the one on
-    the page. The app never asks anything by itself and sends
-    nothing anywhere.
-
-The window remembers its size. When it is wide, the settings
-split into two columns by themselves.
+    Pause for a while        watching turns off for the chosen time
+                             and then turns itself back on; below the
+                             menu you can see how much of it is left
 
 
 
@@ -196,35 +200,36 @@ Icon colour:
   orange  the countdown to locking is running
   grey    off, paused, or already locked
 
-LEFT click   opens the app window
+LEFT click   opens the window on the Signal monitor
 RIGHT click  opens the menu
 
 The menu is a shortcut for what changes often - not a full
 replacement for the window. It does not carry the countdown
-position, the "primary monitor only" option or the Wi-Fi
-networks; those are set once and belong in the window. The items
-are named exactly as in the settings:
+position, the "main monitor only" option or the Wi-Fi networks;
+those are set once and belong in the window. The items are named
+exactly as they are in the window, so that one thing is not called
+two different things:
 
-  Signal chart
-  Watched device …
+  Signal monitor
+  Which device to watch  ▸        devices that can be heard right now
   ---
-  Automatic locking on
-  Do not lock while the user is active (mouse, keyboard)
+  Lock when I walk away with the phone
+  Do not lock while I am typing or moving the mouse
   Start after signing in to Windows
   ---
-  Lock after … without a signal     12 s to 120 s (default 45 s)
-  Countdown shows …                 do not show, or 5 s to 30 s ahead
-  Sensitivity (range)               see section 6
-  Warn when the phone disappears …  see section 7
+  Silence before locking  ▸       12 s to 120 s (default 45 s)
+  When to show the countdown  ▸   do not show, or 5 s to 30 s ahead
+  Range  ▸                        see section 6
+  When the phone disappears  ▸    see section 7
   ---
-  Pause watching …                  5 minutes to 2 days
-  Cancel the pause                  (only while watching is paused)
+  Pause for a while  ▸            5 minutes to 2 days
+  End the pause                   (only while watching is paused)
   ---
-  Settings                          opens the window on the settings
-                                    tab; unlike "Signal chart" it never
-                                    closes the window, only brings it
-                                    to the front
-  Quit
+  Settings                        opens the window
+  Quit the application
+
+Items with an arrow ▸ open a submenu of values; the one in force
+is ticked.
 
 
 
@@ -232,10 +237,12 @@ are named exactly as in the settings:
   5. SIGNAL CHART
 ----------------------------------------------------------------
 
-The "Chart" tab in the app window. Ranges from 2 minutes to
-1 day; the legend is in the window. The horizontal axis shows the
-time of day (with seconds on the 2 minute range), the vertical one
-the signal strength in dBm. The history survives both an
+The "Signal monitor" page in the app window. The range is chosen
+with the buttons in the top right: 2m, 5m, 15m, 1h, 8h, 1D, and the
+legend is right under the chart. The horizontal axis shows the time
+of day (with seconds on the 2m range), the vertical one the signal
+strength in dBm. In a wide or maximised window the chart takes the
+whole width. The history survives both an
 app restart and a computer restart. Time when the app was not
 running is marked separately and does not count as a lost signal.
 
@@ -258,9 +265,9 @@ What it is good for: it tells two different problems apart.
 This decides how weak a signal still counts as "you are at the
 desk".
 
-  Off          locks only when the signal disappears (default)
-  -100 to -85  longer range, locks later
-  -80 to -60   shorter range, locks sooner
+  Phone inaudible   locks only when the signal disappears (default)
+  -100 to -85       longer range, locks later
+  -80 to -60        shorter range, locks sooner
 
 Measured at a desk: phone in a pocket -81 to -83 dBm, phone on
 the desk -73 dBm. So -80 and above is stronger than a normal
@@ -302,15 +309,29 @@ line reads "Locking held off".
 ----------------------------------------------------------------
 
 Turn it on during installation, later in the icon menu ("Start
-after signing in to Windows"), or in the app window under
-"Application behaviour". All three do the same thing.
+after signing in to Windows"), or in the window on the
+"Application" page. All three do the same thing.
 
 It creates a task in Task Scheduler with these settings:
   - starts 30 seconds after sign-in (bluetooth needs a moment)
-  - restart on failure: after 1 minute, at most 3 times
+  - repeats every 5 minutes, so watching comes back after a crash
   - no run-time limit (otherwise Windows would stop it after
     3 days)
   - runs on battery too
+
+QUIT IT YOURSELF AND IT STAYS QUIT
+
+The five-minute repeat is there for crashes, not to overrule you.
+When you quit the application ("Quit the application" in the window
+or in the menu), it makes a note of that and the repeating task
+leaves it alone - it stays off until the computer restarts, or
+until you start it yourself.
+
+To keep it off for good, use the "Start after signing in to
+Windows" switch.
+
+A crash leaves no such note behind, so watching returns within five
+minutes on its own.
 
 The app CANNOT run as a Windows service - services run in
 a separate session with no access to the desktop, and cannot
@@ -338,33 +359,18 @@ the phone was seen, when it disappeared and why it locked.
       "Phone seen for the first time" is missing from the log → pick the
       right phone in the settings (or in the icon menu).
 
-  It locked right after waking the computer, with no countdown
-      Versions up to and including 1.1 did that. While the machine
-      slept the app measured nothing, so on waking it saw a long
-      silence and locked at once - even with the phone on the desk.
-      From version 1.2 the measurement starts again after a wake;
-      the log says "The loop stood still for X s". Guarding does
-      not stop: if the phone really is gone, it locks after the
-      set delay and with a countdown, as always.
-
-  The log is full of "Locking" lines, a minute apart
-      Versions up to and including 1.4 did that. Once the screen
-      was locked, a single signal from the phone started the whole
-      cycle again: after the set delay a countdown box was drawn
-      where the lock screen hid it, and then the screen was
-      "locked" a second time, which does nothing. Version 1.4 was
-      meant to fix it, but it asked the wrong question - it only
-      recognised the moment while the lock screen is being drawn,
-      so the pause lasted a second. From version 1.5 the app asks
-      Windows for the session's own lock state, so watching pauses
-      for as long as the screen stays locked (the log says
-      "Screen locked - watching pauses until it is unlocked.")
-      and the delay starts from zero when it is unlocked - so
-      finishing your password is never followed by an immediate
-      lock.
-
   I cannot see the icon
       It is hidden under the arrow next to the clock.
+
+      If Windows Explorer restarted in the meantime (the taskbar
+      disappeared and came back), the app puts its icon back by
+      itself and writes a line about it in the log.
+
+  The log repeats "The tray icon could not be updated"
+      Windows allows nothing into the notification area while the
+      screen is locked, and briefly none while Explorer restarts.
+      The app keeps trying and writes "The tray icon can be updated
+      again." once it works. Watching is not affected.
 
   The app will not start twice
       That is correct - the second attempt only says it is
@@ -405,11 +411,15 @@ and the app has to be restarted afterwards:
   threshold_window_s   over how many seconds the signal is smoothed
   scanner_restart_s    how often to restart reception as a precaution
   silence_watchdog_s   after how long a silence to restart reception
-  log                  write events to dyn_lock.log
-  language             "cs" or "en" (switched with the flags in the top
-                       right corner of the app window)
 
-The remaining keys match the items in the settings.
+The keys the app writes for itself can be read here too:
+
+  window_w, window_h   the size the window was last closed at
+  window_maximized     whether it was maximised
+
+The remaining keys match the items in the window. A watched
+device's MAC address can only be entered here (the "target" key),
+because the list in the window offers named devices only.
 
 
 
@@ -420,43 +430,42 @@ The remaining keys match the items in the settings.
 AFTER INSTALLATION
 
   C:\Program Files\Da BT Dynamic Lock
-      DaBTDynamicLock.exe  the application
-      uninstall.exe        the uninstaller
-      config.default.json  default settings for new users
-      ___INFO-READ.txt     this manual
-      ___INFO-CTI.txt      the manual in Czech
+      DaBtDynamicLock.exe  one file: the application, its installer
+                           and its uninstaller in the same executable
 
   %APPDATA%\Da BT Dynamic Lock
       config.json          your settings
       dyn_lock.log         event log (at 2 MB it is moved aside
                            as dyn_lock.log.1)
       history.json         signal history for the chart
+      quit-by-user.txt     the note that you quit the app yourself
+                           (written only on quitting, see section 8)
+
+The manuals are not shipped - the "Manual" link in the window opens
+them on GitHub, so they always match the newest version.
 
 IN THE PROJECT FOLDER (source code)
 
-  windows\dyn_lock.py      the application
-  windows\texts.py         all texts in Czech and English
-                           (the installer uses them too)
-  windows\marks.py         drawing of the checkboxes, radio marks and
-                           language flags (shared by the app and the
-                           installer)
-  windows\icons\           application icons
-  tests\test_logic.py      decision tests - run after any change
-  tests\test_window.py     window tests (device list, scrolling,
-                           language)
-  tests\test_installer.py  the full install/uninstall cycle
-  tests\preview.py         renders the window to PNG to check the look
-                           (with "installer" the installer windows too)
+  app-2.0\Core\            the decisions (when to lock), no window
+  app-2.0\Platform\        everything that asks Windows (bluetooth,
+                           Wi-Fi, session state, monitors, locking)
+  app-2.0\Engine\          settings, log, history, the main loop
+  app-2.0\App\             the window, the tray icon, the countdown,
+                           the texts
+  app-2.0\Installer\       install and uninstall logic
+  app-2.0\build-setup.ps1  builds the installer
+  app-2.0\Core.Tests\      checks for each layer; run them with
+  app-2.0\Engine.Tests\    dotnet run --project <folder>
+  app-2.0\Platform.Tests\
+  app-2.0\Installer.Tests\
   tools\check_docs.py      checks the manuals against reality
   tools\ble_scan.py        diagnostics: what can be heard nearby
   tools\track.py           diagnostics: following a single device
   tools\analyze.py         evaluation of measurements from track.py
-  tools\make_icons.py      icon generator
   docs\                    these manuals
-  installer\               the installer and how to build it
   phone\                   the Android app, its source and signing key
-  start.bat                run from source
-  _output\                 tool output (previews, reports)
+  windows\                 the previous 1.5 (Python); it stays until
+                           2.0 has been tried out
 
 The tools for building the Android app (Java + the Android SDK,
 ~700 MB) live in an _android-build folder ONE LEVEL UP, next to the
@@ -512,23 +521,34 @@ signing-key-README.txt next to it.
  13. FOR DEVELOPERS
 ----------------------------------------------------------------
 
-RUNNING FROM SOURCE
+BUILDING AND TRYING IT OUT
 
-    start.bat                 normally
-    start.bat --dry-run       without actually locking; can run
-                              alongside the installed version
+    dotnet build app-2.0\App\App.csproj -c Release
 
-When run from source the app keeps its data next to itself, not
-in %APPDATA% - so the development and installed versions do not
+The build can then be run like this (with no switch at all, a copy
+outside the installed folder offers to install itself):
+
+    DaBtDynamicLock.exe --dry-run      without actually locking; can
+                                       run alongside the installed
+                                       version
+    DaBtDynamicLock.exe --self-check   works the window's controls
+                                       and checks they are saved
+    DaBtDynamicLock.exe --screenshot "<folder>"
+                                       photographs the windows so the
+                                       look can be checked
+
+A test run keeps its data beside itself in a dry-run-data folder,
+not in %APPDATA% - so the development and installed versions do not
 share settings.
 
 BUILDING THE INSTALLER
 
     powershell -ExecutionPolicy Bypass -File
-        "...\Da BT Dynamic Lock\installer\build_installer.ps1"
+        "...\Da BT Dynamic Lock\app-2.0\build-setup.ps1"
 
-It packs both the application and the installer into a single
-DaBTDynamicLock-setup.exe.
+It produces a single DaBtDynamicLock.exe that is also the
+installer, and checks it with the self-check. Nothing else is
+bundled with it.
 
 BUILDING THE PHONE APP
 

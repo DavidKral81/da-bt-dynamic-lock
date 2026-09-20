@@ -237,6 +237,27 @@ public sealed partial class SettingsWindow
             ? "  OK    switching back restores the first language"
             : $"  FAIL  switching back left \"{NavSignal.Text}\"");
 
+        // ---- the manual link ---------------------------------------------
+        // The address is read, never opened: nothing in this application goes
+        // near the network, and the fault worth catching is the address itself
+        // - a link that ignores the language hands an English reader the Czech
+        // manual, and nobody would notice until they clicked it.
+        SelectPage("app");
+        string wasLanguage = Texts.Language;
+
+        LanguageChoice.SelectedItem = Texts.Languages.First(l => l.Code == "en");
+        string english = ManualUrl();
+        LanguageChoice.SelectedItem = Texts.Languages.First(l => l.Code == "cs");
+        string czech = ManualUrl();
+        LanguageChoice.SelectedItem = Texts.Languages.First(l => l.Code == wasLanguage);
+
+        lines.Add(english.EndsWith("___INFO-READ.txt") && czech.EndsWith("___INFO-CTI.txt")
+            ? "  OK    the manual link follows the language"
+            : $"  FAIL  the manual link ignores the language: en -> {english}, cs -> {czech}");
+        lines.Add(ManualLink.Content as string is { Length: > 0 }
+            ? "  OK    ...and the link is labelled"
+            : "  FAIL  the manual link has no label");
+
         // ---- the size the window is left at ------------------------------
         // Closing it used to throw away whatever the person had done to it
         // (David, 19.09.2026). Checked through HideWindow/ShowWindow, the very

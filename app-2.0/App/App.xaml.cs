@@ -409,6 +409,27 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         var prints = new SortedDictionary<string, string>(StringComparer.Ordinal);
         try
         {
+            // ⚠ NOT WITH THE SCREEN LOCKED. Measured 20.09.2026: a WinUI 3
+            // window draws nothing while the session is locked, so PrintWindow
+            // captures the title bar and a black rectangle - for every window,
+            // the installer's included. The run still finished with exit 0 and
+            // nine worthless files, which is the worst way for this to fail:
+            // the fingerprints all change, and whoever compares them goes
+            // looking for a fault in the application.
+            //
+            // (1.5 could photograph a locked screen - Tk draws with GDI. That
+            // note in the project's own documentation does not carry over.)
+            if (SessionState.IsLocked() is { Ok: true, Value: true })
+            {
+                _log.Write("No pictures taken: the screen is locked, and a WinUI "
+                    + "window draws nothing while it is. Unlock and run again.");
+                // Through Shutdown, so the exit code actually reaches the
+                // caller: it ends the process itself for a picture run, and an
+                // Environment.Exit after it never runs.
+                Shutdown(1);
+                return;
+            }
+
             await Task.Delay(TimeSpan.FromSeconds(1));      // let the first tick run
 
             // The loop is stopped for the rest of this. It ticks twice a second
@@ -932,6 +953,8 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     public void RestartScanner() => _scanner.RequestRestart();
 
     // --------------------------------------------------------------- IAppHost
+
+    public bool TakingPictures => _options.ScreenshotFolder is not null;
 
     public void SaveSettings()
     {

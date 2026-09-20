@@ -30,6 +30,22 @@ public interface IAppHost
     /// </summary>
     string DataFolder { get; }
 
+    /// <summary>
+    /// This run exists to photograph the windows.
+    ///
+    /// ⚠ It must not remember the window's size, and must not open at a
+    /// remembered one. Measured on 20.09.2026: a picture run stored that its
+    /// window had been maximised, the next one therefore opened maximised, and
+    /// PrintWindow drew all nine screenshots black. It is the rule this project
+    /// already has for made-up data, in another shape - a run that produces
+    /// pictures stands on nothing it saved earlier and leaves nothing behind,
+    /// or the pictures stop being comparable.
+    ///
+    /// The self-check is deliberately NOT included: it has to be able to check
+    /// that the size is remembered, and it clears what it wrote when it ends.
+    /// </summary>
+    bool TakingPictures { get; }
+
     void SaveSettings();
     void PauseFor(TimeSpan how);
     void ResumePausing();

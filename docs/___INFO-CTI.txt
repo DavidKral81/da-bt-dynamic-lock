@@ -45,8 +45,9 @@ OBSAH
   1. INSTALACE
 ----------------------------------------------------------------
 
-Stáhni  DaBTDynamicLock-setup.exe  z vydání na GitHubu a spusť ho
-(vyžádá si práva správce):
+Stáhni  DaBtDynamicLock.exe  z vydání na GitHubu a spusť ho.
+Sám si řekne o práva správce a nabídne instalaci; je to tentýž
+soubor, který se pak nainstaluje:
   https://github.com/DavidKral81/da-bt-dynamic-lock/releases/latest
 
 Nabízí tři volby:
@@ -95,85 +96,91 @@ V NOTEBOOKU (Windows)
 
   4. Spusť Da BT Dynamic Lock. Aplikace nemá okno, běží jako zelená
      ikona vpravo dole u hodin.
-  5. Klepni na ikonu. Otevře se okno aplikace → záložka "Nastavení"
-     → v sekci "Které zařízení hlídat" vyber svůj telefon.
-     (Totéž jde i pravým klikem na ikonu → "Sledované zařízení".)
+  5. Klepni na ikonu. Otevře se okno → vlevo vyber "Telefon a Wi-Fi"
+     → v kartě "Které zařízení hlídat" vyber svůj telefon.
+     (Totéž jde i pravým klikem na ikonu → "Které zařízení hlídat".)
 
   Hotovo. Odejdi s telefonem a notebook se do 45 sekund zamkne.
 
 
 
 ----------------------------------------------------------------
-  3. OKNO APLIKACE (GRAF A NASTAVENÍ)
+  3. OKNO APLIKACE
 ----------------------------------------------------------------
 
-Otevře se klepnutím na ikonu v liště. Má dvě záložky. Vpravo nahoře,
-vedle záložek, jsou dvě vlaječky — tím se přepíná jazyk (čeština /
-angličtina). Přepne se hned, včetně nabídky u ikony.
+Otevře se klepnutím na ikonu v liště. Vlevo jsou čtyři stránky,
+vpravo jejich obsah. Okno si pamatuje velikost i to, že bylo
+maximalizované, takže se příště otevře stejně velké.
 
-GRAF
-    Síla signálu v čase, rozsah 2 minuty až 1 den. Vysvětlivky jsou
-    přímo v okně. Podrobně v oddílu 5.
+MONITOR SIGNÁLU
+    Síla signálu v čase. Podrobně v oddílu 5. Otevře se jako první
+    a levý klik na ikonu v liště vede rovnou sem.
 
-NASTAVENÍ
-    Všechno, co jde nastavit, pohromadě:
+APLIKACE
+    Jazyk                    čeština / angličtina; přepne se hned,
+                             včetně nabídky u ikony
+    Spouštět po přihlášení do Windows      viz oddíl 8
+    Zapisovat záznam o běhu - Log          záznam událostí; hodí se
+                             přiložit k hlášení chyby
+    Umístění logu            cesta k datové složce a tlačítko
+                             "Otevřít složku"
+    Verze                    číslo verze a odkaz "Stránka vydání"
 
+    Pod kartami jsou odkazy na projekt, na tento návod a na aplikaci
+    pro telefon, a tlačítko "Ukončit aplikaci".
+
+    Odkazy jen otevřou stránku v prohlížeči. Aplikace se sama nikam
+    neptá a nic neodesílá — číslo verze v okně porovnej s číslem na
+    stránce vydání sám.
+
+TELEFON A WI-FI
     Které zařízení hlídat
         Zařízení, která jsou právě slyšet, i se sílou signálu.
-        Vybraný telefon je zeleně. Když je zrovna mimo dosah,
-        zůstane v seznamu s poznámkou "není slyšet".
+        Vybrané je zaškrtnuté. Když zrovna ztichne, zůstane v seznamu
+        s poznámkou, jak dávno bylo slyšet naposledy.
+
+    Když telefon zmizí       viz oddíl 7
+
+    Nezamykat na vybraných Wi-Fi sítích
+                             pro místa, kde zamykat nepotřebujete.
+                             Ve výchozím stavu vypnuto.
+
+    Sítě bez zamykání        zaškrtnutím síť uložíte, odškrtnutím
+                             zapomenete; ta, ke které jste právě
+                             připojeni, je označená. Síť se pozná
+                             podle názvu I podle adresy přístupového
+                             bodu (MAC), takže cizí Wi-Fi se stejným
+                             názvem hlídání nevypne. Mesh a opakovače
+                             mají proto řádek pro každý přístupový
+                             bod. Platí jen skutečné připojení, ne to,
+                             že je síť na dosah
+
+ZAMYKÁNÍ
+    Zamykat, když se vzdálím s telefonem   hlavní vypínač
 
     Kdy zamknout
-        Automatické zamykání aktivní   hlavní vypínač
-        Zamknout po                    12 s až 120 s (výchozí 45 s)
-        Dosah (citlivost)              viz oddíl 6
-        Před zamknutím ukázat odpočet  okénko "Uzamknutí za X s"; jen
-                                       informace, nejde jím uzamknutí
-                                       zrušit
-        Kde odpočet ukázat (0 % nahoře, 100 % dole)
-                                       po desetinách výšky obrazovky,
-                                       výchozí 30 % odshora. Vodorovně
-                                       je okénko vždy uprostřed.
-        Zobrazovat odpočet jen na primárním monitoru
-                                       ve výchozím stavu je odpočet
-                                       vidět na všech monitorech, na
-                                       každém uprostřed jeho obrazovky
-        Nezamykat při aktivitě uživatele (myš, klávesnice)
+        Ticho, po kterém se zamyká     12 s až 120 s (výchozí 45 s)
+        Dosah                          viz oddíl 6
+        Nezamykat, když právě píšu nebo hýbu myší
                                        POZOR: kdokoli u stolu tím může
                                        uzamknutí odkládat, proto je to
                                        ve výchozím stavu vypnuté
 
-    Chování aplikace
-        Spouštět po přihlášení do Windows   viz oddíl 8
+    Odpočet před zamknutím
+        Kdy ukázat odpočet             okénko "Uzamknutí za X s"; jen
+                                       informace, nejde jím uzamknutí
+                                       zrušit. Kliknutí jím projde na
+                                       to, co je pod ním
+        Kde se odpočet ukáže           po desetinách výšky obrazovky,
+                                       výchozí 30 % odshora. Vodorovně
+                                       je okénko vždy uprostřed
+        Jen na hlavním monitoru        ve výchozím stavu je odpočet
+                                       vidět na každé obrazovce, vždy
+                                       uprostřed té své
 
-    Když telefon zmizí       viz oddíl 7
-    Wi-Fi sítě               seznam Wi-Fi, na kterých se obrazovka
-                             nezamyká — pro místa, kde zamykat
-                             nepotřebujete. Zaškrtnutím síť přidáte,
-                             odškrtnutím odeberete; ta, ke které jste
-                             právě připojeni, je v seznamu označená.
-                             Ve výchozím stavu je celá volba vypnutá.
-                             U každé sítě je vidět i adresa přístupového
-                             bodu (MAC) — síť se totiž pozná podle názvu
-                             i podle ní, takže cizí Wi-Fi se stejným
-                             názvem hlídání nevypne. Mesh a opakovače
-                             mají proto v seznamu řádek pro každý
-                             přístupový bod. Síť platí jen tehdy, když
-                             jste k ní opravdu připojeni
     Dočasně pozastavit       hlídání se na zvolenou dobu vypne
                              a pak se samo zase zapne; pod volbou je
                              vidět, kolik času ještě zbývá
-
-    Dole jsou odkazy na aplikaci do telefonu, na tento návod a na
-    projekt, pod nimi číslo verze s odkazem "Zkontrolovat
-    aktualizace" a tlačítko "Ukončit aplikaci".
-
-    "Zkontrolovat aktualizace" jen otevře v prohlížeči stránku
-    s vydáními — porovnej číslo verze v okně s číslem na stránce.
-    Aplikace se sama nikam neptá a nic neodesílá.
-
-Okno si pamatuje velikost i to, jestli je na výšku nebo na šířku.
-Když je široké, nastavení se samo rozdělí do dvou sloupců.
 
 
 
@@ -186,33 +193,35 @@ Barva ikony:
   oranžová  běží odpočet do uzamknutí
   šedá      vypnuto, pozastaveno, nebo už zamčeno
 
-LEVÝ klik   otevře okno aplikace
+LEVÝ klik   otevře okno na Monitoru signálu
 PRAVÝ klik  otevře nabídku
 
 Nabídka je zkratka pro to, co se mění často - ne úplná náhrada
-okna. Nenajdeš v ní polohu odpočtu, volbu "jen na primárním
-monitoru" ani Wi-Fi sítě; tohle se nastavuje jednou a patří do
-okna. Položky se jmenují stejně jako v nastavení:
+okna. Nenajdeš v ní polohu odpočtu, volbu "jen na hlavním monitoru"
+ani Wi-Fi sítě; tohle se nastavuje jednou a patří do okna. Položky
+se jmenují stejně jako v okně, aby se jedna věc nejmenovala dvakrát
+jinak:
 
-  Graf signálu
-  Sledované zařízení …
+  Monitor signálu
+  Které zařízení hlídat  ▸        zařízení, která jsou právě slyšet
   ---
-  Automatické zamykání aktivní
-  Nezamykat při aktivitě uživatele (myš, klávesnice)
+  Zamykat, když se vzdálím s telefonem
+  Nezamykat, když právě píšu nebo hýbu myší
   Spouštět po přihlášení do Windows
   ---
-  Uzamknout po … bez signálu       12 s až 120 s (výchozí 45 s)
-  Odpočet se ukáže …               nezobrazovat, nebo 5 s až 30 s předem
-  Citlivost (dosah)                viz oddíl 6
-  Upozornit, když telefon zmizí …  viz oddíl 7
+  Ticho, po kterém se zamyká  ▸   12 s až 120 s (výchozí 45 s)
+  Kdy ukázat odpočet  ▸           nezobrazovat, nebo 5 s až 30 s předem
+  Dosah  ▸                        viz oddíl 6
+  Když telefon zmizí  ▸           viz oddíl 7
   ---
-  Pozastavit hlídání …             5 minut až 2 dny
-  Zrušit pozastavení               (jen když je hlídání pozastavené)
+  Dočasně pozastavit  ▸           5 minut až 2 dny
+  Ukončit pozastavení             (jen když je hlídání pozastavené)
   ---
-  Nastavení                        otevře okno rovnou na nastavení
-                                   (na rozdíl od "Graf signálu" okno
-                                   nezavírá, jen ho vytáhne dopředu)
-  Ukončit
+  Nastavení                       otevře okno
+  Ukončit aplikaci
+
+Položky se šipkou ▸ mají podnabídku s hodnotami; ta platná je
+zaškrtnutá.
 
 
 
@@ -220,10 +229,11 @@ okna. Položky se jmenují stejně jako v nastavení:
   5. GRAF SIGNÁLU
 ----------------------------------------------------------------
 
-Záložka "Graf" v okně aplikace. Rozsah 2 minuty až 1 den,
-vysvětlivky jsou přímo v okně. Vodorovná osa ukazuje čas podle
-hodin (u rozsahu 2 minuty i se sekundami), svislá sílu signálu
-v dBm. Historie přežije restart aplikace i počítače; doba,
+Stránka "Monitor signálu" v okně aplikace. Rozsah se přepíná
+tlačítky vpravo nahoře: 2m, 5m, 15m, 1h, 8h, 1D. Vysvětlivky jsou
+přímo pod grafem. Vodorovná osa ukazuje čas podle hodin (u rozsahu
+2m i se sekundami), svislá sílu signálu v dBm. V širokém nebo
+maximalizovaném okně se graf roztáhne přes celou šířku. Historie přežije restart aplikace i počítače; doba,
 kdy aplikace neběžela, je vyznačená zvlášť a nepočítá se jako
 výpadek signálu.
 
@@ -243,9 +253,9 @@ K čemu je: rozliší dvě různé příčiny problémů.
 
 Určuje, jak slabý signál se ještě počítá za "jsi u stolu".
 
-  Vypnuto      zamkne, až signál úplně zmizí (výchozí)
-  -100 až -85  větší dosah, zamyká později
-  -80 až -60   menší dosah, zamyká dřív
+  Telefon neslyšitelný   zamkne, až signál úplně zmizí (výchozí)
+  -100 až -85            větší dosah, zamyká později
+  -80 až -60             menší dosah, zamyká dřív
 
 Naměřeno u stolu: telefon v kapse -81 až -83 dBm, na stole -73 dBm.
 Hodnota -80 a vyšší je tedy nad běžným signálem z kapsy a začne
@@ -283,15 +293,27 @@ fungovat. V logu je pak řádek "Locking held off".
 ----------------------------------------------------------------
 
 Zapíná se buď při instalaci, nebo kdykoli později v nabídce ikony
-("Spouštět po přihlášení do Windows"), nebo v okně aplikace
-v sekci "Chování aplikace". Všechny tři cesty dělají totéž.
+("Spouštět po přihlášení do Windows"), nebo v okně na stránce
+"Aplikace". Všechny tři cesty dělají totéž.
 
 Vytvoří se úloha v Plánovači s tímto nastavením:
   - spuštění 30 sekund po přihlášení (než naběhne bluetooth)
-  - restart při selhání: po 1 minutě, nejvýše 3x
+  - opakování po 5 minutách, aby se po pádu hlídání samo vrátilo
   - bez časového omezení běhu (jinak by ji Windows po 3 dnech
     ukončily)
   - běží i na baterii
+
+KDYŽ APLIKACI VYPNETE SAMI, ZŮSTANE VYPNUTÁ
+
+Opakování po 5 minutách hlídá pády, ne vaše rozhodnutí. Když
+aplikaci ukončíte ("Ukončit aplikaci" v okně nebo v nabídce),
+poznamená si to a opakovaná úloha ji nespustí — zůstane vypnutá
+až do restartu počítače, nebo dokud ji nespustíte sami.
+
+Trvale ji vypnete přepínačem "Spouštět po přihlášení do Windows".
+
+Po pádu žádná taková poznámka nezbude, takže se hlídání do pěti
+minut vrátí samo.
 
 Aplikace NEMŮŽE běžet jako služba Windows - služby běží v oddělené
 relaci bez přístupu k ploše a obrazovku odtamtud nezamknou.
@@ -318,32 +340,18 @@ vidět, kdy zmizel a proč se zamklo.
       V logu chybí "Phone seen for the first time" → v nastavení
       (nebo v nabídce ikony) vyber správný telefon.
 
-  Zamklo se hned po probuzení notebooku, bez odpočtu
-      Tohle dělaly verze do 1.1 včetně. Zatímco počítač spal,
-      aplikace neměřila, a po probuzení viděla dlouhé ticho, takže
-      zamkla okamžitě - i s telefonem na stole. Od verze 1.2 se
-      měření po probuzení začíná znovu; v logu je řádek
-      "The loop stood still for X s". Hlídání tím nekončí: když
-      telefon opravdu chybí, zamkne se po nastavené době a
-      s odpočtem, jako vždycky.
-
-  V logu je spousta "Locking" za sebou, po minutě po sobě
-      Tohle dělaly verze do 1.4 včetně. Když byla obrazovka
-      zamčená, stačil jeden signál z telefonu a celý cyklus se
-      rozjel znovu: po nastavené době se nakreslilo okénko
-      odpočtu, jenže schované za zamykací obrazovkou, a pak se
-      "zamklo" podruhé, což už nic neudělá. Verze 1.4 to sice
-      měla řešit, ale ptala se špatnou otázkou - poznala jen tu
-      chvíli, kdy se zamykací obrazovka kreslí, takže pauza
-      vydržela vteřinu. Od verze 1.5 se aplikace ptá Windows
-      přímo na stav relace, takže se hlídání pozastaví na celou
-      dobu zamčení (v logu "Screen locked - watching pauses
-      until it is unlocked.") a po odemčení začne měřit od nuly
-      - takže dopsané heslo už nikdy nenásleduje okamžité
-      zamčení.
-
   Ikona není vidět
       Bude schovaná pod šipkou skrytých ikon vpravo dole.
+
+      Když se mezitím restartoval Průzkumník Windows (hlavní panel
+      zmizel a zase naskočil), aplikace si ikonu vrátí sama. Do logu
+      si o tom napíše řádek.
+
+  V logu se opakuje "The tray icon could not be updated"
+      Windows nepustí nic do oznamovací oblasti, dokud je obrazovka
+      zamčená, a chvíli ani při restartu Průzkumníka. Aplikace to
+      zkouší dál a napíše "The tray icon can be updated again.",
+      jakmile se to povede. Hlídání to nijak neovlivní.
 
   Aplikace nejde spustit dvakrát
       Tak je to správně - druhý pokus jen oznámí, že už běží.
@@ -380,11 +388,15 @@ se mění jen tohle a po změně je nutný restart aplikace:
   threshold_window_s   přes kolik sekund se signál vyhlazuje
   scanner_restart_s    jak často preventivně restartovat příjem
   silence_watchdog_s   po jak dlouhém tichu restartovat příjem
-  log                  zapisovat události do dyn_lock.log
-  language             "cs" nebo "en" (přepíná se vlaječkami vpravo
-                       nahoře v okně aplikace)
 
-Ostatní klíče odpovídají položkám v nastavení.
+Dají se tu přečíst i klíče, které si aplikace ukládá sama:
+
+  window_w, window_h   velikost okna, jak bylo naposledy zavřené
+  window_maximized     jestli bylo maximalizované
+
+Ostatní klíče odpovídají položkám v okně; MAC adresu hlídaného
+zařízení lze zadat jedině tady (klíč "target"), protože seznam
+v okně nabízí jen pojmenovaná zařízení.
 
 
 
@@ -395,42 +407,41 @@ Ostatní klíče odpovídají položkám v nastavení.
 PO INSTALACI
 
   C:\Program Files\Da BT Dynamic Lock
-      DaBTDynamicLock.exe  aplikace
-      uninstall.exe        odinstalátor
-      config.default.json  výchozí nastavení pro nové uživatele
-      ___INFO-CTI.txt      tento návod
-      ___INFO-READ.txt     návod v angličtině
+      DaBtDynamicLock.exe  jediný soubor: aplikace, instalátor
+                           i odinstalátor v jednom
 
   %APPDATA%\Da BT Dynamic Lock
       config.json          tvoje nastavení
       dyn_lock.log         záznam událostí (při 2 MB se odsune
                            jako dyn_lock.log.1)
       history.json         historie signálu pro graf
+      quit-by-user.txt     poznámka, že jsi aplikaci vypnul sám
+                           (vznikne jen při ukončení, viz oddíl 8)
+
+Návody se nedodávají — odkaz "Návod" v okně je otevře na GitHubu,
+takže platí vždy pro nejnovější verzi.
 
 VE SLOŽCE PROJEKTU (zdrojový kód)
 
-  windows\dyn_lock.py      aplikace
-  windows\texts.py         všechny texty česky i anglicky
-                           (používá je i instalátor)
-  windows\marks.py         kresba zaškrtávátek, přepínačů a vlaječek
-                           (sdílí ji aplikace i instalátor)
-  windows\icons\           ikony aplikace
-  tests\test_logic.py      testy rozhodování - spustit po úpravě
-  tests\test_window.py     testy okna (seznam zařízení, posouvání,
-                           jazyk)
-  tests\test_installer.py  celý cyklus instalace a odinstalace
-  tests\preview.py         vykreslí okno do PNG pro kontrolu vzhledu
-                           (s parametrem "installer" i okna instalátoru)
+  app-2.0\Core\            rozhodování (kdy zamknout), bez okna
+  app-2.0\Platform\        vše, co se ptá Windows (bluetooth, Wi-Fi,
+                           stav relace, monitory, zamykání)
+  app-2.0\Engine\          nastavení, log, historie, hlavní smyčka
+  app-2.0\App\             okno, ikona v liště, odpočet, texty
+  app-2.0\Installer\       logika instalace a odinstalace
+  app-2.0\build-setup.ps1  sestavení instalačky
+  app-2.0\Core.Tests\      kontroly jednotlivých vrstev; spouští se
+  app-2.0\Engine.Tests\    příkazem  dotnet run --project <složka>
+  app-2.0\Platform.Tests\
+  app-2.0\Installer.Tests\
   tools\check_docs.py      kontrola návodů proti skutečnosti
   tools\ble_scan.py        diagnostika: co je v okolí slyšet
   tools\track.py           diagnostika: sledování jednoho zařízení
   tools\analyze.py         vyhodnocení měření z track.py
-  tools\make_icons.py      generátor ikon
   docs\                    tyto návody
-  installer\               instalátor a jeho sestavení
   phone\                   aplikace pro Android + zdrojový kód + klíč
-  start.bat                spuštění ze zdrojáku
-  _output\                 výstupy nástrojů (náhledy, reporty)
+  windows\                 předchozí verze 1.5 (Python); zůstává,
+                           dokud se 2.0 neodzkouší
 
 Nástroje pro sestavení aplikace pro Android (Java + Android SDK,
 ~700 MB) leží ve složce _android-build O ÚROVEŇ VÝŠ, tedy vedle
@@ -482,21 +493,32 @@ signing-key-README.txt vedle něj.
   13. PRO VÝVOJ
 ----------------------------------------------------------------
 
-SPUŠTĚNÍ ZE ZDROJOVÉHO KÓDU
+SESTAVENÍ A ZKUŠEBNÍ BĚH
 
-    start.bat                 normálně
-    start.bat --dry-run       bez skutečného zamykání; jde spustit
-                              i vedle nainstalované verze
+    dotnet build app-2.0\App\App.csproj -c Release
 
-Ze zdrojáku si aplikace ukládá data vedle sebe, ne do %APPDATA% -
-vývojová a nainstalovaná verze si tedy nelezou do nastavení.
+Sestavenou aplikaci pak jde spustit takto (bez parametru by se
+kopie mimo instalační složku nabídla nainstalovat):
 
-SESTAVENÍ INSTALÁTORU
+    DaBtDynamicLock.exe --dry-run      bez skutečného zamykání; jde
+                                       spustit i vedle nainstalované
+                                       verze
+    DaBtDynamicLock.exe --self-check   projde ovládací prvky okna
+                                       a ověří, že se ukládají
+    DaBtDynamicLock.exe --screenshot "<složka>"
+                                       vyfotí okna pro kontrolu vzhledu
+
+Zkušební běh si ukládá data vedle sebe do složky dry-run-data, ne
+do %APPDATA% - vývojová a nainstalovaná verze si tedy nelezou do
+nastavení.
+
+SESTAVENÍ INSTALAČKY
 
     powershell -ExecutionPolicy Bypass -File
-        "...\Da BT Dynamic Lock\installer\build_installer.ps1"
+        "...\Da BT Dynamic Lock\app-2.0\build-setup.ps1"
 
-Zabalí aplikaci i instalátor do jednoho DaBTDynamicLock-setup.exe.
+Vyrobí jediný DaBtDynamicLock.exe, který je zároveň instalátorem,
+a ověří ho self-checkem. Nic dalšího se k němu nepřibaluje.
 
 SESTAVENÍ APLIKACE PRO TELEFON
 

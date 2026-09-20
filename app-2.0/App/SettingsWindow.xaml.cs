@@ -111,7 +111,8 @@ public sealed partial class SettingsWindow : Window
 
             // Maximised AFTER the size is set, not instead of it: the size
             // above is what the window goes back to when it is un-maximised.
-            if (_host.Settings.WindowMaximized
+            // Never in a picture run - see Placement.
+            if (_host.Settings.WindowMaximized && !_host.TakingPictures
                 && AppWindow.Presenter is OverlappedPresenter presenter)
                 presenter.Maximize();
         }
@@ -141,6 +142,14 @@ public sealed partial class SettingsWindow : Window
     /// </summary>
     private void RememberSize()
     {
+        // ⚠ Never from a run with nobody at the keyboard. The picture run
+        // opens and closes this window a dozen times, and on 20.09.2026 it
+        // saved "maximised" - so the NEXT picture run opened maximised and
+        // PrintWindow drew all nine screenshots black. A size is only a size
+        // the user chose when a user was there to choose it.
+        if (_host.TakingPictures)
+            return;
+
         if (AppWindow.Presenter is not OverlappedPresenter presenter)
             return;
 
@@ -221,6 +230,13 @@ public sealed partial class SettingsWindow : Window
     /// </summary>
     private (int X, int Y, int W, int H) Placement()
     {
+        // The pictures are taken at the designed size, always: a screenshot
+        // run that inherited whatever size somebody left the window at would
+        // give a different image every time, and the whole point of the
+        // fingerprints is that an unchanged screen looks unchanged.
+        if (_host.TakingPictures)
+            return WindowLayout.Centred(WidthDip, HeightDip);
+
         var cfg = _host.Settings;
         int w = cfg.WindowWidth > 0 ? Math.Max(cfg.WindowWidth, MinWidthDip) : WidthDip;
         int h = cfg.WindowHeight > 0 ? Math.Max(cfg.WindowHeight, MinHeightDip) : HeightDip;
@@ -303,6 +319,7 @@ public sealed partial class SettingsWindow : Window
             LblVersion.Text = Texts.Get("lbl_version", AppInfo.Version);
             UpdatesLink.Content = Texts.Get("link_updates");
             ProjectLink.Content = Texts.Get("link_project");
+            ManualLink.Content = Texts.Get("link_manual");
             PhoneAppLink.Content = Texts.Get("link_phone_app");
             QuitButton.Content = Texts.Get("btn_quit");
 
@@ -809,6 +826,21 @@ public sealed partial class SettingsWindow : Window
         Open(AppInfo.ProjectUrl + "/releases/latest");
 
     private void OnOpenProject(object sender, RoutedEventArgs e) => Open(AppInfo.ProjectUrl);
+
+    /// <summary>
+    /// The manual, in the language the window is in.
+    ///
+    /// On GitHub rather than beside the program: 2.0 installs a single
+    /// executable and ships no documents at all, so a local copy would be one
+    /// more thing to keep in step. This way the manual always matches the
+    /// newest release. As with every other link here, the address is handed to
+    /// the browser - nothing in this application talks to the network.
+    /// </summary>
+    private void OnOpenManual(object sender, RoutedEventArgs e) => Open(ManualUrl());
+
+    /// <summary>The manual for the language in use. Apart, so a check can read it.</summary>
+    internal static string ManualUrl() => AppInfo.ProjectUrl + "/blob/main/docs/"
+        + (Texts.Language == "en" ? "___INFO-READ.txt" : "___INFO-CTI.txt");
 
     private void OnQuit(object sender, RoutedEventArgs e)
     {

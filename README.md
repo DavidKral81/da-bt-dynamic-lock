@@ -127,9 +127,10 @@ full of gaps means interference — usually a Bluetooth mouse.
 
 ## Installation
 
-**Windows** — run `DaBTDynamicLock-setup.exe` from the latest release. It
-offers a Start menu shortcut, a desktop shortcut and automatic start after
-sign-in. The program goes to `C:\Program Files\Da BT Dynamic Lock`; settings
+**Windows** — run `DaBtDynamicLock.exe` from the latest release. The download
+is the application itself: run it and it asks for administrator rights and
+offers to install, with a Start menu shortcut, a desktop shortcut and
+automatic start after sign-in. The program goes to `C:\Program Files\Da BT Dynamic Lock`; settings
 and history live in `%APPDATA%\Da BT Dynamic Lock`, per user.
 
 **Android** — install `DaBTDynamicLock.apk` from the same release, open it,
@@ -145,15 +146,19 @@ Full instructions: [English manual](docs/___INFO-READ.txt) ·
 ## Building from source
 
 ```
-windows\      Python 3.14 + bleak, pystray, Pillow, tkinter
+app-2.0\      C# on .NET 8 and WinUI 3 — the Windows app and its installer
 phone\        Java, no Gradle (aapt2 + javac + d8 + apksigner)
-installer\    PyInstaller
+windows\      the previous 1.x line, Python 3.14 + bleak, pystray, tkinter
 ```
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File installer\build_installer.ps1   # setup.exe
-powershell -ExecutionPolicy Bypass -File phone\build.ps1                 # APK
+powershell -ExecutionPolicy Bypass -File app-2.0\build-setup.ps1   # the installer
+powershell -ExecutionPolicy Bypass -File phone\build.ps1           # APK
 ```
+
+The Windows build produces **one executable** that is the application, its
+installer and its uninstaller at once, and needs nothing installed on the
+machine it runs on.
 
 The Android build needs no Android Studio and no Gradle, but the tools
 (a JDK and the Android SDK build-tools) have to be present in an
@@ -166,12 +171,13 @@ there, the build works offline.
 Tests, to be run before any release:
 
 ```
-py tests\test_logic.py        the locking decision
-py tests\test_window.py       window behaviour, device list, language switch
-py tests\test_installer.py    a full install and uninstall cycle
-py tests\preview.py           renders the window to PNG so the look can be checked
-py tests\preview.py installer the same for every installer window
-py tools\check_docs.py        checks the documentation against the code
+dotnet run --project app-2.0\Core.Tests        the locking decision
+dotnet run --project app-2.0\Platform.Tests    what Windows is asked, on this machine
+dotnet run --project app-2.0\Engine.Tests      the loop, settings, log, history
+dotnet run --project app-2.0\Installer.Tests   a full install and uninstall cycle
+DaBtDynamicLock.exe --self-check               the window's controls reach the file
+DaBtDynamicLock.exe --screenshot "<folder>"    photographs the windows to check the look
+py tools\check_docs.py                         checks the documentation against the code
 ```
 
 ---

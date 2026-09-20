@@ -257,6 +257,7 @@ public static class Texts
         ["lbl_version"] = "Verze {0}",
         ["link_updates"] = "Stránka vydání",
         ["link_project"] = "Projekt na GitHubu",
+        ["link_manual"] = "Návod",
         ["link_phone_app"] = "Stáhnout aplikaci pro telefon",
         ["btn_quit"] = "Ukončit aplikaci",
 
@@ -461,6 +462,7 @@ public static class Texts
         ["lbl_version"] = "Version {0}",
         ["link_updates"] = "Releases page",
         ["link_project"] = "Project on GitHub",
+        ["link_manual"] = "Manual",
         ["link_phone_app"] = "Download the phone app",
         ["btn_quit"] = "Quit the application",
 
