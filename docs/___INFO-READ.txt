@@ -177,6 +177,13 @@ LOCKING
                                        cannot: nobody touches a key for
                                        two hours while a film plays
 
+                                       Once a safeguard stops applying
+                                       (the film ends, the hands stop
+                                       moving), the silence is measured
+                                       again from zero - so leaving full
+                                       screen still leaves time to come
+                                       back, with a countdown as usual.
+
                                        CAREFUL: anyone at the desk can
                                        postpone locking this way, so
                                        both are off by default

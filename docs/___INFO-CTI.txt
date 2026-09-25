@@ -171,6 +171,13 @@ ZAMYKÁNÍ
                                        nepokryje: u filmu se dvě hodiny
                                        nikdo klávesnice nedotkne
 
+                                       Jakmile pojistka přestane platit
+                                       (film skončí, ruce se přestanou
+                                       hýbat), začne se ticho měřit
+                                       znovu od nuly — takže po vypnutí
+                                       celé obrazovky je ještě čas se
+                                       vrátit, s odpočtem jako vždy.
+
                                        POZOR: kdokoli u stolu tím může
                                        uzamknutí odkládat, proto jsou obě
                                        ve výchozím stavu vypnuté
