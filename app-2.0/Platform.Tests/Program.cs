@@ -27,6 +27,7 @@ internal static class PlatformChecks
 
         CheckSession();
         CheckIdle();
+        CheckFullScreen();
         CheckWifi();
         CheckMonitors();
         CheckAddressFormatting();
@@ -205,6 +206,32 @@ internal static class PlatformChecks
         // Anything above a few hours means the wrap-around arithmetic is wrong.
         Check("...and is not absurd", true, idle.Value < 24 * 3600);
         Console.WriteLine($"        (idle for {idle.Value:F1} s)");
+    }
+
+    // ------------------------------------------------------ full screen
+
+    /// <summary>
+    /// The guard that holds the lock off while something fills the screen.
+    ///
+    /// Asked of the REAL machine, because that is the half nothing else
+    /// covers: Core.Tests proves the decision over made-up data and
+    /// Engine.Tests proves the wiring, but neither can say whether Windows
+    /// answers this question at all on this computer. If it did not, the
+    /// setting would be switched on and quietly do nothing.
+    ///
+    /// What is NOT checked is the answer itself - whether something is full
+    /// screen right now depends on what is on screen, and a test cannot put a
+    /// film there. The answer is printed so a person can see it.
+    /// </summary>
+    static void CheckFullScreen()
+    {
+        Console.WriteLine("\nSomething filling the screen:");
+        var reading = FullScreenApp.Running();
+        Check("Windows answers the question", true, reading.Ok);
+        if (reading.Problem is not null)
+            Console.WriteLine($"        ({reading.Problem})");
+        Console.WriteLine($"        (right now it says: "
+            + $"{(reading.Value ? "yes, something is full screen" : "no")})");
     }
 
     // ------------------------------------------------------------ Wi-Fi
