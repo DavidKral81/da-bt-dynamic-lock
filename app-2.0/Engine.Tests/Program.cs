@@ -655,10 +655,22 @@ internal static class EngineChecks
         Check("a film playing holds the lock off", 0, r.System.LocksAttempted);
         Check("...and the loop really asked", true, r.System.FullScreenAsked > 0);
 
-        // The film ends: nothing is watching the screen any more.
+        // ⚠ THE FILM ENDS AND THE COUNTDOWN HAS TO START OVER. Reported by
+        // David 26.09.2026: leaving full screen locked the screen THAT INSTANT,
+        // with no countdown, because the silence had gone on piling up for the
+        // whole film and was hours past the threshold. Same cause as unticking
+        // a Wi-Fi network on 11.09.2026 - a guard that holds the lock off is a
+        // spell during which the silence says nothing about where the phone is.
         r.System.FullScreen = false;
-        for (int i = 0; i < 4; i++) r.Tick();
-        Check("when it ends, the screen locks", true, r.System.LocksAttempted > 0);
+        r.Tick();
+        Check("the first tick after the film does NOT lock", 0, r.System.LocksAttempted);
+        Check("...because the silence starts over", true, r.Watch.Silence() < 1);
+
+        // ...and then it behaves as usual: the phone is still not heard, so
+        // after the threshold there is a countdown and then the lock.
+        for (int i = 0; i < 40; i++) r.Tick();     // 20 s
+        Check("the countdown comes back", true, r.View.CountdownShown > 0);
+        Check("...and then it locks", true, r.System.LocksAttempted > 0);
 
         // Switched off, the question is not even asked - the loop ticks twice a
         // second and an answer it would throw away is work for nothing.

@@ -65,14 +65,26 @@ public sealed record Decision(
 public static class DecisionMaker
 {
     /// <summary>
-    /// Reasons under which nothing is being watched at all. Coming back from
-    /// any of them has to restart the silence measurement - otherwise the first
-    /// tick after the return finds silence long past the threshold and locks
+    /// Reasons under which the lock is being held off. Coming back from any of
+    /// them has to restart the silence measurement - otherwise the first tick
+    /// after the return finds silence long past the threshold and locks
     /// instantly, with no countdown. Reported by David 11.09.2026 after
     /// unticking a network; unpausing and switching the app back on had the
     /// very same cause.
+    ///
+    /// ⚠ "idle_guard" BELONGS HERE, and leaving it out was the same fault a
+    /// second time (reported 26.09.2026): leaving a full-screen film locked the
+    /// screen that instant, because the silence had been piling up for the
+    /// whole film. Whether the phone was really silent is beside the point -
+    /// what matters is that the person got no countdown and no chance. The
+    /// typing guard is the same story on a smaller scale.
+    ///
+    /// The name is about the LOCK, not the radio: the silence goes on being
+    /// measured throughout, it just stops meaning anything once it is no
+    /// longer what decides.
     /// </summary>
-    public static readonly string[] NotWatching = { "off", "paused", "trusted_network" };
+    public static readonly string[] NotWatching =
+        { "off", "paused", "trusted_network", "idle_guard" };
 
     /// <summary>
     /// Pure decision function - no UI, no locking, nothing asked of Windows.
