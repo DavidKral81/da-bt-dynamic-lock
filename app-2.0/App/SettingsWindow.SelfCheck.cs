@@ -55,6 +55,14 @@ public sealed partial class SettingsWindow
         IdleGuard.IsOn = true;
         Check("the typing safeguard is saved", true, s => s.IdleGuard);
 
+        // The second half of "do not lock while...", and a separate switch on
+        // purpose: a film runs for hours without a keystroke, so the two are
+        // different situations rather than one setting with two names.
+        FullScreenGuard.IsOn = true;
+        Check("the full screen safeguard is saved", true, s => s.FullScreenGuard);
+        FullScreenGuard.IsOn = false;
+        Check("...and switching it off is saved too", false, s => s.FullScreenGuard);
+
         PrimaryOnly.IsOn = true;
         Check("countdown on the main monitor only is saved", true,
             s => s.CountdownPrimaryOnly);

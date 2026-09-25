@@ -200,15 +200,18 @@ public static class Texts
         // meas". Czech is the longer language, so it sets the limit.
         ["opt_range_edge"] = "{0} dBm – telefon v kapse",
         ["opt_range_plain"] = "{0} dBm",
-        ["sw_idle_guard"] = "Nezamykat, když právě píšu nebo hýbu myší",
-        ["sw_idle_guard_hint"] = "Pojistka pro případ, že telefon zmlkne "
-                               + "během práce na počítači.",
+        ["card_hold_off"] = "Nezamykat, když…",
+        ["card_hold_off_hint"] = "Pojistky pro případ, že telefon zmlkne, "
+                               + "zatímco uživatel sedí u počítače. Stačí, "
+                               + "aby platila jedna z nich.",
+        ["sw_idle_guard"] = "Myš nebo klávesnice je právě používána",
+        ["sw_fullscreen"] = "Nějaká aplikace nebo video běží na full screen",
         ["group_countdown"] = "Odpočet před zamknutím",
         ["lbl_countdown"] = "Kdy ukázat odpočet",
         ["lbl_countdown_hint"] = "Kolik času zbývá na návrat ke stolu.",
         ["opt_countdown_off"] = "Nezobrazovat",
         ["opt_countdown_from"] = "{0} sekund předem",
-        ["lbl_position"] = "Kde se odpočet ukáže",
+        ["lbl_position"] = "Pozice odpočtu na obrazovce",
         ["opt_from_top"] = "{0} % odshora",
         ["sw_primary_only"] = "Jen na hlavním monitoru",
         ["sw_primary_only_hint"] = "Jinak se odpočet ukáže na každé obrazovce.",
@@ -406,15 +409,18 @@ public static class Texts
         // ("about what a pocket measures") came out cut off as "a pocket meas".
         ["opt_range_edge"] = "{0} dBm - a phone in a pocket",
         ["opt_range_plain"] = "{0} dBm",
-        ["sw_idle_guard"] = "Do not lock while I am typing or moving the mouse",
-        ["sw_idle_guard_hint"] = "A safeguard for when the phone goes quiet "
-                               + "during work at the computer.",
+        ["card_hold_off"] = "Do not lock while…",
+        ["card_hold_off_hint"] = "Safeguards for when the phone goes quiet "
+                               + "while somebody is sitting at the computer. "
+                               + "Either one on its own is enough.",
+        ["sw_idle_guard"] = "The mouse or keyboard is in use",
+        ["sw_fullscreen"] = "An application or a video is running full screen",
         ["group_countdown"] = "The countdown before locking",
         ["lbl_countdown"] = "When to show the countdown",
         ["lbl_countdown_hint"] = "How much time is left to get back to the desk.",
         ["opt_countdown_off"] = "Do not show",
         ["opt_countdown_from"] = "{0} seconds ahead",
-        ["lbl_position"] = "Where the countdown appears",
+        ["lbl_position"] = "Countdown position on the screen",
         ["opt_from_top"] = "{0} % from the top",
         ["sw_primary_only"] = "On the main monitor only",
         ["sw_primary_only_hint"] = "Otherwise the countdown appears on every screen.",

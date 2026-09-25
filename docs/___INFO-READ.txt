@@ -166,10 +166,20 @@ LOCKING
     When to lock
         Silence before locking         12 s to 120 s (default 45 s)
         Range                          see section 6
-        Do not lock while I am typing or moving the mouse
-                                       CAREFUL: anyone at the desk
-                                       can postpone locking this
-                                       way, so it is off by default
+        Do not lock while…             two safeguards for when the
+                                       phone goes quiet while somebody
+                                       is sitting at the computer.
+                                       Either one is enough:
+
+          The mouse or keyboard is in use
+          An application or a video is running full screen
+                                       the second covers what the first
+                                       cannot: nobody touches a key for
+                                       two hours while a film plays
+
+                                       CAREFUL: anyone at the desk can
+                                       postpone locking this way, so
+                                       both are off by default
 
     Countdown before locking
         When to show the countdown     a small "Locking in X s"
@@ -177,7 +187,7 @@ LOCKING
                                        cannot cancel the lock. Clicks
                                        pass through it to whatever is
                                        underneath
-        Where the countdown appears    in tenths of the screen height,
+        Countdown position on screen   in tenths of the screen height,
                                        30 % from the top by default.
                                        Horizontally it is always
                                        centred

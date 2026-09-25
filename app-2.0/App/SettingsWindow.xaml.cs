@@ -290,8 +290,10 @@ public sealed partial class SettingsWindow : Window
             LblSilence.Text = Texts.Get("lbl_silence");
             LblRange.Text = Texts.Get("lbl_range");
             LblRangeHint.Text = Texts.Get("lbl_range_hint");
+            CardHoldOff.Text = Texts.Get("card_hold_off");
+            CardHoldOffHint.Text = Texts.Get("card_hold_off_hint");
             SwIdleGuard.Text = Texts.Get("sw_idle_guard");
-            SwIdleGuardHint.Text = Texts.Get("sw_idle_guard_hint");
+            SwFullScreen.Text = Texts.Get("sw_fullscreen");
             GroupCountdown.Text = Texts.Get("group_countdown");
             LblCountdown.Text = Texts.Get("lbl_countdown");
             LblCountdownHint.Text = Texts.Get("lbl_countdown_hint");
@@ -385,6 +387,7 @@ public sealed partial class SettingsWindow : Window
 
             Active.IsOn = cfg.Active;
             IdleGuard.IsOn = cfg.IdleGuard;
+            FullScreenGuard.IsOn = cfg.FullScreenGuard;
             PrimaryOnly.IsOn = cfg.CountdownPrimaryOnly;
             TrustedOn.IsOn = cfg.TrustedNetworkPause;
             LogOn.IsOn = cfg.Log;
@@ -641,6 +644,13 @@ public sealed partial class SettingsWindow : Window
     {
         if (_filling) return;
         _host.Settings.IdleGuard = IdleGuard.IsOn;
+        _host.SaveSettings();
+    }
+
+    private void OnFullScreenGuardToggled(object sender, RoutedEventArgs e)
+    {
+        if (_filling) return;
+        _host.Settings.FullScreenGuard = FullScreenGuard.IsOn;
         _host.SaveSettings();
     }
 

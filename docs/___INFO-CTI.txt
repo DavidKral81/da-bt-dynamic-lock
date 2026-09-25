@@ -161,9 +161,18 @@ ZAMYKÁNÍ
     Kdy zamknout
         Ticho, po kterém se zamyká     12 s až 120 s (výchozí 45 s)
         Dosah                          viz oddíl 6
-        Nezamykat, když právě píšu nebo hýbu myší
+        Nezamykat, když…               dvě pojistky pro případ, že telefon
+                                       zmlkne, zatímco uživatel sedí u
+                                       počítače. Stačí, aby platila jedna:
+
+          Myš nebo klávesnice je právě používána
+          Nějaká aplikace nebo video běží na full screen
+                                       druhá pojistka řeší to, co první
+                                       nepokryje: u filmu se dvě hodiny
+                                       nikdo klávesnice nedotkne
+
                                        POZOR: kdokoli u stolu tím může
-                                       uzamknutí odkládat, proto je to
+                                       uzamknutí odkládat, proto jsou obě
                                        ve výchozím stavu vypnuté
 
     Odpočet před zamknutím
@@ -171,7 +180,7 @@ ZAMYKÁNÍ
                                        informace, nejde jím uzamknutí
                                        zrušit. Kliknutí jím projde na
                                        to, co je pod ním
-        Kde se odpočet ukáže           po desetinách výšky obrazovky,
+        Pozice odpočtu na obrazovce    po desetinách výšky obrazovky,
                                        výchozí 30 % odshora. Vodorovně
                                        je okénko vždy uprostřed
         Jen na hlavním monitoru        ve výchozím stavu je odpočet

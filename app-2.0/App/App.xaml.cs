@@ -946,6 +946,14 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
 
     public Reading<double> IdleSeconds() => UserIdle.Seconds();
 
+    /// <summary>
+    /// ⚠ Never true while the pictures are being taken. The screenshot run
+    /// puts its own windows up full screen, which would hold the lock off and
+    /// change the state the pictures are supposed to show.
+    /// </summary>
+    public Reading<bool> FullScreenAppRunning() =>
+        MadeUpData ? new Reading<bool>(false) : FullScreenApp.Running();
+
     public Reading<WifiConnection?> CurrentNetwork() => WifiNetwork.Current();
 
     public Reading<bool> LockScreen() => ScreenLock.Lock();
@@ -1174,6 +1182,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     private const int MenuIdleGuard = 7;
     private const int MenuAutostart = 8;
     private const int MenuEndPause = 9;
+    private const int MenuFullScreen = 10;
 
     // Submenu entries are numbered by BLOCK plus the position in their list,
     // so one comparison says both which setting was chosen and which value.
@@ -1230,6 +1239,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             new(0, null),
             new(MenuWatching, Texts.Get("sw_active"), Ticked: _settings.Active),
             new(MenuIdleGuard, Texts.Get("sw_idle_guard"), Ticked: _settings.IdleGuard),
+            new(MenuFullScreen, Texts.Get("sw_fullscreen"), Ticked: _settings.FullScreenGuard),
             new(MenuAutostart, Texts.Get("sw_autostart"), Ticked: AutostartOn()),
             new(0, null),
             new(MenuSilenceBase, Texts.Get("lbl_silence"), Children: Pick(
@@ -1347,6 +1357,12 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
 
             case MenuIdleGuard:
                 _settings.IdleGuard = !_settings.IdleGuard;
+                SaveSettings();
+                RefreshMenu();
+                break;
+
+            case MenuFullScreen:
+                _settings.FullScreenGuard = !_settings.FullScreenGuard;
                 SaveSettings();
                 RefreshMenu();
                 break;

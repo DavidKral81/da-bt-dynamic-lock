@@ -34,6 +34,13 @@ public sealed record Settings
     [JsonPropertyName("threshold_window_s")] public double ThresholdWindowSeconds { get; set; } = 6;
     [JsonPropertyName("idle_guard")] public bool IdleGuard { get; set; }
     [JsonPropertyName("idle_guard_s")] public double IdleGuardSeconds { get; set; } = 15;
+
+    /// <summary>
+    /// Hold the lock off while something fills the screen - a video, a
+    /// presentation, a game. Off by default, like the typing guard: both of
+    /// them let somebody at the desk postpone locking indefinitely.
+    /// </summary>
+    [JsonPropertyName("fullscreen_guard")] public bool FullScreenGuard { get; set; }
     [JsonPropertyName("trusted_network_pause")] public bool TrustedNetworkPause { get; set; }
 
     [JsonPropertyName("trusted_networks")]
@@ -88,6 +95,7 @@ public sealed record Settings
         CountdownFromSeconds = CountdownFromSeconds,
         IdleGuard = IdleGuard,
         IdleGuardSeconds = IdleGuardSeconds,
+        FullScreenGuard = FullScreenGuard,
         RssiThreshold = RssiThreshold,
         ThresholdWindowSeconds = ThresholdWindowSeconds,
     };

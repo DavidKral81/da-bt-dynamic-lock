@@ -32,6 +32,7 @@ internal static class EngineChecks
             CheckTrustedNetwork(scratch);
             CheckHistoryStore(scratch);
             CheckQuitMarker(scratch);
+            CheckFullScreenGuard(scratch);
         }
         finally
         {
@@ -225,6 +226,9 @@ internal static class EngineChecks
     {
         public bool ScreenLocked;
         public double Idle = 999;
+        public bool FullScreen;
+        public string? FullScreenProblem;
+        public int FullScreenAsked;
         public WifiConnection? Network;
         public string? NetworkProblem;
         public bool LockFails;
@@ -233,6 +237,14 @@ internal static class EngineChecks
 
         public Reading<bool> IsScreenLocked() => new(ScreenLocked);
         public Reading<double> IdleSeconds() => new(Idle);
+
+        public Reading<bool> FullScreenAppRunning()
+        {
+            FullScreenAsked++;
+            return FullScreenProblem is null
+                ? new Reading<bool>(FullScreen)
+                : Reading<bool>.Failed(false, FullScreenProblem);
+        }
 
         public Reading<WifiConnection?> CurrentNetwork() =>
             NetworkProblem is null
@@ -614,6 +626,63 @@ internal static class EngineChecks
         File.WriteAllText(Path.Combine(folder, QuitMarker.FileName), "not a note at all");
         Check("a note that makes no sense is ignored", false,
             QuitMarker.Applies(folder, switchedOffAt));
+    }
+
+    /// <summary>
+    /// The guard that holds the lock off while something fills the screen.
+    ///
+    /// Run through the loop rather than over Decide() alone: Core.Tests already
+    /// proves the decision, and what breaks in practice is the wiring - a
+    /// setting the loop never passes on, or a reading it never asks for.
+    /// </summary>
+    static void CheckFullScreenGuard(string scratch)
+    {
+        Console.WriteLine("\nThe guard for something filling the screen:");
+        // dryRun: false, or the loop never calls LockScreen at all and every
+        // count below would be zero for a reason that has nothing to do with
+        // the guard being checked.
+        var r = new Rig(scratch, "fullscreen", dryRun: false);
+        r.Cfg.FullScreenGuard = true;
+        r.System.FullScreen = true;
+        r.Hear();
+        r.Tick();
+
+        // The room has to KEEP chattering, not just once: a single burst ages
+        // out, the radio then looks deaf, and the deaf-radio guard holds the
+        // lock off - so the check would pass for the wrong reason entirely.
+        r.RoomKeepsChattering = true;
+        for (int i = 0; i < 100; i++) r.Tick();     // 50 s of silence
+        Check("a film playing holds the lock off", 0, r.System.LocksAttempted);
+        Check("...and the loop really asked", true, r.System.FullScreenAsked > 0);
+
+        // The film ends: nothing is watching the screen any more.
+        r.System.FullScreen = false;
+        for (int i = 0; i < 4; i++) r.Tick();
+        Check("when it ends, the screen locks", true, r.System.LocksAttempted > 0);
+
+        // Switched off, the question is not even asked - the loop ticks twice a
+        // second and an answer it would throw away is work for nothing.
+        var off = new Rig(scratch, "fullscreen-off", dryRun: false);
+        off.Cfg.FullScreenGuard = false;
+        off.System.FullScreen = true;
+        off.Hear();
+        off.RoomKeepsChattering = true;
+        for (int i = 0; i < 100; i++) off.Tick();
+        Check("with the guard off, a film does not stop the lock", true,
+            off.System.LocksAttempted > 0);
+        Check("...and Windows is not asked at all", 0, off.System.FullScreenAsked);
+
+        // ⚠ A reading that fails means "nothing is full screen", so the failure
+        // can only ever lead to MORE locking - never to a computer left open.
+        var broken = new Rig(scratch, "fullscreen-broken", dryRun: false);
+        broken.Cfg.FullScreenGuard = true;
+        broken.System.FullScreenProblem = "SHQueryUserNotificationState failed (0x80004005)";
+        broken.Hear();
+        broken.RoomKeepsChattering = true;
+        for (int i = 0; i < 100; i++) broken.Tick();
+        Check("a check that fails still locks", true, broken.System.LocksAttempted > 0);
+        Check("...and says so once, not twice a second", 1,
+            broken.LogText.Split("SHQueryUserNotificationState").Length - 1);
     }
 
     /// <summary>Did this run without throwing?</summary>

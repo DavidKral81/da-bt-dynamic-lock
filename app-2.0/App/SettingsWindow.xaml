@@ -314,22 +314,46 @@
                         </Grid>
                     </Border>
 
+                    <!-- Two ways of saying "somebody is here" under one heading:
+                         hands on the keyboard, and eyes on something filling the
+                         screen. They are separate switches because they are
+                         separate situations - a film runs for two hours without
+                         a keystroke (David, 25.09.2026). -->
                     <Border Style="{StaticResource Card}">
-                        <Grid ColumnSpacing="14">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <FontIcon Glyph="&#xE7C4;" FontSize="18" VerticalAlignment="Center"/>
-                            <StackPanel Grid.Column="1" Spacing="2">
-                                <TextBlock x:Name="SwIdleGuard" Text="" Style="{StaticResource CardTitle}"/>
-                                <TextBlock x:Name="SwIdleGuardHint" Text="" Style="{StaticResource CardHint}"/>
-                            </StackPanel>
-                            <ToggleSwitch x:Name="IdleGuard" Grid.Column="2" OnContent="" OffContent=""
-                                          MinWidth="0" VerticalAlignment="Center"
-                                          Toggled="OnIdleGuardToggled"/>
-                        </Grid>
+                        <StackPanel Spacing="4">
+                            <TextBlock x:Name="CardHoldOff" Text="" Style="{StaticResource CardTitle}"/>
+                            <TextBlock x:Name="CardHoldOffHint" Text="" Style="{StaticResource CardHint}"/>
+
+                            <Grid ColumnSpacing="14" Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <FontIcon Glyph="&#xE7C4;" FontSize="18" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="SwIdleGuard" Grid.Column="1" Text=""
+                                           Style="{StaticResource CardTitle}"
+                                           VerticalAlignment="Center"/>
+                                <ToggleSwitch x:Name="IdleGuard" Grid.Column="2" OnContent="" OffContent=""
+                                              MinWidth="0" VerticalAlignment="Center"
+                                              Toggled="OnIdleGuardToggled"/>
+                            </Grid>
+
+                            <Grid ColumnSpacing="14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <FontIcon Glyph="&#xE7F4;" FontSize="18" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="SwFullScreen" Grid.Column="1" Text=""
+                                           Style="{StaticResource CardTitle}"
+                                           VerticalAlignment="Center"/>
+                                <ToggleSwitch x:Name="FullScreenGuard" Grid.Column="2" OnContent="" OffContent=""
+                                              MinWidth="0" VerticalAlignment="Center"
+                                              Toggled="OnFullScreenGuardToggled"/>
+                            </Grid>
+                        </StackPanel>
                     </Border>
 
                     <TextBlock x:Name="GroupCountdown" Text="" Style="{StaticResource GroupHead}"/>

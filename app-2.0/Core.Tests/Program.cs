@@ -62,6 +62,36 @@ Check("without work show the countdown", LockAction.Countdown,
 Check("countdown hides while working even just before locking", LockAction.None,
     DecisionMaker.Decide(po, 19.5, true, 0, 1).Action);
 
+Console.WriteLine("\nFull screen guard:");
+// The case the typing guard cannot cover: a film runs for two hours without a
+// keystroke, so "nobody has touched anything" says nothing about the chair.
+var fs = cfg with { FullScreenGuard = true };
+Check("a film playing full screen - do not lock", LockAction.None,
+    DecisionMaker.Decide(fs, 60, true, 0, 999, fullScreen: true).Action);
+Check("...and it says which guard", "idle_guard",
+    DecisionMaker.Decide(fs, 60, true, 0, 999, fullScreen: true).Reason);
+Check("nothing full screen - lock", LockAction.Lock,
+    DecisionMaker.Decide(fs, 60, true, 0, 999, fullScreen: false).Action);
+Check("guard disabled - lock even with a film on", LockAction.Lock,
+    DecisionMaker.Decide(cfg, 60, true, 0, 999, fullScreen: true).Action);
+
+// The two guards are separate situations, not two halves of one condition:
+// either on its own has to hold the lock off, and each has to work with the
+// other switched off.
+Check("typing alone holds it off with the film guard off", LockAction.None,
+    DecisionMaker.Decide(cfg with { IdleGuard = true }, 60, true, 0, 3,
+        fullScreen: false).Action);
+Check("a film alone holds it off with the typing guard off", LockAction.None,
+    DecisionMaker.Decide(fs, 60, true, 0, 999, fullScreen: true).Action);
+Check("both on, neither true - lock", LockAction.Lock,
+    DecisionMaker.Decide(cfg with { IdleGuard = true, FullScreenGuard = true },
+        60, true, 0, 999, fullScreen: false).Action);
+
+// A full screen film must not put up a countdown that ends in nothing either.
+Check("no countdown while a film is on", LockAction.None,
+    DecisionMaker.Decide(fs with { Countdown = true }, 15, true, 0, 999,
+        fullScreen: true).Action);
+
 Console.WriteLine("\nBehind the lock screen nothing is decided:");
 // 41 of 68 locks in the log were locking an already locked screen.
 Check("locked screen wins over a long silence", LockAction.Stop,

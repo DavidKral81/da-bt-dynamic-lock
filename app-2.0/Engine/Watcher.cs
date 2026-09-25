@@ -50,6 +50,10 @@ public interface IWatcherSystem
 {
     Reading<bool> IsScreenLocked();
     Reading<double> IdleSeconds();
+
+    /// <summary>Is something filling the screen - a video, a presentation, a game?</summary>
+    Reading<bool> FullScreenAppRunning();
+
     Reading<WifiConnection?> CurrentNetwork();
     Reading<bool> LockScreen();
 
@@ -197,9 +201,10 @@ public sealed class Watcher
         double pause = _watch.PauseLeft;
         bool trusted = OnTrustedNetwork(cfg);
         double idle = Idle();
+        bool fullScreen = FullScreen(cfg);
 
         var decision = DecisionMaker.Decide(cfg.ForWatching(), _watch.Silence(),
-            _watch.Armed, pause, idle, locked, trusted);
+            _watch.Armed, pause, idle, locked, trusted, fullScreen);
 
         // Back from a state in which nothing was watched: the switch was off, a
         // pause ran out, or the machine left a network without locking (or that
@@ -221,7 +226,7 @@ public sealed class Watcher
             _log.Write($"Watching resumed after '{_notWatching}' - the silence is "
                 + "measured again from now.");
             decision = DecisionMaker.Decide(cfg.ForWatching(), _watch.Silence(),
-                _watch.Armed, pause, idle, locked, trusted);
+                _watch.Armed, pause, idle, locked, trusted, fullScreen);
         }
         _notWatching = DecisionMaker.NotWatching.Contains(decision.Reason)
             ? decision.Reason : null;
@@ -453,6 +458,36 @@ public sealed class Watcher
             _log.Write(reading.Problem);
         return reading.Value;
     }
+
+    /// <summary>
+    /// Is something filling the screen? Only asked when the setting is on -
+    /// the loop ticks twice a second and there is no sense asking Windows a
+    /// question whose answer would be thrown away.
+    ///
+    /// A failed reading means "no", so it can only ever lead to MORE locking.
+    /// Said once, for the same reason the Wi-Fi check says it once.
+    /// </summary>
+    private bool FullScreen(Settings cfg)
+    {
+        if (!cfg.FullScreenGuard)
+            return false;
+
+        var reading = _system.FullScreenAppRunning();
+        if (!reading.Ok)
+        {
+            if (!_fullScreenCheckFailed)
+            {
+                _fullScreenCheckFailed = true;
+                _log.Write(reading.Problem ?? "the full screen check failed");
+            }
+            return false;
+        }
+
+        _fullScreenCheckFailed = false;
+        return reading.Value;
+    }
+
+    private bool _fullScreenCheckFailed;
 
     /// <summary>
     /// Null does not mean zero - it means the reading was deliberately

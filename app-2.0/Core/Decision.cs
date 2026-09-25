@@ -27,6 +27,9 @@ public sealed record WatchSettings
     public bool IdleGuard { get; init; }
     public double IdleGuardSeconds { get; init; } = 15;
 
+    /// <summary>Hold the lock off while something fills the screen.</summary>
+    public bool FullScreenGuard { get; init; }
+
     /// <summary>
     /// How strong the signal has to be to count as "at the desk", in dBm. Null
     /// means hearing it at all is enough.
@@ -82,6 +85,8 @@ public static class DecisionMaker
     /// <param name="armed">False once locked, until the phone comes back.</param>
     /// <param name="pauseLeft">Seconds left of a manual pause.</param>
     /// <param name="idle">Seconds since the last keyboard or mouse input.</param>
+    /// <param name="fullScreen">Something is filling the screen - a video, a
+    /// presentation, a game.</param>
     public static Decision Decide(
         WatchSettings cfg,
         double? silence,
@@ -89,7 +94,8 @@ public static class DecisionMaker
         double pauseLeft,
         double idle,
         bool screenLocked = false,
-        bool trustedNetwork = false)
+        bool trustedNetwork = false,
+        bool fullScreen = false)
     {
         if (!cfg.Active)
             return new Decision(LockAction.Stop, "off", 0, "st_off");
@@ -119,10 +125,17 @@ public static class DecisionMaker
         double limit = cfg.SilenceSeconds;
         int remaining = (int)Math.Round(limit - silence.Value, MidpointRounding.AwayFromZero);
 
-        // The idle guard is evaluated BEFORE the countdown. When we already know
+        // The guards are evaluated BEFORE the countdown. When we already know
         // there will be no locking, there is no point in scaring the user with a
         // countdown that ends in nothing.
-        bool idleGuard = cfg.IdleGuard && idle < cfg.IdleGuardSeconds;
+        //
+        // Two of them, and they answer the same question in different ways:
+        // typing says "somebody is working here", full screen says "somebody is
+        // watching this" - which is the case typing cannot cover, because a film
+        // runs for two hours without a single keystroke. Either one is enough to
+        // hold the lock off; they are not two halves of one condition.
+        bool idleGuard = (cfg.IdleGuard && idle < cfg.IdleGuardSeconds)
+            || (cfg.FullScreenGuard && fullScreen);
 
         if (silence.Value >= limit)
         {
