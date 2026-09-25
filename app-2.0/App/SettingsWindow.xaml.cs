@@ -291,7 +291,6 @@ public sealed partial class SettingsWindow : Window
             LblRange.Text = Texts.Get("lbl_range");
             LblRangeHint.Text = Texts.Get("lbl_range_hint");
             CardHoldOff.Text = Texts.Get("card_hold_off");
-            CardHoldOffHint.Text = Texts.Get("card_hold_off_hint");
             SwIdleGuard.Text = Texts.Get("sw_idle_guard");
             SwFullScreen.Text = Texts.Get("sw_fullscreen");
             GroupCountdown.Text = Texts.Get("group_countdown");

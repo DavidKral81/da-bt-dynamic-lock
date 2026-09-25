@@ -201,9 +201,6 @@ public static class Texts
         ["opt_range_edge"] = "{0} dBm – telefon v kapse",
         ["opt_range_plain"] = "{0} dBm",
         ["card_hold_off"] = "Nezamykat, když…",
-        ["card_hold_off_hint"] = "Pojistky pro případ, že telefon zmlkne, "
-                               + "zatímco uživatel sedí u počítače. Stačí, "
-                               + "aby platila jedna z nich.",
         ["sw_idle_guard"] = "Myš nebo klávesnice je právě používána",
         ["sw_fullscreen"] = "Nějaká aplikace nebo video běží na full screen",
         ["group_countdown"] = "Odpočet před zamknutím",
@@ -410,9 +407,6 @@ public static class Texts
         ["opt_range_edge"] = "{0} dBm - a phone in a pocket",
         ["opt_range_plain"] = "{0} dBm",
         ["card_hold_off"] = "Do not lock while…",
-        ["card_hold_off_hint"] = "Safeguards for when the phone goes quiet "
-                               + "while somebody is sitting at the computer. "
-                               + "Either one on its own is enough.",
         ["sw_idle_guard"] = "The mouse or keyboard is in use",
         ["sw_fullscreen"] = "An application or a video is running full screen",
         ["group_countdown"] = "The countdown before locking",
