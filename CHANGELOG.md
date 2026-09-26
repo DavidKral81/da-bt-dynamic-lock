@@ -15,6 +15,13 @@ there and nowhere else.
   installer and its tests. It stays in the history and in the 1.x releases.
   The check that every phone text exists in both languages moved into
   `tools/check_docs.py`, the reference measurement into `tools/`.
+- **Settings survive a file held open for a moment.** Saving writes the new
+  file beside the old one and moves it over; while an antivirus scan or a
+  sync client holds the old one, that move is refused. It is now retried for
+  up to two seconds instead of losing the change.
+- **The setup file no longer carries its icon twice** (31.8 KB less).
+- `app-2.0/build-setup.ps1` puts the finished setup in `_output/setup` and
+  checks it before copying it there.
 
 ## 2.0 — 26 Sep 2026
 
