@@ -146,6 +146,24 @@ internal static class PlatformChecks
         Check("a path with & in it stays valid XML", true,
             awkward.Contains("C:\\a &amp; b.exe"));
 
+        // Whose task is it? The old shared task name is only taken over when
+        // it is ours - somebody else's must be left alone.
+        string sid = System.Security.Principal.WindowsIdentity.GetCurrent().User!.Value;
+        static string Owned(string userId) =>
+            "<?xml version=\"1.0\" encoding=\"UTF-16\"?>"
+            + "<Task xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">"
+            + $"<Principals><Principal id=\"Author\"><UserId>{userId}</UserId>"
+            + "</Principal></Principals></Task>";
+        Check("a task stored under this user's SID is ours", true,
+            Autostart.OwnedByCurrentUser(Owned(sid)));
+        Check("...and under DOMAIN\\user too", true,
+            Autostart.OwnedByCurrentUser(Owned(Autostart.CurrentUser())));
+        Check("another user's task is not", false,
+            Autostart.OwnedByCurrentUser(Owned("S-1-5-21-1-2-3-1001")));
+        Check("...nor one without an owner", false,
+            Autostart.OwnedByCurrentUser(Owned("")));
+        Check("...nor rubbish", false, Autostart.OwnedByCurrentUser("not xml at all"));
+
         Check("the account is DOMAIN\\user", true,
             Autostart.CurrentUser().EndsWith(Environment.UserName,
                 StringComparison.OrdinalIgnoreCase));
@@ -215,6 +233,21 @@ internal static class PlatformChecks
         Check("...and matches the account this runs under", true,
             user.Value.Length > 0 && string.Equals(user.Value, Environment.UserName,
                 StringComparison.OrdinalIgnoreCase));
+
+        // The sign-in time the note about switching the app off hangs on. It
+        // sits AFTER the three strings, so a wrong string length shifts it into
+        // rubbish; the window below is where a real answer has to fall.
+        var signedIn = SessionState.SignedInAt();
+        Check("the sign-in time comes back", true, signedIn.Ok);
+        DateTime now = DateTime.UtcNow;
+        DateTime booted = now - TimeSpan.FromMilliseconds(Environment.TickCount64);
+        Check("...after the computer started and not in the future", true,
+            signedIn.Value is DateTime at
+            && at >= booted - TimeSpan.FromMinutes(1) && at <= now);
+        Console.WriteLine($"        (signed in {signedIn.Value?.ToLocalTime():dd.MM.yyyy HH:mm:ss}, "
+            + $"started {booted.ToLocalTime():dd.MM.yyyy HH:mm:ss})");
+        Check("...and is the same moment when asked again", signedIn.Value,
+            SessionState.SignedInAt().Value);
     }
 
     // ------------------------------------------------------------ idle

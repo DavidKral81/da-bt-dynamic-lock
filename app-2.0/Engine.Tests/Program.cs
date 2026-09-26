@@ -77,7 +77,7 @@ internal static class EngineChecks
         File.WriteAllText(path, """
             {
               "_about": "documentation that must survive a save",
-              "target": "DaKing",
+              "target": "Work",
               "silence_s": 30,
               "trusted_networks": [{"ssid": "Home", "bssid": "AA:BB:CC:DD:EE:FF"}],
               "something_a_newer_version_added": 7
@@ -85,7 +85,7 @@ internal static class EngineChecks
             """);
         var (loaded, ok) = Settings.Load(path);
         Check("a saved file reads back", null, ok);
-        Check("...the target", "DaKing", loaded.Target);
+        Check("...the target", "Work", loaded.Target);
         Check("...the threshold", 30.0, loaded.SilenceSeconds);
         Check("...and a saved network, both halves", "Home:AA:BB:CC:DD:EE:FF",
             $"{loaded.TrustedNetworks[0].Ssid}:{loaded.TrustedNetworks[0].Bssid}");
@@ -97,6 +97,9 @@ internal static class EngineChecks
         Check("...and so does a key this version does not know", true,
             written.Contains("something_a_newer_version_added"));
         Check("the change itself landed", 60.0, Settings.Load(path).Value.SilenceSeconds);
+        // Written beside the file and moved over it, so a reader never meets
+        // half a file; the stand-in must not be left lying there.
+        Check("...and nothing is left beside it", false, File.Exists(path + ".new"));
 
         File.WriteAllText(path, "{ this is not json");
         var (broken, complaint) = Settings.Load(path);
@@ -369,7 +372,7 @@ internal static class EngineChecks
         for (int i = 0; i < 100; i++) r.Tick();     // 50 s with the switch off
         Check("switched off, nothing happens", "Off/st_off", r.View.Last);
 
-        // Reported by David 11.09.2026: the silence kept counting while nothing
+        // Found in use on 11.09.2026: the silence kept counting while nothing
         // was watched, so the first tick after switching back on found it long
         // past the threshold and locked at once, with no countdown.
         r.Cfg.Active = true;
@@ -573,20 +576,21 @@ internal static class EngineChecks
         Console.WriteLine("\nThe note left when the user switches the app off");
         string folder = Path.Combine(scratch, "quit-marker");
 
-        // A clock of its own, so a restart can be played properly: a real one
-        // moves BOTH the uptime counter and the wall clock, and a check that
-        // only moves one of them proves nothing.
+        // The sign-in is handed in, so a new one can be played without signing
+        // out. Sleep, locking and the passing of hours do not appear here at
+        // all: they do not change the sign-in, which is the whole point.
         var quitAt = new DateTime(2026, 9, 19, 22, 0, 0);
-        const long switchedOffAt = 500_000;     // the machine had been up 500 s
+        var signedIn = new DateTime(2026, 9, 19, 7, 58, 12, DateTimeKind.Utc);
+        var signedInAgain = new DateTime(2026, 9, 20, 6, 41, 3, DateTimeKind.Utc);
 
         Check("no note, so a scheduled start may run", false,
-            QuitMarker.Applies(folder, quitAt, switchedOffAt));
+            QuitMarker.Applies(folder, signedIn));
 
         Check("writing the note reports no problem", null,
-            QuitMarker.Write(folder, quitAt, switchedOffAt));
+            QuitMarker.Write(folder, quitAt, signedIn));
 
-        Check("a scheduled start minutes later stays away", true,
-            QuitMarker.Applies(folder, quitAt.AddMinutes(5), switchedOffAt + 300_000));
+        Check("a scheduled start in the same sign-in stays away", true,
+            QuitMarker.Applies(folder, signedIn));
 
         // The task knocks every five minutes for as long as the note lasts -
         // 288 times a day. The log is told once, not 288 times.
@@ -595,49 +599,45 @@ internal static class EngineChecks
         Check("...the ones after it are not", false,
             QuitMarker.FirstRefusal(folder));
         Check("...and marking it does not spoil the note", true,
-            QuitMarker.Applies(folder, quitAt.AddMinutes(10), switchedOffAt + 600_000));
-        QuitMarker.Write(folder, quitAt, switchedOffAt);
+            QuitMarker.Applies(folder, signedIn));
+        QuitMarker.Write(folder, quitAt, signedIn);
         Check("a new quit is reported again", true,
             QuitMarker.FirstRefusal(folder));
 
-        // Five hours asleep. ⚠ The counter KEEPS COUNTING while the machine
-        // sleeps - measured 20.09.2026 on this machine: GetTickCount64 said
-        // 50.44 h and the system had indeed been up 50.44 h, while the unbiased
-        // time, which leaves sleep out, said 41.64 h. So sleep moves the clock
-        // and the counter together and the session start does not budge, which
-        // is what makes closing the lid safe here.
-        Check("...and still stays away after five hours asleep", true,
-            QuitMarker.Applies(folder, quitAt.AddHours(5),
-                switchedOffAt + (long)TimeSpan.FromHours(5).TotalMilliseconds));
+        // ⚠ A NEW SIGN-IN ends the note - after signing out, a restart, or a
+        // "Shut down" with fast startup. Found in review on 26.09.2026: the
+        // note used to hang on the uptime, which neither signing out nor fast
+        // startup resets, so the app did not start the next morning.
+        // Nothing in the comparison grows with time, so it also stays expired
+        // however long the new sign-in lasts - the fault an earlier,
+        // uptime-only version of this note had.
+        Check("after signing in again the note has expired", false,
+            QuitMarker.Applies(folder, signedInAgain));
 
-        // A restart: the counter starts again from nearly nothing AND hours
-        // have passed on the clock. That, and only that, makes the note expire
-        // (David chose this of the two on 19.09.2026).
-        var afterReboot = quitAt.AddHours(9);
-        Check("after a restart the note has expired", false,
-            QuitMarker.Applies(folder, afterReboot, uptimeMs: 12_000));
+        // Not knowing the sign-in reads as "no note": watching more than asked
+        // is a nuisance, watching less is the failure that matters.
+        Check("an unknown sign-in never lets the note hold", false,
+            QuitMarker.Applies(folder, null));
+        Check("...and a note cannot be written without one, loudly", true,
+            QuitMarker.Write(folder, quitAt, null) is not null);
 
-        // ⚠ AND IT STAYS EXPIRED. Found in review on 20.09.2026: comparing
-        // uptimes alone, a note written after 500 s came back to life once the
-        // NEW session had also been up 500 s - so an app that crashed later
-        // that day would not be restarted, and the log would have said the
-        // user switched it off. A note has to die with its session.
-        Check("...and does not come back when the new session runs longer", false,
-            QuitMarker.Applies(folder, afterReboot.AddHours(1), switchedOffAt + 3_600_000));
+        // The zone must not matter: the note is compared in UTC. A local-time
+        // comparison expired it when the clocks went back.
+        Check("the same sign-in given in local time still matches", true,
+            QuitMarker.Applies(folder, signedIn.ToLocalTime()));
 
         // Starting the app by hand means what it says.
         QuitMarker.Clear(folder);
         Check("starting by hand tears the note up", false,
-            QuitMarker.Applies(folder, quitAt.AddMinutes(5), switchedOffAt + 300_000));
+            QuitMarker.Applies(folder, signedIn));
         Check("...and tearing up a note that is not there is quiet", true,
             Quiet(() => QuitMarker.Clear(folder)));
 
-        // Rubbish reads as "no note": watching more than asked is a nuisance,
-        // watching less is the failure that matters.
+        // Rubbish reads as "no note" too.
         Directory.CreateDirectory(folder);
         File.WriteAllText(Path.Combine(folder, QuitMarker.FileName), "not a note at all");
         Check("a note that makes no sense is ignored", false,
-            QuitMarker.Applies(folder, switchedOffAt));
+            QuitMarker.Applies(folder, signedIn));
     }
 
     /// <summary>
@@ -667,8 +667,8 @@ internal static class EngineChecks
         Check("a film playing holds the lock off", 0, r.System.LocksAttempted);
         Check("...and the loop really asked", true, r.System.FullScreenAsked > 0);
 
-        // ⚠ THE FILM ENDS AND THE COUNTDOWN HAS TO START OVER. Reported by
-        // David 26.09.2026: leaving full screen locked the screen THAT INSTANT,
+        // ⚠ THE FILM ENDS AND THE COUNTDOWN HAS TO START OVER. Found in
+        // use on 26.09.2026: leaving full screen locked the screen THAT INSTANT,
         // with no countdown, because the silence had gone on piling up for the
         // whole film and was hours past the threshold. Same cause as unticking
         // a Wi-Fi network on 11.09.2026 - a guard that holds the lock off is a

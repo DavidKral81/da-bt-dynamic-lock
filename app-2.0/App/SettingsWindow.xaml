@@ -91,8 +91,8 @@
                         <TextBlock x:Name="NavSignal" Text="" VerticalAlignment="Center"/>
                     </StackPanel>
                 </ListViewItem>
-                <!-- Application second, right under the signal monitor (David,
-                     19.09.2026). -->
+                <!-- Application second, right under the signal monitor: it is
+                     the page reached for after the chart. -->
                 <ListViewItem Tag="app">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <FontIcon Glyph="&#xE713;" FontSize="16"/>
@@ -134,8 +134,8 @@
                  down and the rest of the window empty. -->
             <!-- ⚠ The ceiling is on the PAGES, not here. The chart has none:
                  a wide window or a maximised one should give it the whole
-                 width, because a squeezed chart says nothing (David,
-                 19.09.2026). The settings pages keep theirs - a line of text
+                 width, because a squeezed chart says nothing. The settings
+                 pages keep theirs - a line of text
                  stretched across a wide monitor is hard to read, and this
                  project's own rules say to hold a column at about 600. -->
             <Grid x:Name="Pages" HorizontalAlignment="Stretch"
@@ -227,7 +227,7 @@
                     <!-- The Wi-Fi cards live on this page too: a network where
                          locking is not wanted is part of the same question as
                          which phone to listen for - what has to be true for the
-                         screen to stay on (David, 19.09.2026). -->
+                         screen to stay on. -->
                     <Border Style="{StaticResource Card}">
                         <Grid ColumnSpacing="14">
                             <Grid.ColumnDefinitions>
@@ -318,7 +318,7 @@
                          hands on the keyboard, and eyes on something filling the
                          screen. They are separate switches because they are
                          separate situations - a film runs for two hours without
-                         a keystroke (David, 25.09.2026). -->
+                         a keystroke. -->
                     <Border Style="{StaticResource Card}">
                         <StackPanel Spacing="4">
                             <TextBlock x:Name="CardHoldOff" Text="" Style="{StaticResource CardTitle}"/>

@@ -68,7 +68,7 @@ public static class DecisionMaker
     /// Reasons under which the lock is being held off. Coming back from any of
     /// them has to restart the silence measurement - otherwise the first tick
     /// after the return finds silence long past the threshold and locks
-    /// instantly, with no countdown. Reported by David 11.09.2026 after
+    /// instantly, with no countdown. Found in use on 11.09.2026 after
     /// unticking a network; unpausing and switching the app back on had the
     /// very same cause.
     ///

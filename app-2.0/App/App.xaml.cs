@@ -98,11 +98,17 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         // Nobody has chosen a language yet - follow Windows. Written back so
         // the file says what the app is actually doing rather than leaving the
         // answer to be worked out again on every start.
+        //
+        // ⚠ NOT when the file could not be read. The defaults stand in for it
+        // then, and saving them would put an empty device and no saved networks
+        // over the user's real settings - for a file that was only busy, or
+        // half-written, for a moment.
         string? saveProblem = null;
         if (string.IsNullOrEmpty(_settings.Language))
         {
             _settings.Language = Texts.SystemLanguage();
-            saveProblem = _settings.Save(_options.SettingsPath);
+            if (problem is null)
+                saveProblem = _settings.Save(_options.SettingsPath);
         }
         Texts.Language = _settings.Language;
 
@@ -175,25 +181,42 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         // installed copy's either.
         if (!_options.DryRun)
         {
+            // The task starts the app the same way at sign-in and on its five
+            // minute repeat - one action serves both triggers. The note tells
+            // them apart without needing to: it belongs to one sign-in, so at a
+            // new sign-in it simply no longer applies.
             if (_options.Scheduled)
             {
-                if (QuitMarker.Applies(_options.DataFolder, Environment.TickCount64))
+                var signedIn = SessionState.SignedInAt();
+                if (!signedIn.Ok)
+                    _log.Write($"The sign-in time could not be read ({signedIn.Problem}) "
+                        + "- starting, whatever note was left.");
+
+                if (QuitMarker.Applies(_options.DataFolder, signedIn.Value))
                 {
                     if (QuitMarker.FirstRefusal(_options.DataFolder))
                         _log.Write("Started by the schedule, but the user switched the app "
-                            + "off since the computer started - staying off until a "
-                            + "restart (said once, not every five minutes).");
+                            + "off in this sign-in - staying off until the next one "
+                            + "(said once, not every five minutes).");
                     Exit();
                     Environment.Exit(0);
                     return;
                 }
-                _log.Write("Started by the schedule - the app was not running.");
+
+                // Said apart, because the log is read to find crashes: a start
+                // right after signing in is the ordinary morning, and calling it
+                // "the app was not running" made every morning look like one.
+                bool atSignIn = signedIn.Value is DateTime at
+                    && DateTime.UtcNow - at < TimeSpan.FromMinutes(3);
+                _log.Write(atSignIn
+                    ? "Started at sign-in."
+                    : "Started by the schedule - the app was not running.");
             }
             else
             {
-                // Started by hand (or at logon), which says the opposite of the
-                // note. Torn up here rather than when quitting, so a note left
-                // by a copy that crashed mid-quit cannot outlive its meaning.
+                // Started by hand, which says the opposite of the note. Torn up
+                // here rather than when quitting, so a note left by a copy that
+                // crashed mid-quit cannot outlive its meaning.
                 QuitMarker.Clear(_options.DataFolder);
             }
         }
@@ -1034,13 +1057,13 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         _log.Write("Quitting, asked for by the user.");
 
         // Left BEFORE the process goes, so the repeating task knows this was
-        // meant. It lasts until the computer restarts - switching the app off
-        // now is not the same as never again, and "never again" is what the
+        // meant. It lasts until the next sign-in - switching the app off now is
+        // not the same as never again, and "never again" is what the
         // start-at-logon switch is for.
         if (!_options.DryRun)
         {
             string? trouble = QuitMarker.Write(
-                _options.DataFolder, DateTime.Now, Environment.TickCount64);
+                _options.DataFolder, DateTime.Now, SessionState.SignedInAt().Value);
             if (trouble is not null)
                 _log.Write($"The app will be started again by the schedule: {trouble}");
         }
@@ -1076,7 +1099,11 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     /// longer exists.
     /// </summary>
     private AutostartTarget AutostartWhere() => new(
-        TaskName: AppInfo.Name,
+        // One task per user. Task names are shared by the whole machine, and
+        // one name for everybody let a second user's install overwrite the
+        // first user's task - and an uninstall delete it.
+        TaskName: $"{AppInfo.Name} - {Environment.UserName}",
+        LegacyTaskName: AppInfo.Name,
         Program: Environment.ProcessPath
             ?? Path.Combine(AppInfo.ProgramFolder, AppInfo.Name + ".exe"),
         // Tells the copy the task starts that it was the SCHEDULE, not a
@@ -1213,8 +1240,8 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     private const int BlockSize = 100;
 
     /// <summary>
-    /// The menu on a right click - the one 1.5 had, item for item (David,
-    /// 19.09.2026), so everything reachable there is reachable here.
+    /// The menu on a right click - the one 1.5 had, item for item, so
+    /// everything reachable there is reachable here.
     ///
     /// The labels come from the SAME keys as the settings window. 1.5 learned
     /// why: its menu said "Active" where the window said "Automatic locking

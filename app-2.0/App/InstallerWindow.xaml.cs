@@ -47,6 +47,9 @@ public sealed partial class InstallerWindow : Window
     /// <summary>True once the work has run and the window shows the outcome.</summary>
     private bool _finished;
 
+    /// <summary>True while installing or removing - the window will not close.</summary>
+    private bool _working;
+
     public nint Handle { get; }
 
     /// <summary>Stops the log writing into the settings folder once it is removed.</summary>
@@ -73,7 +76,20 @@ public sealed partial class InstallerWindow : Window
         // Closing the window ends the process. There is no tray icon and no
         // loop behind this one - leaving it would keep an invisible copy of the
         // program alive holding the very files it just wrote.
-        AppWindow.Closing += (_, _) => Quit();
+        //
+        // ⚠ Except while the work runs. The buttons are off then, but the cross
+        // in the title bar is not, and ending the process mid-copy left a
+        // half-filled Program Files folder - with exit code 0, because there
+        // was no result yet to say otherwise.
+        AppWindow.Closing += (_, args) =>
+        {
+            if (_working)
+            {
+                args.Cancel = true;
+                return;
+            }
+            Quit();
+        };
 
         LanguageChoice.ItemsSource = Texts.Languages;
 
@@ -247,11 +263,6 @@ public sealed partial class InstallerWindow : Window
     internal void HideWindow() => AppWindow.Hide();
 
     /// <summary>
-    /// Does the window say which version it is? Checked by the picture run in
-    /// both states, because the rewrite already lost it once and nobody
-    /// noticed until the installer was in use.
-    /// </summary>
-    /// <summary>
     /// Does what the window laid out fit inside it? Null when it does, else how
     /// far it runs past the bottom. Checked by the picture run: the English
     /// outcome of a removal with problems came out 22 DIP taller than its
@@ -265,6 +276,11 @@ public sealed partial class InstallerWindow : Window
             : $"{Root.ActualHeight:F1} DIP of content in {inside:F1} DIP of window";
     }
 
+    /// <summary>
+    /// Does the window say which version it is? Checked by the picture run in
+    /// both states, because the rewrite already lost it once and nobody
+    /// noticed until the installer was in use.
+    /// </summary>
     internal bool ShowsVersion =>
         VersionText.Visibility == Visibility.Visible
         && VersionText.Text.Contains(AppInfo.Version, StringComparison.Ordinal);
@@ -314,22 +330,34 @@ public sealed partial class InstallerWindow : Window
         // Off the UI thread: copying 69 MB and waiting for a running copy to go
         // takes seconds, and a window that stops repainting looks like one that
         // has crashed.
-        SetupReport report = await Task.Run(() =>
+        _working = true;
+        SetupReport report;
+        try
         {
-            try
+            report = await Task.Run(() =>
             {
-                return _uninstall
-                    ? Setup.Uninstall(Where(), alsoData, Step)
-                    : Setup.Install(Where(), Environment.ProcessPath ?? "", what,
-                        uninstallerSource: null, AppInfo.Version, language, Step);
-            }
-            catch (Exception ex)
-            {
-                // Never swallowed: a setup that stops halfway and says nothing
-                // leaves a half-installed program behind and no way to tell.
-                return new SetupReport(new[] { ex.Message });
-            }
-        });
+                try
+                {
+                    return _uninstall
+                        ? Setup.Uninstall(Where(), alsoData, Step)
+                        : Setup.Install(Where(), Environment.ProcessPath ?? "", what,
+                            uninstallerSource: null, AppInfo.Version, language, Step);
+                }
+                catch (Exception ex)
+                {
+                    // Never swallowed: a setup that stops halfway and says
+                    // nothing leaves a half-installed program behind and no way
+                    // to tell.
+                    return new SetupReport(new[] { ex.Message });
+                }
+            });
+        }
+        finally
+        {
+            // In a finally, so a failure here can never leave a window that
+            // refuses to close.
+            _working = false;
+        }
 
         // The settings folder is where the log lives. Once it is really gone,
         // the lines that follow go to the console only - written to the file,

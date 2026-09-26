@@ -209,8 +209,8 @@ public sealed class Watcher
         // Back from a state in which nothing was watched: the switch was off, a
         // pause ran out, or the machine left a network without locking (or that
         // network was unticked). The silence kept counting meanwhile, so
-        // deciding on it would lock at once and skip the countdown. Reported by
-        // David 11.09.2026 after unticking a network; the other two had the
+        // deciding on it would lock at once and skip the countdown. Found in use
+        // on 11.09.2026 after unticking a network; the other two had the
         // very same cause.
         //
         // A locked screen is NOT such a return. Decide() weighs screen_locked

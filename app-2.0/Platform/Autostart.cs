@@ -1,24 +1,31 @@
 using System.Diagnostics;
 using System.Security;
+using System.Security.Principal;
 using System.Text;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace DaBtDynamicLock.Platform;
 
 /// <summary>Where an autostart entry should point, and what to call it.</summary>
-/// <param name="TaskName">The scheduled task's name.</param>
+/// <param name="TaskName">The scheduled task's name. One per user: tasks share
+/// one name space for the whole machine.</param>
 /// <param name="Program">What gets started.</param>
 /// <param name="Arguments">What it is started with; empty for none.</param>
 /// <param name="WorkingDirectory">Where it starts from.</param>
 /// <param name="ShortcutPath">The fallback shortcut, in the Startup folder.</param>
 /// <param name="ScratchFolder">Where the task's XML may be written while it is
 /// handed to Windows. It is deleted again straight away.</param>
+/// <param name="LegacyTaskName">The one name every earlier version used for
+/// every user. Taken over - removed - only when it belongs to THIS user.</param>
 public sealed record AutostartTarget(
     string TaskName,
     string Program,
     string Arguments,
     string WorkingDirectory,
     string ShortcutPath,
-    string ScratchFolder);
+    string ScratchFolder,
+    string? LegacyTaskName = null);
 
 /// <summary>
 /// Starting the app when the user signs in.
@@ -54,8 +61,12 @@ public static class Autostart
         if (!refresh && _known is bool remembered && now - _knownAt < RememberSeconds)
             return remembered;
 
+        // A task under the old shared name counts while it is this user's:
+        // it still starts the app at sign-in, and the switch must not say "off"
+        // over it. The next switch-on replaces it with the per-user one.
         bool found = Run($"schtasks /Query /TN \"{target.TaskName}\"").Ok
-            || File.Exists(target.ShortcutPath);
+            || File.Exists(target.ShortcutPath)
+            || LegacyIsOurs(target);
         _known = found;
         _knownAt = now;
         return found;
@@ -92,6 +103,7 @@ public static class Autostart
         if (task.Ok)
         {
             log("Start at logon enabled (scheduled task).");
+            RemoveLegacyIfOurs(target, log);
             return;
         }
 
@@ -110,6 +122,7 @@ public static class Autostart
         // running from the Startup folder, or from neither. The check at the
         // end of Set() is what decides whether this worked.
         Run($"schtasks /Delete /F /TN \"{target.TaskName}\"");
+        RemoveLegacyIfOurs(target, log);
         try
         {
             File.Delete(target.ShortcutPath);
@@ -249,6 +262,61 @@ public static class Autostart
               </Actions>
             </Task>
             """;
+    }
+
+    /// <summary>
+    /// Is there a task under the old shared name, and is it THIS user's?
+    ///
+    /// Every version before this one registered the same task name for every
+    /// user, and task names are one name space for the whole machine - so a
+    /// second user installing overwrote the first one's task, and uninstalling
+    /// deleted it. Taking the old name over is therefore only safe when it is
+    /// ours; somebody else's is left exactly as it is.
+    /// </summary>
+    private static bool LegacyIsOurs(AutostartTarget target)
+    {
+        if (target.LegacyTaskName is not string legacy)
+            return false;
+        var query = Run($"schtasks /Query /TN \"{legacy}\" /XML");
+        return query.Ok && OwnedByCurrentUser(query.Value);
+    }
+
+    private static void RemoveLegacyIfOurs(AutostartTarget target, Action<string> log)
+    {
+        if (!LegacyIsOurs(target))
+            return;
+        var removed = Run($"schtasks /Delete /F /TN \"{target.LegacyTaskName}\"");
+        log(removed.Ok
+            ? "The start-at-logon task under the old shared name was removed."
+            : $"The start-at-logon task under the old shared name could not be removed "
+              + $"({removed.Problem}) - it may start the app a second time, which the "
+              + "single-copy lock turns away.");
+    }
+
+    /// <summary>
+    /// Does this task XML (as schtasks /Query /XML prints it) run as the user
+    /// running now? Windows stores the principal as a SID - measured on this
+    /// machine 26.09.2026 - but DOMAIN\user is accepted too. Anything unreadable
+    /// is "not ours", so a doubt can only leave a task alone, never delete it.
+    /// </summary>
+    public static bool OwnedByCurrentUser(string taskXml)
+    {
+        try
+        {
+            XNamespace mit = "http://schemas.microsoft.com/windows/2004/02/mit/task";
+            string? owner = XDocument.Parse(taskXml).Root?
+                .Element(mit + "Principals")?.Element(mit + "Principal")?
+                .Element(mit + "UserId")?.Value.Trim();
+            if (string.IsNullOrEmpty(owner))
+                return false;
+            string? sid = WindowsIdentity.GetCurrent().User?.Value;
+            return string.Equals(owner, sid, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(owner, CurrentUser(), StringComparison.OrdinalIgnoreCase);
+        }
+        catch (XmlException)
+        {
+            return false;
+        }
     }
 
     /// <summary>DOMAIN\user, the way Task Scheduler writes it.</summary>

@@ -63,10 +63,9 @@ if ($running.Count -gt 0) {
 if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
 
 # One publish profile, not a row of switches typed by hand: two builds must not
-# differ by what somebody remembered to pass.
-& dotnet publish $project -p:PublishProfile=SelfContained `
-    -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true `
-    -o $staging
+# differ by what somebody remembered to pass. Everything, one file and
+# compression included, is in the profile.
+& dotnet publish $project -p:PublishProfile=SelfContained -o $staging
 if ($LASTEXITCODE -ne 0) {
     Write-Host "dotnet publish failed with $LASTEXITCODE." -ForegroundColor Red
     exit 1
@@ -135,7 +134,7 @@ Write-Host "  written: $($item.LastWriteTime.ToString('dd.MM.yyyy HH:mm:ss'))"
 Write-Host "  SHA-256: $hash"
 Write-Host "  version: $version"
 Write-Host ""
-Write-Host "Record the time, size and hash in CLAUDE.md - it is the only thing"
-Write-Host "that tells two builds of the same version number apart."
+Write-Host "Write the time, size and hash down with the build - they are the only"
+Write-Host "thing that tells two builds of the same version number apart."
 Write-Host ""
 exit 0

@@ -140,17 +140,29 @@ public sealed record Settings
     /// so a failed write must be reported: in 1.4 it passed unnoticed, the
     /// switch moved, the file did not, and the setting was back to its old
     /// value after a restart.
+    ///
+    /// Written beside the file and then moved over it, never into it: a reader
+    /// that arrives mid-write - the scheduled task starts a copy every five
+    /// minutes, and each one reads this file - would otherwise find half a file,
+    /// take the defaults, and could save those over the real settings.
     /// </summary>
     public string? Save(string path)
     {
+        string temporary = path + ".new";
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, JsonSerializer.Serialize(this, Format));
+            File.WriteAllText(temporary, JsonSerializer.Serialize(this, Format));
+            File.Move(temporary, path, overwrite: true);
             return null;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
+            // The stand-in goes, or it would sit beside the real file for good.
+            // Failing to remove it changes nothing about what is reported.
+            try { File.Delete(temporary); }
+            catch (Exception cleanup) when (cleanup is IOException
+                                                or UnauthorizedAccessException) { }
             return $"the settings could not be saved ({e.Message})";
         }
     }

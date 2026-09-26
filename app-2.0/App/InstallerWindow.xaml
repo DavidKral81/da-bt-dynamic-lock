@@ -7,8 +7,9 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <!-- The installer, which is this very program started under another name.
-         There is no separate installer executable in 2.0: a second one would
+    <!-- The installer, which is this very program - same file, same name -
+         started from anywhere but its installed home. There is no separate
+         installer executable in 2.0: a second one would
          have had to carry its own copy of .NET, and measuring showed that costs
          more than the whole application does. The shipped 1.5 already worked
          this way for the UNinstaller, so the shape is the project's own.
@@ -111,9 +112,9 @@
 
                 <!-- how it went.
                      There is NO heading of its own in here: the outcome is
-                     written into the heading at the top of the window. Two of
-                     them meant the window said "Instalace - Da BT Dynamic Lock"
-                     twice, once in its own title bar and once under it. -->
+                     written into the heading at the top of the window, which
+                     until then names what is about to happen. A second heading
+                     here would have stacked two headings over the outcome. -->
                 <StackPanel x:Name="PageResult" Spacing="12" Visibility="Collapsed">
 
                     <Border x:Name="ProblemsCard" Style="{StaticResource Card}"

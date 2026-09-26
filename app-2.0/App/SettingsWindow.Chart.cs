@@ -281,7 +281,7 @@ public sealed partial class SettingsWindow
         if (inView.Count == 0)
             return;
 
-        // Drawn the way 1.5 drew it, which David preferred (17.09.2026): in each
+        // Drawn the way 1.5 drew it, which read better in use: in each
         // pixel column ONE THIN UPRIGHT STROKE from the weakest reading to the
         // strongest, and a thin line joining it to the column before. The first
         // 2.0 drew a thicker polyline through the strongest reading only, and
@@ -464,7 +464,7 @@ public sealed partial class SettingsWindow
         // The fill is the chart's own see-through brush, so the swatch looks
         // like the band. The outline is the same colour at nearly full
         // strength: without it the faint fills vanished into the background
-        // and could not be told apart (David, 17.09.2026).
+        // and could not be told apart.
         "band" => new Rectangle
         {
             Width = 22,

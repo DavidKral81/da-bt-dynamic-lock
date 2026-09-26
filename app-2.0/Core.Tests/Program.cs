@@ -139,15 +139,15 @@ string[] uuids = { "0000feaa-0000-1000-8000-00805f9b34fb" };
 // An empty target used to match EVERYTHING, so any BLE device around counted
 // as the phone. Found in use, not by the tests.
 Check("no target picked = nothing counts", false,
-    DeviceMatch.Matches("AA:BB:CC:DD:EE:FF", "Xiaomi 15 DaKing", uuids, ""));
+    DeviceMatch.Matches("AA:BB:CC:DD:EE:FF", "Galaxy S24 Work", uuids, ""));
 Check("null target counts as none either", false,
-    DeviceMatch.Matches("AA:BB:CC:DD:EE:FF", "Xiaomi 15 DaKing", uuids, null));
+    DeviceMatch.Matches("AA:BB:CC:DD:EE:FF", "Galaxy S24 Work", uuids, null));
 Check("part of the name matches", true,
-    DeviceMatch.Matches("AA:BB:CC:DD:EE:FF", "Xiaomi 15 DaKing", uuids, "DaKing"));
+    DeviceMatch.Matches("AA:BB:CC:DD:EE:FF", "Galaxy S24 Work", uuids, "Work"));
 Check("and case does not matter", true,
-    DeviceMatch.Matches("AA:BB:CC:DD:EE:FF", "Xiaomi 15 DaKing", uuids, "daking"));
+    DeviceMatch.Matches("AA:BB:CC:DD:EE:FF", "Galaxy S24 Work", uuids, "work"));
 Check("a different name does not match", false,
-    DeviceMatch.Matches("AA:BB:CC:DD:EE:FF", "Xiaomi 15 DaKing", uuids, "Pixel"));
+    DeviceMatch.Matches("AA:BB:CC:DD:EE:FF", "Galaxy S24 Work", uuids, "Pixel"));
 Check("a MAC address matches", true,
     DeviceMatch.Matches("AA:BB:CC:DD:EE:FF", null, uuids, "AA:BB:CC:DD:EE:FF"));
 Check("a MAC in lower case matches too", true,
@@ -155,7 +155,7 @@ Check("a MAC in lower case matches too", true,
 Check("a different MAC does not", false,
     DeviceMatch.Matches("AA:BB:CC:DD:EE:FF", null, uuids, "11:22:33:44:55:66"));
 Check("an unnamed device does not match a name target", false,
-    DeviceMatch.Matches("AA:BB:CC:DD:EE:FF", null, uuids, "DaKing"));
+    DeviceMatch.Matches("AA:BB:CC:DD:EE:FF", null, uuids, "Work"));
 Check("a service UUID matches", true,
     DeviceMatch.Matches("AA:BB:CC:DD:EE:FF", null, uuids, "feaa"));
 Check("no UUIDs at all is not a crash", false,

@@ -63,6 +63,23 @@ public static class Setup
         string language, Action<string> report)
     {
         var problems = new List<string>();
+        string program = Path.Combine(where.TargetDir, ProgramName);
+
+        // Start at logon goes BEFORE the app is stopped, as when uninstalling.
+        // The task repeats every five minutes, and one firing between the stop
+        // and the copy starts the OLD program again - which then holds its file,
+        // the copy fails, and the old version carries on. Switched back on at
+        // the end if it was asked for.
+        //
+        // Its failure only matters when it was meant to stay off: otherwise the
+        // switch at the end decides, and reports for itself.
+        if (File.Exists(program))
+        {
+            report("autostart");
+            var off = Run(program, "--autostart-off");
+            if (!off.Ok && !what.Autostart)
+                problems.Add($"start at logon could not be switched off ({off.Detail})");
+        }
 
         report("stopping");
         StopRunningApp(where.TargetDir);
@@ -74,7 +91,6 @@ public static class Setup
             TryDeleteFolder(where.TargetDir);
         CopyProgram(source, where.TargetDir);
 
-        string program = Path.Combine(where.TargetDir, ProgramName);
         if (!File.Exists(program))
             return new SetupReport(new[] { $"{ProgramName} is not in the target folder" });
 

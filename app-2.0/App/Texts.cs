@@ -34,6 +34,10 @@ public static class Texts
     private static readonly CultureInfo CzechCulture = new("cs-CZ");
     private static readonly CultureInfo EnglishCulture = new("en-GB");
 
+    /// <summary>One language on offer. A record, not a tuple: a drop-down binds
+    /// to a real property name, and a tuple has none at run time.</summary>
+    public sealed record LanguageOption(string Code, string Name);
+
     /// <summary>
     /// The languages on offer, each written IN ITSELF - never translated, so
     /// somebody who opened the app in a language they cannot read still
@@ -46,10 +50,6 @@ public static class Texts
     ///
     /// One list, used by the settings window and by the installer.
     /// </summary>
-    /// <summary>One language on offer. A record, not a tuple: a drop-down binds
-    /// to a real property name, and a tuple has none at run time.</summary>
-    public sealed record LanguageOption(string Code, string Name);
-
     public static readonly LanguageOption[] Languages =
     {
         new("cs", "Čeština"),
@@ -180,6 +180,7 @@ public static class Texts
                            + "„mlčící“ telefon upozorní.",
         ["opt_no_warning"] = "Neupozorňovat",
         ["opt_after_minutes"] = "Po {0} minutách bez signálu",
+        ["opt_after_one_minute"] = "Po 1 minutě bez signálu",
 
         // --- settings window: locking ------------------------------------
         ["sw_active"] = "Zamykat, když se vzdálím s telefonem",
@@ -389,6 +390,7 @@ public static class Texts
                            + "gives warning of a phone that has gone quiet.",
         ["opt_no_warning"] = "Do not warn",
         ["opt_after_minutes"] = "After {0} minutes without a signal",
+        ["opt_after_one_minute"] = "After 1 minute without a signal",
 
         // --- settings window: locking ------------------------------------
         ["sw_active"] = "Lock when I walk away with my phone",

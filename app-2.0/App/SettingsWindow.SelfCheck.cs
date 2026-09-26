@@ -272,8 +272,8 @@ public sealed partial class SettingsWindow
             : "  FAIL  the manual link has no label");
 
         // ---- the size the window is left at ------------------------------
-        // Closing it used to throw away whatever the person had done to it
-        // (David, 19.09.2026). Checked through HideWindow/ShowWindow, the very
+        // Closing it used to throw away whatever the person had done to it.
+        // Checked through HideWindow/ShowWindow, the very
         // pair that does it, rather than by calling the saving method on its
         // own - the wiring is the half that breaks.
         var presenter = (OverlappedPresenter)AppWindow.Presenter;

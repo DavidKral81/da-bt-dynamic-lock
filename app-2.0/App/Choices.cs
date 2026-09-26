@@ -72,7 +72,12 @@ internal static class Choices
         ? Texts.Get("opt_countdown_off")
         : Texts.Get("opt_countdown_from", seconds);
 
-    public static string WarnLabel(int minutes) => minutes == 0
-        ? Texts.Get("opt_no_warning")
-        : Texts.Get("opt_after_minutes", minutes);
+    // One minute has its own wording: "Po 1 minutách" and "After 1 minutes"
+    // are what the plural key gives it. The other lists here never offer 1.
+    public static string WarnLabel(int minutes) => minutes switch
+    {
+        0 => Texts.Get("opt_no_warning"),
+        1 => Texts.Get("opt_after_one_minute"),
+        _ => Texts.Get("opt_after_minutes", minutes),
+    };
 }

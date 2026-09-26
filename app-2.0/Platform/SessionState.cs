@@ -156,6 +156,46 @@ public static class SessionState
     }
 
     /// <summary>
+    /// When the user signed in to this Windows session, in UTC.
+    ///
+    /// The identity of a sign-in: it stays the same across sleep, locking and
+    /// unlocking, and is a different moment after signing out, restarting, or
+    /// shutting down with fast startup - which does NOT reset the uptime
+    /// counter, so uptime cannot tell those apart. The note the app leaves when
+    /// the user switches it off lasts exactly this long.
+    ///
+    /// Checked against the CurrentTime field of the same answer: a shifted
+    /// structure gives a number, not an error, and a sign-in in the future or
+    /// before 2000 is how that rubbish would show.
+    /// </summary>
+    public static Reading<DateTime?> SignedInAt()
+    {
+        if (!WTSQuerySessionInformationW(IntPtr.Zero, WtsCurrentSession,
+                WtsSessionInfoEx, out IntPtr buffer, out uint size))
+            return Reading<DateTime?>.Failed(null,
+                $"WTSQuerySessionInformation failed (error {Marshal.GetLastWin32Error()})");
+        try
+        {
+            if (size != Marshal.SizeOf<WtsInfoEx>())
+                return Reading<DateTime?>.Failed(null, $"returned {size} B, expected exactly "
+                    + $"{Marshal.SizeOf<WtsInfoEx>()}");
+
+            var data = Marshal.PtrToStructure<WtsInfoEx>(buffer).Data;
+            long earliest = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc).ToFileTimeUtc();
+            if (data.LogonTime < earliest || data.LogonTime > data.CurrentTime)
+                return Reading<DateTime?>.Failed(null,
+                    $"the sign-in time {data.LogonTime} makes no sense against the current "
+                    + $"time {data.CurrentTime}");
+
+            return new Reading<DateTime?>(DateTime.FromFileTimeUtc(data.LogonTime));
+        }
+        finally
+        {
+            WTSFreeMemory(buffer);
+        }
+    }
+
+    /// <summary>
     /// The user name Windows reports for this session, for the layout check in
     /// the tests. Compared there against the account the test runs under - a
     /// shifted field gives rubbish, and checking the first string alone is not

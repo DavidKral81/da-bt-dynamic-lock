@@ -31,7 +31,7 @@ public sealed partial class SettingsWindow : Window
     private const int WidthDip = 920;
     private const int HeightDip = 700;
 
-    // The smallest it may be shrunk to. 900 DIP, set by David on 19.09.2026:
+    // The smallest it may be shrunk to. 900 DIP, because
     // the chart is the page that matters and a narrow one says nothing, so the
     // window is not allowed to be squeezed below a width that can show it.
     private const int MinWidthDip = 900;
@@ -132,7 +132,7 @@ public sealed partial class SettingsWindow : Window
 
     /// <summary>
     /// Keeps the size the window was left at, so reopening it does not undo
-    /// what the person did to it (David, 19.09.2026).
+    /// what the person did to it.
     ///
     /// ⚠ A MAXIMISED window's size is never stored as the ordinary one. Windows
     /// reports the full screen while it is maximised, and storing that would
