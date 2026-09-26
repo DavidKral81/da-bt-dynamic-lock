@@ -143,12 +143,14 @@ public sealed record Options
     public string MutexName => DryRun ? AppInfo.MutexName + ".DryRun" : AppInfo.MutexName;
 
     /// <summary>
-    /// A run with nobody at the keyboard: pictures, the self-check, or one that
-    /// quits on a timer. Such a run must never put up a modal dialog - it would
-    /// sit there waiting for a click that is never coming.
+    /// A run with nobody at the keyboard: pictures, the self-check, one that
+    /// quits on a timer, or one the scheduled task started. Such a run must
+    /// never put up a modal dialog - it would sit there waiting for a click
+    /// that is never coming, and the task's five minute repeat would put up a
+    /// new one every time it found the app already running.
     /// </summary>
     public bool Batch => SelfCheck || ScreenshotFolder is not null
-        || QuitAfterSeconds > 0 || Autostart is not null;
+        || QuitAfterSeconds > 0 || Autostart is not null || Scheduled;
 
     public string SettingsPath => Path.Combine(DataFolder, "config.json");
     public string LogPath => Path.Combine(DataFolder, "dyn_lock.log");

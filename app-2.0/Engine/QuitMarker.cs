@@ -20,9 +20,10 @@ namespace DaBtDynamicLock.Engine;
 /// the moment THIS Windows session started, worked out as "now minus how long
 /// the machine has been up". That moment stays the same for as long as the
 /// session lives and becomes a different one after a restart - so a note whose
-/// session start no longer matches belongs to a session that is over. Sleep and
-/// hibernation do not move the counter on, which is exactly right: closing the
-/// lid is not a restart, and the app must stay off over it.
+/// session start no longer matches belongs to a session that is over. Sleep
+/// moves the clock and the counter on together (measured 20.09.2026, see
+/// Engine.Tests), so the session start stays put, which is exactly right:
+/// closing the lid is not a restart, and the app must stay off over it.
 ///
 /// ⚠ NOT the uptime on its own, which is what this did until review caught it
 /// on 20.09.2026. A note written after eight hours of running came back to life
@@ -99,6 +100,32 @@ public static class QuitMarker
                                     or FileNotFoundException or DirectoryNotFoundException)
         {
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Is this the first scheduled start the note turns away? Marks the note,
+    /// so the log says it once rather than every five minutes - 288 identical
+    /// lines a day would push everything else out of it.
+    ///
+    /// The mark lives in the note itself (a third line, which
+    /// <see cref="Applies(string, DateTime, long)"/> ignores), so a new quit
+    /// writes a fresh note and gets reported again. A note that cannot be read
+    /// or marked answers true: one line too many beats none.
+    /// </summary>
+    public static bool FirstRefusal(string dataFolder)
+    {
+        try
+        {
+            string path = PathIn(dataFolder);
+            if (File.ReadAllLines(path).Length > 2)
+                return false;
+            File.AppendAllLines(path, new[] { "reported" });
+            return true;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return true;
         }
     }
 

@@ -145,7 +145,13 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         _onlyInstance = new Mutex(true, _options.MutexName, out bool mine);
         if (!mine)
         {
-            _log.Write("Another copy is already running - this one is stopping.");
+            // A scheduled start that finds the app running is the repeat doing
+            // its job, every five minutes - not worth a line, let alone a
+            // dialog (Batch covers that). Task Scheduler only skips the copies
+            // it started itself; one started by hand or by the installer is
+            // invisible to it.
+            if (!_options.Scheduled)
+                _log.Write("Another copy is already running - this one is stopping.");
             // Told to the person, not just to the file. A copy that vanishes
             // without a word is indistinguishable from one that crashed.
             // Not in a batch run: a modal dialog there would wait forever for
@@ -173,8 +179,10 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             {
                 if (QuitMarker.Applies(_options.DataFolder, Environment.TickCount64))
                 {
-                    _log.Write("Started by the schedule, but the user switched the app "
-                        + "off since the computer started - stopping again.");
+                    if (QuitMarker.FirstRefusal(_options.DataFolder))
+                        _log.Write("Started by the schedule, but the user switched the app "
+                            + "off since the computer started - staying off until a "
+                            + "restart (said once, not every five minutes).");
                     Exit();
                     Environment.Exit(0);
                     return;

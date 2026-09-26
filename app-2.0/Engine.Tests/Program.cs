@@ -588,6 +588,18 @@ internal static class EngineChecks
         Check("a scheduled start minutes later stays away", true,
             QuitMarker.Applies(folder, quitAt.AddMinutes(5), switchedOffAt + 300_000));
 
+        // The task knocks every five minutes for as long as the note lasts -
+        // 288 times a day. The log is told once, not 288 times.
+        Check("the first scheduled start turned away is reported", true,
+            QuitMarker.FirstRefusal(folder));
+        Check("...the ones after it are not", false,
+            QuitMarker.FirstRefusal(folder));
+        Check("...and marking it does not spoil the note", true,
+            QuitMarker.Applies(folder, quitAt.AddMinutes(10), switchedOffAt + 600_000));
+        QuitMarker.Write(folder, quitAt, switchedOffAt);
+        Check("a new quit is reported again", true,
+            QuitMarker.FirstRefusal(folder));
+
         // Five hours asleep. ⚠ The counter KEEPS COUNTING while the machine
         // sleeps - measured 20.09.2026 on this machine: GetTickCount64 said
         // 50.44 h and the system had indeed been up 50.44 h, while the unbiased

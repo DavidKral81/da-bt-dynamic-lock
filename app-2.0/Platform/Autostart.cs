@@ -136,7 +136,8 @@ public static class Autostart
         {
             Directory.CreateDirectory(target.ScratchFolder);
             // schtasks reads the XML as UTF-16 and rejects anything else.
-            File.WriteAllText(path, TaskXml(target, CurrentUser()), Encoding.Unicode);
+            File.WriteAllText(path, TaskXml(target, CurrentUser(), DateTime.Now),
+                Encoding.Unicode);
 
             var made = Run($"schtasks /Create /F /TN \"{target.TaskName}\" "
                 + $"/XML \"{path}\"");
@@ -161,12 +162,25 @@ public static class Autostart
     /// <summary>
     /// The task, as Windows wants to read it. Kept apart from the registering
     /// so it can be checked without touching Task Scheduler at all.
+    ///
+    /// Two triggers, each with one job. The logon trigger starts the app when
+    /// the user signs in. The time trigger carries the five minute repeat that
+    /// brings a crashed app back - ⚠ NOT the logon trigger, measured 26.09.2026:
+    /// a repeat there only starts when that trigger fires, at the next logon,
+    /// and this task is always registered after logon. After every install the
+    /// app could be killed and stay dead until the user signed in again.
     /// </summary>
-    public static string TaskXml(AutostartTarget target, string user)
+    /// <param name="registeredAt">When the task is handed to Windows. The
+    /// repeat starts one interval later rather than at once: at once, it would
+    /// race the installer starting the app, and the copy that lost would stop
+    /// on the single-instance lock.</param>
+    public static string TaskXml(AutostartTarget target, string user, DateTime registeredAt)
     {
         string arguments = target.Arguments.Length == 0
             ? string.Empty
             : SecurityElement.Escape($"\"{target.Arguments}\"");
+        string firstRepeat = registeredAt.AddMinutes(5)
+            .ToString("yyyy-MM-dd'T'HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
 
         return $"""
             <?xml version="1.0" encoding="UTF-16"?>
@@ -179,11 +193,15 @@ public static class Autostart
                   <Enabled>true</Enabled>
                   <UserId>{SecurityElement.Escape(user)}</UserId>
                   <Delay>PT30S</Delay>
+                </LogonTrigger>
+                <TimeTrigger>
+                  <Enabled>true</Enabled>
+                  <StartBoundary>{firstRepeat}</StartBoundary>
                   <Repetition>
                     <Interval>PT5M</Interval>
                     <StopAtDurationEnd>false</StopAtDurationEnd>
                   </Repetition>
-                </LogonTrigger>
+                </TimeTrigger>
               </Triggers>
               <Principals>
                 <Principal id="Author">
@@ -194,8 +212,10 @@ public static class Autostart
               </Principals>
               <Settings>
                 <!-- Carries the repeat above: a five minute repeat while a copy
-                     is already running must do nothing at all. Without this,
-                     every repeat would start a second watcher. -->
+                     is already running must do nothing at all. This covers a
+                     copy the task started; one started by hand or by the
+                     installer is Task Scheduler's blind spot, and the app
+                     itself stops a scheduled start quietly then. -->
                 <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
                 <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
                 <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>

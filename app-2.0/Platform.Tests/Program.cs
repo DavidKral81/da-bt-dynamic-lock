@@ -88,7 +88,8 @@ internal static class PlatformChecks
         // are the entire reason it is XML and not a plain schtasks command:
         // without them Windows stops the task after three days and never
         // restarts it after a crash.
-        string xml = Autostart.TaskXml(target, "DOMAIN\\Someone");
+        var registeredAt = new DateTime(2026, 9, 26, 12, 0, 0);
+        string xml = Autostart.TaskXml(target, "DOMAIN\\Someone", registeredAt);
         Check("the task has no time limit", true,
             xml.Contains("<ExecutionTimeLimit>PT0S</ExecutionTimeLimit>"));
         Check("...and restarts after a crash", true,
@@ -109,6 +110,28 @@ internal static class PlatformChecks
         Check("...and the repeat never runs out", false,
             xml.Contains("<Duration>"));
 
+        // ⚠ WHERE the repeat hangs matters more than that it exists. Measured
+        // 26.09.2026: a repeat on the logon trigger only starts when that
+        // trigger fires, at the next logon - and the task is registered AFTER
+        // logon, by the installer or the switch. So after every install there
+        // was no repeat until the user signed in again: the app was killed and
+        // stayed dead for an hour and a half, with no next run time in Task
+        // Scheduler. A time trigger repeats from the moment it is registered.
+        var mit = System.Xml.Linq.XNamespace.Get(
+            "http://schemas.microsoft.com/windows/2004/02/mit/task");
+        var triggers = System.Xml.Linq.XDocument.Parse(xml).Root!.Element(mit + "Triggers")!;
+        Check("the repeat hangs on a time trigger, not on the logon", "PT5M",
+            (string?)triggers.Element(mit + "TimeTrigger")
+                ?.Element(mit + "Repetition")?.Element(mit + "Interval"));
+        Check("...the logon trigger does not repeat on its own", null,
+            triggers.Element(mit + "LogonTrigger")?.Element(mit + "Repetition")?.Name.LocalName);
+        Check("...and the app still starts at logon", true,
+            triggers.Element(mit + "LogonTrigger") is not null);
+        // Not at once: an immediate first repeat would race the installer
+        // starting the app, and the loser would stop on the single-copy lock.
+        Check("...the repeat starts one interval after registering", "2026-09-26T12:05:00",
+            (string?)triggers.Element(mit + "TimeTrigger")?.Element(mit + "StartBoundary"));
+
         // Valid XML is not a detail here: Task Scheduler rejects the whole file
         // over one duplicated element, and the task would simply not exist.
         Check("the task is valid XML", true,
@@ -119,7 +142,7 @@ internal static class PlatformChecks
         // A path with an ampersand in it is valid on Windows and would tear the
         // XML in half unescaped. Task Scheduler would reject the lot.
         string awkward = Autostart.TaskXml(target with { Program = "C:\\a & b.exe" },
-            "DOMAIN\\Someone");
+            "DOMAIN\\Someone", registeredAt);
         Check("a path with & in it stays valid XML", true,
             awkward.Contains("C:\\a &amp; b.exe"));
 

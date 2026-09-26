@@ -165,7 +165,10 @@ installing means putting that one file in place.
 crash.** Measured on 18 Sep 2026, after the application died: Task Scheduler
 recorded the failing exit code and started nothing — that setting is about a
 task that cannot be *started*. A five-minute repeat brings watching back
-instead. Quitting deliberately leaves a note that the repeat respects, so the
+instead. It hangs on a time trigger, not on the logon one: a repeat on a
+logon trigger only starts at the next sign-in, and the task is always created
+after one — measured on 26 Sep 2026, when a killed application stayed dead
+and Task Scheduler showed no next run. Quitting deliberately leaves a note that the repeat respects, so the
 repeat cannot overrule the person; the note carries the moment the Windows
 session began, so it expires with a restart and survives sleep, which moves
 the clock and the uptime counter together.

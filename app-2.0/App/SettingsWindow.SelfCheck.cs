@@ -241,6 +241,11 @@ public sealed partial class SettingsWindow
         lines.Add(scheduled.Scheduled && scheduled.Setup is null
             ? "  OK    a start by the schedule is told apart from one by hand"
             : "  FAIL  --scheduled was not recognised, so a deliberate quit would be undone");
+        // The repeat finds the app already running most of the time. A dialog
+        // saying so would come back every five minutes.
+        lines.Add(scheduled.Batch
+            ? "  OK    a start by the schedule never puts up a dialog"
+            : "  FAIL  a start by the schedule would say \"already running\" every five minutes");
         lines.Add(NavSignal.Text == before
             ? "  OK    switching back restores the first language"
             : $"  FAIL  switching back left \"{NavSignal.Text}\"");

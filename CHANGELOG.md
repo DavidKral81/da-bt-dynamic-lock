@@ -47,7 +47,8 @@ being heard. How it is built, and what it looks like, have.
 - **The screen is watched again within five minutes of a crash.** The logon
   task now repeats, because Windows' own "restart the task if it fails" does
   not cover a program that dies — measured: Task Scheduler recorded the
-  failing exit code and did nothing. Quitting the application deliberately
+  failing exit code and did nothing. The repeat runs from the moment the task
+  is created, not from the next sign-in. Quitting the application deliberately
   still means what it says: it leaves a note that the repeat respects, so the
   app stays off until the computer restarts or it is started by hand.
 
