@@ -37,12 +37,25 @@ being heard. How it is built, and what it looks like, have.
   choosing between a British and an American one for "English" has no right
   answer.
 
-- **The installer is the application itself**, under another name. It asks for
-  administrator rights on its own instead of telling the user to arrange them,
-  and shows what it did in the same window rather than a second one. Nothing
-  on the machine needs a runtime installed for it to run.
+- **The installer is the application itself** — the same file under the same
+  name; run from anywhere but its installed home, it offers to install. It
+  asks for administrator rights on its own instead of telling the user to
+  arrange them, and shows what it did in the same window rather than a second
+  one. Nothing on the machine needs a runtime installed for it to run.
+
+- **Start at logon is one task per user.** Task names are shared by the whole
+  machine, and 1.x used one name for everybody, so a second user's install
+  replaced the first user's task and an uninstall removed it. The old task is
+  taken over only when it belongs to the user doing it.
 
 ### Added
+
+- **Do not lock while something runs full screen** — a second safeguard
+  beside "the mouse or keyboard is in use", for a film that plays for two
+  hours without a keystroke. Either one is enough; both are off by default,
+  because anyone at the desk can postpone locking with them. When a safeguard
+  stops applying, the silence is measured again from zero, so the countdown
+  still comes before the lock.
 
 - **The screen is watched again within five minutes of a crash.** The logon
   task now repeats, because Windows' own "restart the task if it fails" does
@@ -50,36 +63,13 @@ being heard. How it is built, and what it looks like, have.
   failing exit code and did nothing. The repeat runs from the moment the task
   is created, not from the next sign-in. Quitting the application deliberately
   still means what it says: it leaves a note that the repeat respects, so the
-  app stays off until the computer restarts or it is started by hand.
+  app stays off until the next sign-in or until it is started by hand.
 
 - **The tray menu offers what the 1.x one did**, submenus and all: the watched
   device, the silence before locking, the countdown, the sensitivity, the
-  warning and the pause, plus the three switches. The values are the same ones
-  the window offers, from one list, so the two cannot drift apart.
-
-### Fixed
-
-- **The tray icon survives the shell restarting.** If Explorer restarted, the
-  icon vanished with it and never came back — and every attempt to redraw it
-  afterwards left an icon behind in memory. Measured on 18 Sep 2026: 3305 of
-  them in under three hours, after which Windows would hand out nothing more
-  and the application died trying to open a countdown box. It now listens for
-  the taskbar being rebuilt and puts its icon back, and a failed attempt no
-  longer leaks anything.
-
-- **Uninstalling works when started from Installed apps.** 2.0's first build
-  shut down "every copy running from the program folder", which included the
-  uninstaller itself.
-
-### Fixed in 1.x as well
-
-- **The mouse wheel scrolls the settings by one step again.** The wheel was
-  bound with `bind_all`, which puts the handler on a tag belonging to the
-  whole interpreter rather than to the window — closing the settings did not
-  take it away, so every reopen added another handler and they all scrolled
-  the same view. After the window had been opened six times, one notch of the
-  wheel ran six steps. The binding now belongs to the window and goes away
-  with it.
+  warning and the pause, plus four switches — watching, both safeguards and
+  start at logon. The values are the same ones the window offers, from one
+  list, so the two cannot drift apart.
 
 ### Security
 

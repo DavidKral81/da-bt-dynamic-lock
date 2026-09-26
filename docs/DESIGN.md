@@ -153,7 +153,10 @@ verbs of both the shortcut and the executable on Windows 11 build 26200 — the
 verb does not exist; Microsoft blocked it so installers cannot help
 themselves to the taskbar.
 
-**The installer is the application under another name.** Measured before
+**The installer is the application itself — same file, same name.** A WinUI 3
+executable cannot even be renamed: it finds its own XAML through resources
+keyed to its file name, so a renamed copy dies before drawing anything.
+Measured before
 deciding: an *empty* window in a supposedly lean toolkit came to 72.6 MB
 self-contained, while the whole finished application came to 68.6 MB — those
 ~65 MB are .NET itself and both carry it equally. A separate installer would
@@ -168,10 +171,25 @@ task that cannot be *started*. A five-minute repeat brings watching back
 instead. It hangs on a time trigger, not on the logon one: a repeat on a
 logon trigger only starts at the next sign-in, and the task is always created
 after one — measured on 26 Sep 2026, when a killed application stayed dead
-and Task Scheduler showed no next run. Quitting deliberately leaves a note that the repeat respects, so the
-repeat cannot overrule the person; the note carries the moment the Windows
-session began, so it expires with a restart and survives sleep, which moves
-the clock and the uptime counter together.
+and Task Scheduler showed no next run. Quitting deliberately leaves a note
+that the repeat respects, so the repeat cannot overrule the person. The note
+carries the moment the user signed in, as Windows reports it, and holds only
+for that sign-in: sleep and locking keep it, signing out, restarting or
+shutting down end it. An earlier version keyed it to the uptime, which fast
+startup and signing out do not reset — the app then stayed off the next
+morning. One task per user, because task names are shared by the whole
+machine and one name for everybody let users overwrite each other's.
+
+**Do not lock while something runs full screen.** The mouse-and-keyboard
+safeguard says nothing during a film, which plays for hours without a
+keystroke, so a second one asks Windows whether an application is presenting
+full screen (the same question Windows answers for its own notifications),
+and falls back to comparing the foreground window with its monitor. Either
+safeguard is enough to hold the lock off; both are off by default, since
+anyone at the desk can use them to postpone locking. When one stops applying,
+the silence is measured from zero again — otherwise the end of a film would
+find two hours of silence and lock without a countdown, which it did before
+this was fixed.
 
 **The tray icon has to be able to come back.** Windows announces a rebuilt
 notification area, and an application that does not listen for it loses its

@@ -108,8 +108,10 @@ signal chart and all the settings:
 - **countdown** before locking (information only, it cannot be cancelled), how
   high up the screen it appears, and whether it shows on every monitor or on
   the primary one alone
-- **do not lock while typing or moving the mouse** (off by default — anyone at
-  the desk could otherwise postpone locking)
+- **do not lock while the mouse or keyboard is in use, or while something runs
+  full screen** — two separate safeguards, since a film plays for hours without
+  a keystroke (both off by default — anyone at the desk could otherwise
+  postpone locking)
 - **warning when the phone disappears** for good, so a silent failure does not
   go unnoticed
 - **do not lock on saved networks** (off by default) — for wherever locking is

@@ -245,21 +245,17 @@ def quote_findings(doc, text, source):
 def load_source():
     """Everything the programs can print or display, in one haystack.
 
-    Both generations are in here on purpose. 1.5 is what ships today and 2.0 is
-    what the manuals are being rewritten for, so a sentence quoted from either
-    has to be found. When windows/ goes, its three files go with it and the
-    rest keeps working - that is why they are listed rather than walked.
+    2.0 and the phone app only. The manuals describe 2.0 alone, and keeping
+    1.5's texts in here let an old label vouch for a quote the current app
+    never says: "Quit application" was 1.5's button, 2.0's is "Quit the
+    application", and the manual carried the old one unnoticed.
     """
-    v15 = "\n".join(read(p) for p in ("windows/dyn_lock.py",
-                                      "windows/texts.py",
-                                      "installer/installer.py")
-                    if (ROOT / p).exists())
     v20 = "\n".join(io.open(p, encoding="utf-8", errors="replace").read()
                     for p in (ROOT / "app-2.0").rglob("*.cs")
                     if not any(part in SKIP_DIRS for part in p.parts))
     android = "\n".join(io.open(p, encoding="utf-8", errors="replace").read()
                         for p in (ROOT / "phone/src/java").rglob("*.java"))
-    return "\n".join((v15, v20, android))
+    return "\n".join((v20, android))
 
 
 # The checker checks itself first. Left column: what must be reported.
@@ -269,6 +265,8 @@ MUST_REPORT = [
     "  1. Run  instalace\\DaBTDynamicLock-setup.exe  and follow it.",
     "  2. Copy  telefon\\DaBTDynamicLock.apk  to the phone.",
     '  The log then says "Zamykam obrazovku pomoci telefonu" and locks.',
+    # 1.5's label, which 1.5's texts in the haystack used to excuse.
+    '  and a "Quit application" button.',
 ]
 
 MUST_STAY_SILENT = [
@@ -281,7 +279,7 @@ MUST_STAY_SILENT = [
     "   telefon na stole, myš zapnutá     177 signálů/min, výpadky do 3 s",
     '        "...\\Da BT Dynamic Lock\\installer\\build_installer.ps1"',
     "   tests\\test_installer.py  the full install/uninstall cycle",
-    '         Before locking, show a countdown  a small "Uzamknutí za X s"',
+    '         When to show the countdown  a small "Zamknutí za X s"',
     "   windows\\dyn_lock.py       the application itself",
     "   The difference between \"at the desk\" and \"three metres away\" is 2 dB.",
 ]

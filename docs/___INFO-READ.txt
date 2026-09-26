@@ -97,13 +97,13 @@ ON THE PHONE (Android)
 ON THE COMPUTER (Windows)
 
   4. Start Da BT Dynamic Lock. It has no window of its own; it
-     runs as a green icon near the clock.
+     runs as an icon near the clock, grey until a phone is chosen.
   5. Click the icon. The window opens → pick "Phone and Wi-Fi" on
      the left → choose your phone under "Which device to watch".
      (You can also right-click the icon → "Which device to watch".)
 
-  Done. Walk away with the phone and the computer locks within
-  45 seconds.
+  Done once the icon is green. Walk away with the phone and the
+  computer locks within 45 seconds.
 
 
 
@@ -131,7 +131,7 @@ APPLICATION
                              page" link
 
     Below the cards are links to the project, to this manual and to
-    the phone app, and a "Quit application" button.
+    the phone app, and a "Quit the application" button.
 
     The links only open a page in the browser. The app never asks
     anything by itself and sends nothing anywhere - compare the
@@ -145,7 +145,7 @@ PHONE AND WI-FI
 
     When the phone disappears   see section 7
 
-    Do not lock on chosen Wi-Fi networks
+    Do not lock on the selected Wi-Fi networks
                              for wherever you do not need locking.
                              Off by default.
 
@@ -161,7 +161,7 @@ PHONE AND WI-FI
                              merely being in range
 
 LOCKING
-    Lock when I walk away with the phone   the main switch
+    Lock when I walk away with my phone    the main switch
 
     When to lock
         Silence before locking         12 s to 120 s (default 45 s)
@@ -188,13 +188,14 @@ LOCKING
                                        postpone locking this way, so
                                        both are off by default
 
-    Countdown before locking
+    The countdown before locking
         When to show the countdown     a small "Locking in X s"
                                        window; information only, it
                                        cannot cancel the lock. Clicks
                                        pass through it to whatever is
                                        underneath
-        Countdown position on screen   in tenths of the screen height,
+        Countdown position on the screen
+                                       in tenths of the screen height,
                                        30 % from the top by default.
                                        Horizontally it is always
                                        centred
@@ -215,7 +216,9 @@ LOCKING
 Icon colour:
   green   the phone is heard, watching is active
   orange  the countdown to locking is running
-  grey    off, paused, or already locked
+  grey    not watching: off, paused, locked, on a saved Wi-Fi,
+          waiting for the phone, or a "Do not lock while…"
+          safeguard is holding
 
 LEFT click   opens the window on the Signal monitor
 RIGHT click  opens the menu
@@ -230,8 +233,10 @@ two different things:
   Signal monitor
   Which device to watch  ▸        devices that can be heard right now
   ---
-  Lock when I walk away with the phone
-  Do not lock while I am typing or moving the mouse
+  Lock when I walk away with my phone
+  The mouse or keyboard is in use          both safeguards from
+  An application or a video is running full screen
+                                           "Do not lock while…"
   Start after signing in to Windows
   ---
   Silence before locking  ▸       12 s to 120 s (default 45 s)
@@ -309,7 +314,7 @@ It covers a silent failure: when the phone stops broadcasting,
 the computer locks once and then waits for the phone to show up
 again. Until then it is NOT watching, but it looks as if it is.
 
-Since version 1.5 there is one more check: before locking, the app
+There is one more check: before locking, the app
 looks at whether the radio can hear anything else nearby at all
 (a mouse, a TV, someone else's gadget). When it hears nothing
 whatsoever, the silence belongs to the receiver rather than to the
@@ -341,8 +346,10 @@ QUIT IT YOURSELF AND IT STAYS QUIT
 The five-minute repeat is there for crashes, not to overrule you.
 When you quit the application ("Quit the application" in the window
 or in the menu), it makes a note of that and the repeating task
-leaves it alone - it stays off until the computer restarts, or
-until you start it yourself.
+leaves it alone - it stays off until you next sign in (after
+signing out, a restart or shutting the computer down), or until you
+start it yourself. Sleep and locking the screen do not bring it
+back.
 
 To keep it off for good, use the "Start after signing in to
 Windows" switch.

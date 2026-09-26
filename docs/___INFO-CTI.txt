@@ -94,13 +94,14 @@ V TELEFONU (Android)
 
 V NOTEBOOKU (Windows)
 
-  4. Spusť Da BT Dynamic Lock. Aplikace nemá okno, běží jako zelená
-     ikona vpravo dole u hodin.
+  4. Spusť Da BT Dynamic Lock. Aplikace nemá okno, běží jako ikona
+     vpravo dole u hodin. Šedá je, dokud nevybereš telefon.
   5. Klepni na ikonu. Otevře se okno → vlevo vyber "Telefon a Wi-Fi"
      → v kartě "Které zařízení hlídat" vyber svůj telefon.
      (Totéž jde i pravým klikem na ikonu → "Které zařízení hlídat".)
 
-  Hotovo. Odejdi s telefonem a notebook se do 45 sekund zamkne.
+  Hotovo, když je ikona zelená. Odejdi s telefonem a notebook se do
+  45 sekund zamkne.
 
 
 
@@ -142,12 +143,12 @@ TELEFON A WI-FI
     Když telefon zmizí       viz oddíl 7
 
     Nezamykat na vybraných Wi-Fi sítích
-                             pro místa, kde zamykat nepotřebujete.
+                             pro místa, kde zamykat nepotřebuješ.
                              Ve výchozím stavu vypnuto.
 
-    Sítě bez zamykání        zaškrtnutím síť uložíte, odškrtnutím
-                             zapomenete; ta, ke které jste právě
-                             připojeni, je označená. Síť se pozná
+    Sítě bez zamykání        zaškrtnutím síť uložíš, odškrtnutím
+                             zapomeneš; ta, ke které jsi právě
+                             připojený, je označená. Síť se pozná
                              podle názvu I podle adresy přístupového
                              bodu (MAC), takže cizí Wi-Fi se stejným
                              názvem hlídání nevypne. Mesh a opakovače
@@ -183,7 +184,7 @@ ZAMYKÁNÍ
                                        ve výchozím stavu vypnuté
 
     Odpočet před zamknutím
-        Kdy ukázat odpočet             okénko "Uzamknutí za X s"; jen
+        Kdy ukázat odpočet             okénko "Zamknutí za X s"; jen
                                        informace, nejde jím uzamknutí
                                        zrušit. Kliknutí jím projde na
                                        to, co je pod ním
@@ -207,7 +208,9 @@ ZAMYKÁNÍ
 Barva ikony:
   zelená    telefon je slyšet, hlídá se
   oranžová  běží odpočet do uzamknutí
-  šedá      vypnuto, pozastaveno, nebo už zamčeno
+  šedá      nehlídá se: vypnuto, pozastaveno, zamčeno, uložená
+            Wi-Fi, čeká se na telefon, nebo právě drží pojistka
+            "Nezamykat, když…"
 
 LEVÝ klik   otevře okno na Monitoru signálu
 PRAVÝ klik  otevře nabídku
@@ -222,7 +225,8 @@ jinak:
   Které zařízení hlídat  ▸        zařízení, která jsou právě slyšet
   ---
   Zamykat, když se vzdálím s telefonem
-  Nezamykat, když právě píšu nebo hýbu myší
+  Myš nebo klávesnice je právě používána      obě pojistky z karty
+  Nějaká aplikace nebo video běží na full screen   "Nezamykat, když…"
   Spouštět po přihlášení do Windows
   ---
   Ticho, po kterém se zamyká  ▸   12 s až 120 s (výchozí 45 s)
@@ -294,7 +298,7 @@ Po nastavené době bez signálu (výchozí 10 minut) vyskočí bublina.
 jednou zamkne a pak už čeká, až se telefon objeví. Do té doby
 NEHLÍDÁ, ale tváří se, že ano.
 
-Od verze 1.5 navíc: než aplikace zamkne, podívá se, jestli rádio
+Navíc: než aplikace zamkne, podívá se, jestli rádio
 slyší aspoň něco jiného v okolí (myš, televizi, cizí zařízení).
 Když neslyší vůbec nic, ticho nepatří telefonu, ale přijímači - ten
 po delším běhu občas přestane vnímat. Zámek se tehdy odloží,
@@ -319,14 +323,16 @@ Vytvoří se úloha v Plánovači s tímto nastavením:
     ukončily)
   - běží i na baterii
 
-KDYŽ APLIKACI VYPNETE SAMI, ZŮSTANE VYPNUTÁ
+KDYŽ APLIKACI VYPNEŠ SÁM, ZŮSTANE VYPNUTÁ
 
-Opakování po 5 minutách hlídá pády, ne vaše rozhodnutí. Když
-aplikaci ukončíte ("Ukončit aplikaci" v okně nebo v nabídce),
+Opakování po 5 minutách hlídá pády, ne tvoje rozhodnutí. Když
+aplikaci ukončíš ("Ukončit aplikaci" v okně nebo v nabídce),
 poznamená si to a opakovaná úloha ji nespustí — zůstane vypnutá
-až do restartu počítače, nebo dokud ji nespustíte sami.
+do dalšího přihlášení (po odhlášení, restartu nebo vypnutí
+počítače), nebo dokud ji nespustíš sám. Spánek ani zamčení
+obrazovky ji nezapnou.
 
-Trvale ji vypnete přepínačem "Spouštět po přihlášení do Windows".
+Trvale ji vypneš přepínačem "Spouštět po přihlášení do Windows".
 
 Po pádu žádná taková poznámka nezbude, takže se hlídání do pěti
 minut vrátí samo.
