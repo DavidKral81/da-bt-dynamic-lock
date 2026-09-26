@@ -234,9 +234,7 @@ two different things:
   Which device to watch  ▸        devices that can be heard right now
   ---
   Lock when I walk away with my phone
-  The mouse or keyboard is in use          both safeguards from
-  An application or a video is running full screen
-                                           "Do not lock while…"
+  Do not lock while…  ▸           both safeguards, see section 3
   Start after signing in to Windows
   ---
   Silence before locking  ▸       12 s to 120 s (default 45 s)

@@ -113,7 +113,7 @@
                 <!-- how it went.
                      There is NO heading of its own in here: the outcome is
                      written into the heading at the top of the window, which
-                     until then names what is about to happen. A second heading
+                     until then names the application. A second heading
                      here would have stacked two headings over the outcome. -->
                 <StackPanel x:Name="PageResult" Spacing="12" Visibility="Collapsed">
 

@@ -67,9 +67,9 @@ being heard. How it is built, and what it looks like, have.
 
 - **The tray menu offers what the 1.x one did**, submenus and all: the watched
   device, the silence before locking, the countdown, the sensitivity, the
-  warning and the pause, plus four switches — watching, both safeguards and
-  start at logon. The values are the same ones the window offers, from one
-  list, so the two cannot drift apart.
+  warning and the pause, the two safeguards under "Do not lock while…", and
+  the switches for watching and start at logon. The values are the same ones
+  the window offers, from one list, so the two cannot drift apart.
 
 ### Security
 

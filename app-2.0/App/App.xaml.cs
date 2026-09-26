@@ -1226,6 +1226,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     private const int MenuAutostart = 8;
     private const int MenuEndPause = 9;
     private const int MenuFullScreen = 10;
+    private const int MenuHoldOff = 11;     // the submenu holding the two above
 
     // Submenu entries are numbered by BLOCK plus the position in their list,
     // so one comparison says both which setting was chosen and which value.
@@ -1281,8 +1282,15 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             new(MenuDeviceBase, Texts.Get("card_phone"), Children: DeviceItems()),
             new(0, null),
             new(MenuWatching, Texts.Get("sw_active"), Ticked: _settings.Active),
-            new(MenuIdleGuard, Texts.Get("sw_idle_guard"), Ticked: _settings.IdleGuard),
-            new(MenuFullScreen, Texts.Get("sw_fullscreen"), Ticked: _settings.FullScreenGuard),
+            // Under the card's own heading, as in the window. On their own,
+            // "The mouse or keyboard is in use" with a tick beside it reads as
+            // a state of the computer, not as a choice.
+            new(MenuHoldOff, Texts.Get("card_hold_off"), Children: new TrayIcon.MenuItem[]
+            {
+                new(MenuIdleGuard, Texts.Get("sw_idle_guard"), Ticked: _settings.IdleGuard),
+                new(MenuFullScreen, Texts.Get("sw_fullscreen"),
+                    Ticked: _settings.FullScreenGuard),
+            }),
             new(MenuAutostart, Texts.Get("sw_autostart"), Ticked: AutostartOn()),
             new(0, null),
             new(MenuSilenceBase, Texts.Get("lbl_silence"), Children: Pick(
@@ -1370,6 +1378,21 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         Check("...and \"no limit\" saves no threshold at all",
             Settings.Load(_options.SettingsPath).Value.RssiThreshold is null,
             "choosing no limit from the tray menu left a threshold behind");
+
+        // The two safeguards sit under "Do not lock while…", not loose among
+        // the switches - and choosing one from there still has to be saved.
+        var holdOff = items.FirstOrDefault(i => i.Id == MenuHoldOff)?.Children ?? [];
+        Check("both safeguards sit under \"Do not lock while…\"",
+            holdOff.Select(i => i.Id).OrderBy(i => i)
+                .SequenceEqual(new[] { MenuIdleGuard, MenuFullScreen })
+            && !items.Any(i => i.Id is MenuIdleGuard or MenuFullScreen),
+            "the safeguards are not (only) in the \"Do not lock while…\" submenu");
+        bool wasFullScreen = _settings.FullScreenGuard;
+        ChooseFromMenu(MenuFullScreen);
+        Check("...and choosing one from there is saved",
+            Settings.Load(_options.SettingsPath).Value.FullScreenGuard == !wasFullScreen,
+            "choosing the full screen safeguard from the tray menu did not reach the file");
+        ChooseFromMenu(MenuFullScreen);     // back as it was
 
         return lines;
     }

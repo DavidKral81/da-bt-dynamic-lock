@@ -179,10 +179,12 @@ public sealed partial class InstallerWindow : Window
             AppInfo.Name);
 
         // The heading carries the outcome once there is one, so it is not
-        // written here twice. Before that it names what is about to happen.
+        // written here twice. Before that it names the application alone: the
+        // title bar right above already says "Setup - …", and repeating it
+        // word for word under itself looked like a mistake.
         if (!_finished)
         {
-            Heading.Text = Title;
+            Heading.Text = AppInfo.Name;
             Subtitle.Text = Texts.Get("ins_subtitle");
         }
 
