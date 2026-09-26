@@ -15,8 +15,10 @@ code, not the prose.
 What it checks:
   1. every file and folder named in the docs really exists
   2. no Czech is left in files that must be English
-  3. quoted phrases the docs present as program output really appear in the
+  3. no accented character in scripts the shell reads as ANSI
+  4. quoted phrases the docs present as program output really appear in the
      source (a translated log message silently invalidates the manual)
+  5. every text of the phone app exists in both languages
 
 Every run starts with a self-test on the two paths that actually shipped
 broken, plus the prose that must NOT be reported. A checker nobody checks
@@ -53,12 +55,14 @@ DOCS = [
 
 # Files that must be English. The two manuals are bilingual on purpose and
 # texts.py / Texts.java hold the translations themselves, so they are exempt.
-ENGLISH_ONLY = ["README.md", "docs/DESIGN.md", "start.bat", "requirements.txt",
+ENGLISH_ONLY = ["README.md", "docs/DESIGN.md", "requirements.txt",
                 ".gitignore", "phone/signing-key-README.txt"]
 
 # Files that must not contain a single accented character - see ascii_findings.
-ASCII_ONLY = ["installer/build_installer.ps1", "phone/build.ps1", "start.bat",
-              "app-2.0/build-setup.ps1"]
+ASCII_ONLY = ["phone/build.ps1", "app-2.0/build-setup.ps1"]
+
+# The phone app's dictionary: both languages side by side, one put() per text.
+PHONE_TEXTS = "phone/src/java/cz/david/dabtdynamiclock/Texts.java"
 
 # Czech words that do not occur in English. Deliberately words with no
 # English homograph, so a hit is never a false alarm.
@@ -242,6 +246,27 @@ def quote_findings(doc, text, source):
     return out
 
 
+def translation_findings(relative, java, minimum=20):
+    """Texts of the phone app that exist in one language only.
+
+    A key missing in English falls back to Czech, so it would surface as a
+    Czech sentence in the English interface and nobody would find out. Read
+    straight out of the source - every text is one put("key", ...) - so this
+    needs no Java. Moved here from the 1.x test suite when that was retired.
+
+    Too few keys means the parsing broke, not that all is well: a check that
+    reads nothing passes on nothing, the hollow test this project has been
+    bitten by before.
+    """
+    keys = {lang: set(re.findall(lang + r'\.put\("([^"]+)"', java))
+            for lang in ("CZECH", "ENGLISH")}
+    if len(keys["CZECH"]) < minimum:
+        return [("UNREAD", relative,
+                 f"{len(keys['CZECH'])} Czech texts found, the dictionary was not read")]
+    return [("ONE LANG", relative, key)
+            for key in sorted(keys["CZECH"] ^ keys["ENGLISH"])]
+
+
 def load_source():
     """Everything the programs can print or display, in one haystack.
 
@@ -277,15 +302,19 @@ MUST_STAY_SILENT = [
     "   remove it with C:\\Program Files\\Da BT Dynamic Lock\\uninstall.exe",
     "   phone on the desk, mouse on    177 signals/min, gaps up to 3 s",
     "   telefon na stole, myš zapnutá     177 signálů/min, výpadky do 3 s",
-    '        "...\\Da BT Dynamic Lock\\installer\\build_installer.ps1"',
-    "   tests\\test_installer.py  the full install/uninstall cycle",
+    '        "...\\Da BT Dynamic Lock\\app-2.0\\build-setup.ps1"',
+    "   app-2.0\\Installer.Tests\\  a full install and uninstall cycle",
     '         When to show the countdown  a small "Zamknutí za X s"',
-    "   windows\\dyn_lock.py       the application itself",
+    "   tools\\check_docs.py      checks the manuals against reality",
     "   The difference between \"at the desk\" and \"three metres away\" is 2 dB.",
 ]
 
 CZECH_MUST_REPORT = "The screen locks by itself. Aplikace to udělá sama."
 CZECH_MUST_STAY_SILENT = "The phone broadcasts a beacon every 100 ms."
+
+TRANSLATION_MUST_REPORT = ('CZECH.put("a", "x"); ENGLISH.put("a", "x"); '
+                           'CZECH.put("only_czech", "y");')
+TRANSLATION_MUST_STAY_SILENT = 'CZECH.put("a", "x"); ENGLISH.put("a", "x");'
 
 ASCII_MUST_REPORT = "Write-Host 'Sestavuji instalátor'".encode("cp1250")
 ASCII_MUST_STAY_SILENT = b"Write-Host 'Building the installer'"
@@ -317,6 +346,12 @@ def self_test(source):
         broken.append(f"  reported no accent in: {ASCII_MUST_REPORT!r}")
     if ascii_findings("self-test", ASCII_MUST_STAY_SILENT):
         broken.append(f"  found an accent in: {ASCII_MUST_STAY_SILENT!r}")
+    if not translation_findings("self-test", TRANSLATION_MUST_REPORT, minimum=1):
+        broken.append("  missed a text that exists in Czech only")
+    if translation_findings("self-test", TRANSLATION_MUST_STAY_SILENT, minimum=1):
+        broken.append("  reported a text that exists in both languages")
+    if not translation_findings("self-test", "nothing to read here"):
+        broken.append("  read no dictionary at all and still passed")
     return broken
 
 
@@ -328,8 +363,8 @@ def main():
         print("THE CHECKER ITSELF IS BROKEN - do not trust its findings:")
         print("\n".join(broken))
         return 2
-    print(f"Self-test passed ({len(MUST_REPORT) + 2} cases must be reported, "
-          f"{len(MUST_STAY_SILENT) + 2} must stay silent).\n")
+    print(f"Self-test passed ({len(MUST_REPORT) + 4} cases must be reported, "
+          f"{len(MUST_STAY_SILENT) + 3} must stay silent).\n")
 
     findings = []
 
@@ -354,6 +389,9 @@ def main():
     section("\nQuoted program output that the source does not produce:",
             [f for doc in ("docs/___INFO-CTI.txt", "docs/___INFO-READ.txt")
              for f in quote_findings(doc, read(doc), source)])
+
+    section("\nPhone texts that exist in one language only:",
+            translation_findings(PHONE_TEXTS, read(PHONE_TEXTS)))
 
     print()
     if findings:

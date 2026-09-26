@@ -8,8 +8,8 @@ RSSI - and with what threshold.
 Run:     py tools/analyze.py [path to track_log.csv]
 Output:  _output/analysis.txt (UTF-8)
 
-Without an argument it evaluates the reference recording in tests/, the same
-one test_logic.py replays. A fresh measurement from tools/track.py lands in
+Without an argument it evaluates the reference recording beside it,
+tools/track_log.csv. A fresh measurement from tools/track.py lands in
 _output/, so pass that path to look at it.
 """
 
@@ -18,7 +18,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 LOG = (Path(sys.argv[1]) if len(sys.argv) > 1
-       else HERE.parent / "tests" / "track_log.csv")
+       else HERE / "track_log.csv")
 OUT = HERE.parent / "_output" / "analysis.txt"
 OUT.parent.mkdir(exist_ok=True)
 

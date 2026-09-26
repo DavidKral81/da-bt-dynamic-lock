@@ -60,10 +60,9 @@ if (Test-Path $out) { Remove-Item $out -Recurse -Force }
 New-Item -ItemType Directory -Path "$out\res","$out\gen","$out\classes" -Force | Out-Null
 
 # The phone app's version - ONE place, here. Change it here and nowhere else;
-# the app reads it back out of its own package. It used to come from
-# windows\version.py, shared with the 1.x Windows app, but the phone app has
-# its own numbering since the Windows app moved to 2.0, and that folder is
-# going away.
+# the app reads it back out of its own package. It used to be shared with the
+# 1.x Windows app; since the Windows app moved to 2.0 the phone app has its
+# own numbering.
 $version = "1.6"
 
 # Android compares releases by versionCode, not by the name it shows. Left at

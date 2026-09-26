@@ -1,15 +1,11 @@
-# Da BT Dynamic Lock - Windows app
+# Da BT Dynamic Lock - the measurement tools in tools\ (not the application,
+# which is .NET and needs none of this).
 # Tested on Python 3.14.4 (Windows 11).
 #
 #   py -m venv .venv
 #   .venv\Scripts\pip install -r requirements.txt
-#   start.bat
+#   .venv\Scripts\python tools\ble_scan.py
 #
-# tkinter is part of the standard library on Windows, no package needed.
+# tools\check_docs.py and tools\analyze.py use the standard library only.
 
-bleak==3.0.2          # Bluetooth LE scanning
-pystray==0.19.5       # icon in the notification area
-pillow==12.3.0        # icon drawing (also required by pystray)
-
-# Only needed to build the installer, not to run the app:
-pyinstaller==6.22.1
+bleak==3.0.2          # Bluetooth LE scanning (ble_scan.py, track.py)

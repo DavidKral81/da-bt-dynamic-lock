@@ -1,6 +1,6 @@
 using DaBtDynamicLock.Core;
 
-// Same shape as tests/test_logic.py: prints OK/FAIL per case, a summary at the
+// Same shape as the 1.x tests: prints OK/FAIL per case, a summary at the
 // end, and returns 0 or 1. No test framework on purpose - the project convention
 // is a plain runnable check, and one more dependency would have to be restored
 // before anything could be verified.

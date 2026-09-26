@@ -39,8 +39,7 @@ public sealed partial class SettingsWindow : Window
 
     // The values themselves live in Choices, because the tray menu offers the
     // same settings and two lists of the same numbers would drift apart.
-    // They are the ones the shipped 1.5 offers, value for value (dyn_lock.py,
-    // the settings cards): a settings file one version writes and the other
+    // They are the ones 1.5 offered, value for value (its settings cards): a settings file one version writes and the other
     // cannot show would be the price of inventing new ones.
     private static double[] SilenceChoices => Choices.Silence;
     private static double[] RangeChoices => Choices.Range;

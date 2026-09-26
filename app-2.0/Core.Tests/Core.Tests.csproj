@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Runnable check, not a test framework: `dotnet run` prints OK/FAIL per
-       case and returns 0 or 1, the same way tests/test_logic.py does. -->
+       case and returns 0 or 1, the same way the 1.x tests did. -->
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>

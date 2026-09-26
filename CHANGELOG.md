@@ -5,9 +5,16 @@ What changed between releases, newest first. Format follows
 [Semantic Versioning](https://semver.org/).
 
 The version lives in one place per program, and everything else reads it:
-`app-2.0/App/AppInfo.cs` for the Windows application and its installer,
-`phone/build.ps1` for the phone app (numbered on its own since 2.0), and
-`windows/version.py` for the 1.x line. Change it there and nowhere else.
+`app-2.0/App/AppInfo.cs` for the Windows application and its installer, and
+`phone/build.ps1` for the phone app (numbered on its own since 2.0). Change it
+there and nowhere else.
+
+## Unreleased
+
+- **The 1.x code is gone from the tree** — the Python application, its
+  installer and its tests. It stays in the history and in the 1.x releases.
+  The check that every phone text exists in both languages moved into
+  `tools/check_docs.py`, the reference measurement into `tools/`.
 
 ## 2.0 — 26 Sep 2026
 

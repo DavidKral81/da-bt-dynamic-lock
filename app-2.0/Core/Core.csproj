@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Pure logic, no UI and no Windows calls, so it can be tested over plain
-       data - the same split dyn_lock.py keeps between decide() and main_loop. -->
+       data - the same split 1.x kept between deciding and its main loop. -->
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>

@@ -480,14 +480,18 @@ IN THE PROJECT FOLDER (source code)
   app-2.0\Engine.Tests\    dotnet run --project <folder>
   app-2.0\Platform.Tests\
   app-2.0\Installer.Tests\
-  tools\check_docs.py      checks the manuals against reality
+  tools\check_docs.py      checks the manuals against reality and the
+                           phone app's translations for gaps
   tools\ble_scan.py        diagnostics: what can be heard nearby
   tools\track.py           diagnostics: following a single device
   tools\analyze.py         evaluation of measurements from track.py
+  tools\track_log.csv      the reference measurement analyze.py reads
+  requirements.txt         libraries for the tools in tools\ (Python)
   docs\                    these manuals
   phone\                   the Android app, its source and signing key
-  windows\                 the previous 1.5 (Python); it stays until
-                           2.0 has been tried out
+
+The 1.x line (Python) is no longer in the project folder; it lives on
+in the history and in the 1.x releases on GitHub.
 
 The tools for building the Android app (Java + the Android SDK,
 ~700 MB) live in an _android-build folder ONE LEVEL UP, next to the

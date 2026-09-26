@@ -150,8 +150,12 @@ Full instructions: [English manual](docs/___INFO-READ.txt) ·
 ```
 app-2.0\      C# on .NET 8 and WinUI 3 — the Windows app and its installer
 phone\        Java, no Gradle (aapt2 + javac + d8 + apksigner)
-windows\      the previous 1.x line, Python 3.14 + bleak, pystray, tkinter
+tools\        Python: the documentation check and the Bluetooth measurement
+              tools the defaults were derived from (requirements.txt)
 ```
+
+The 1.x line (Python, tkinter) is no longer in the tree; it lives on in the
+history and in the 1.x releases.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File app-2.0\build-setup.ps1   # the installer

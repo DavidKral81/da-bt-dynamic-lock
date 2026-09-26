@@ -11,12 +11,10 @@ phone/*.jks
 
 # Build artifacts - these belong in Releases, not in the source history
 phone/*.apk
-installer/*.exe
-# build output - never commit (this used to name only the old path
-# instalace/_build/, so once the folder was renamed, 1001 PyInstaller files
-# made it into a commit)
+# build output - never commit (a pattern that named only one old path let
+# 1001 build files into a commit once the folder was renamed, so this goes by
+# name)
 _build/
-installer/_build/
 
 # Portable toolchain (~700 MB) and virtual environment.
 # _android-build/ now lives OUTSIDE the project, one level up, so this pattern
@@ -27,18 +25,17 @@ _android-build/
 
 # Runtime data. These patterns match by NAME, not by path - a path-based
 # pattern would silently stop matching after a move or a rename.
-# Note: "config.json" does not match "config.default.json" (different name),
-# so the template holding the default settings stays versioned.
 dyn_lock.log
 dyn_lock.log.1
 history.json
 config.json
 
-# Measurement and diagnostic output needs no pattern of its own - all three
-# tools write into _output/, which is excluded as a whole (see below).
-# BEWARE of a bare "track_log.csv" pattern: it also excluded
-# tests/track_log.csv, the REFERENCE recording that test_logic.py replays.
-# On a fresh clone the test then quietly printed SKIPPED instead of running.
+# Measurement and diagnostic output needs no pattern of its own - the tools
+# write into _output/, which is excluded as a whole (see below).
+# BEWARE of a bare "track_log.csv" pattern: it would also exclude
+# tools/track_log.csv, the REFERENCE recording analyze.py reads by default.
+# It once did exactly that to the copy a test replayed, which then quietly
+# printed SKIPPED on a fresh clone instead of running.
 
 __pycache__/
 *.pyc
@@ -52,7 +49,7 @@ _output/
 # normally nothing matches here. It stays as a safety net: a build run without
 # those properties (a stray `dotnet build` elsewhere, an IDE with its own
 # settings) would otherwise drop a thousand files into a commit, which is
-# exactly what happened once with installer/_build/.
+# exactly what happened once with the 1.x installer's build folder.
 # By NAME, not by path, so a rename cannot silently stop it matching.
 bin/
 obj/

@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * All application texts in Czech and English.
  *
- * The same principle as texts.py in the Windows app: both languages side by
+ * The same principle as Texts.cs in the Windows app: both languages side by
  * side in one file, so a missing translation is obvious at a glance.
  * res/values-en is not used, because the app is built without Gradle and the
  * language is switched inside the app, not by the phone settings.
@@ -155,6 +155,6 @@ public final class Texts {
     // only. Nothing ever called it, so it hid the gap instead of closing it:
     // the dictionary looked guarded while a key falling out of ENGLISH would
     // still show up as a Czech sentence in the English interface. The check
-    // now lives in tests/test_logic.py, which reads the keys straight out of
+    // now lives in tools/check_docs.py, which reads the keys straight out of
     // this file and DOES run before every release.
 }

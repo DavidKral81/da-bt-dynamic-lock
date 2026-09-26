@@ -3,7 +3,7 @@ using DaBtDynamicLock.Core;
 using DaBtDynamicLock.Platform;
 
 // Checks the layer that talks to Windows, against the real machine. Same shape
-// as Core.Tests and tests/test_logic.py: OK/FAIL per case, a summary, an exit
+// as Core.Tests and the 1.x tests: OK/FAIL per case, a summary, an exit
 // code.
 //
 // What these cannot do is run over made-up data - a structure laid out wrongly

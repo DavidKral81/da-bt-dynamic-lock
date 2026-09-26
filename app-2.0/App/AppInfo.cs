@@ -16,7 +16,6 @@ public static class AppInfo
     /// build-setup.ps1 checks the finished file against it. Keep the line
     /// below exactly in its present form - both find it by that text, at the
     /// start of a line.
-    /// (1.5 keeps its own number in windows/version.py.)
     /// </summary>
     public const string Version = "2.0";
 

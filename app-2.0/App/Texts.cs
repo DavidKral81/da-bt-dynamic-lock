@@ -263,7 +263,7 @@ public static class Texts
         ["btn_quit"] = "Ukončit aplikaci",
 
         // --- installer ---------------------------------------------------
-        // Taken from the shipped 1.5 (windows/texts.py, the ins_ and uni_
+        // Taken from the shipped 1.5 (its texts file, the ins_ and uni_
         // keys), with the wording made impersonal: the installer speaks about
         // what happens, not to the reader.
         ["ins_title_install"] = "Instalace – {0}",

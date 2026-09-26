@@ -19,8 +19,8 @@ from pathlib import Path
 from bleak import BleakScanner
 
 HERE = Path(__file__).resolve().parent
-# A NEW measurement goes into _output/ - never over tests/track_log.csv, which
-# is the reference recording replayed by test_logic.py. To make a new
+# A NEW measurement goes into _output/ - never over tools/track_log.csv, which
+# is the reference recording analyze.py reads by default. To make a new
 # measurement the reference one, copy it there by hand.
 LOG = HERE.parent / "_output" / "track_log.csv"
 LOG.parent.mkdir(exist_ok=True)
