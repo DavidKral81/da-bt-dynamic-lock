@@ -530,6 +530,8 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                         Path.Combine(folder, $"setup-{role}-{language}.png"), prints));
                     if (!setup.ShowsVersion)
                         problems.Add($"the {role} window does not say which version it is");
+                    if (setup.Overflow() is string cut)
+                        problems.Add($"the {role} window is cut off at the bottom ({cut})");
 
                     setup.ShowSampleResult(withProblems: uninstall);
                     await Task.Delay(400);
@@ -537,6 +539,8 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                         Path.Combine(folder, $"setup-{role}-done-{language}.png"), prints));
                     if (!setup.ShowsVersion)
                         problems.Add($"the {role} result does not say which version it is");
+                    if (setup.Overflow() is string cutResult)
+                        problems.Add($"the {role} result is cut off at the bottom ({cutResult})");
                     setup.HideWindow();
                 }
 

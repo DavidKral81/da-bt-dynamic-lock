@@ -30,10 +30,12 @@ public sealed partial class InstallerWindow : Window
     private const int MinHeightDip = 240;
 
     /// <summary>
-    /// What the title bar takes, in DIPs. MoveAndResize sizes the WHOLE window,
-    /// so without this the bar eats the bottom of the content - which is the
-    /// same trap the Python preview tool fell into from the other side, when it
-    /// measured without the title bar and cut the picture short.
+    /// What the title bar takes, in DIPs, when the window cannot yet say. MoveAndResize sizes
+    /// the WHOLE window, so without this the bar eats the bottom of the content
+    /// - which is the same trap the Python preview tool fell into from the
+    /// other side, when it measured without the title bar and cut the picture
+    /// short. The real figure is 37.6 at 125 %, borders included, and
+    /// FitToContent reads it off the window whenever it can.
     /// </summary>
     private const int TitleBarDip = 32;
 
@@ -99,9 +101,25 @@ public sealed partial class InstallerWindow : Window
     /// </summary>
     private void FitToContent()
     {
-        Root.Measure(new Windows.Foundation.Size(WidthDip, double.PositiveInfinity));
+        // ⚠ Measured at the width the content really GETS, not at the window's.
+        // MoveAndResize sizes the whole window, frame included, so the content
+        // is narrower than WidthDip (565.6 of 580 DIP at 125 %). Measured at
+        // 580, a sentence that just fits there wrapped in the real window, and
+        // the English outcome of a removal with problems lost 22 DIP off the
+        // bottom - half of its Close button. The frame and the title bar are
+        // read off the window itself; the constant is only what is used before
+        // Windows can say.
+        double scale = WindowLayout.ScaleOf(Handle);
+        var outer = AppWindow.Size;
+        var inner = AppWindow.ClientSize;
+        bool known = inner.Width > 0 && inner.Height > 0
+            && outer.Width > inner.Width && outer.Height > inner.Height;
+        double frameWide = known ? (outer.Width - inner.Width) / scale : 0;
+        double frameHigh = known ? (outer.Height - inner.Height) / scale : TitleBarDip;
+
+        Root.Measure(new Windows.Foundation.Size(WidthDip - frameWide, double.PositiveInfinity));
         int heightDip = Math.Max(MinHeightDip,
-            (int)Math.Ceiling(Root.DesiredSize.Height) + TitleBarDip);
+            (int)Math.Ceiling(Root.DesiredSize.Height + frameHigh));
 
         var (x, y, w, h) = WindowLayout.Centred(WidthDip, heightDip);
         AppWindow.MoveAndResize(new RectInt32(x, y, w, h));
@@ -232,6 +250,20 @@ public sealed partial class InstallerWindow : Window
     /// both states, because the rewrite already lost it once and nobody
     /// noticed until the installer was in use.
     /// </summary>
+    /// <summary>
+    /// Does what the window laid out fit inside it? Null when it does, else how
+    /// far it runs past the bottom. Checked by the picture run: the English
+    /// outcome of a removal with problems came out 22 DIP taller than its
+    /// window and cut the Close button in half.
+    /// </summary>
+    internal string? Overflow()
+    {
+        double inside = AppWindow.ClientSize.Height / WindowLayout.ScaleOf(Handle);
+        return Root.ActualHeight <= inside + 0.5
+            ? null
+            : $"{Root.ActualHeight:F1} DIP of content in {inside:F1} DIP of window";
+    }
+
     internal bool ShowsVersion =>
         VersionText.Visibility == Visibility.Visible
         && VersionText.Text.Contains(AppInfo.Version, StringComparison.Ordinal);

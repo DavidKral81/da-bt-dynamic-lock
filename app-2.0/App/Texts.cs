@@ -497,7 +497,7 @@ public static class Texts
                              + "for this to work.",
         ["ins_partial_desc"] = "The program is installed, but some steps "
                              + "did not succeed.",
-        ["uni_partial_desc"] = "The program has been removed, but some steps "
+        ["uni_partial_desc"] = "The program is removed, but some steps "
                              + "did not succeed.",
         ["ins_problems_desc"] = "These steps did not succeed:",
         ["ins_opt_launch"] = "Run the application",
