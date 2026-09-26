@@ -30,8 +30,9 @@ public sealed partial class InstallerWindow : Window
     private const int MinHeightDip = 240;
 
     /// <summary>
-    /// What the title bar takes, in DIPs, when the window cannot yet say. MoveAndResize sizes
-    /// the WHOLE window, so without this the bar eats the bottom of the content
+    /// What the title bar takes, in DIPs, when the window cannot yet say.
+    /// MoveAndResize sizes the WHOLE window, so without this the bar eats the
+    /// bottom of the content
     /// - which is the same trap the Python preview tool fell into from the
     /// other side, when it measured without the title bar and cut the picture
     /// short. The real figure is 37.6 at 125 %, borders included, and
