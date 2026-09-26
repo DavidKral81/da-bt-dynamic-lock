@@ -9,7 +9,7 @@ The version lives in one place per program, and everything else reads it:
 `phone/build.ps1` for the phone app (numbered on its own since 2.0), and
 `windows/version.py` for the 1.x line. Change it there and nowhere else.
 
-## Unreleased — 2.0
+## 2.0 — 26 Sep 2026
 
 The application has been rewritten. What it does has not changed: it listens
 for a phone over Bluetooth Low Energy and locks the screen when the phone stops
