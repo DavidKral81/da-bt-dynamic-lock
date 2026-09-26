@@ -528,11 +528,15 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                     await Task.Delay(600);
                     Note(problems, Screenshot.Save(setup.Handle,
                         Path.Combine(folder, $"setup-{role}-{language}.png"), prints));
+                    if (!setup.ShowsVersion)
+                        problems.Add($"the {role} window does not say which version it is");
 
                     setup.ShowSampleResult(withProblems: uninstall);
                     await Task.Delay(400);
                     Note(problems, Screenshot.Save(setup.Handle,
                         Path.Combine(folder, $"setup-{role}-done-{language}.png"), prints));
+                    if (!setup.ShowsVersion)
+                        problems.Add($"the {role} result does not say which version it is");
                     setup.HideWindow();
                 }
 

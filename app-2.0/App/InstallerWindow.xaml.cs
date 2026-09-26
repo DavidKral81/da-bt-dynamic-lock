@@ -151,6 +151,10 @@ public sealed partial class InstallerWindow : Window
             Subtitle.Text = Texts.Get("ins_subtitle");
         }
 
+        // The same wording as the settings window. When removing, this names
+        // the version being removed: the uninstaller is the installed program.
+        VersionText.Text = Texts.Get("lbl_version", AppInfo.Version);
+
         FolderLabel.Text = Texts.Get(_uninstall ? "ins_from_folder" : "ins_to_folder");
         FolderPath.Text = Where().TargetDir;
 
@@ -222,6 +226,15 @@ public sealed partial class InstallerWindow : Window
     /// it would quit, which is right for a person and wrong here.
     /// </summary>
     internal void HideWindow() => AppWindow.Hide();
+
+    /// <summary>
+    /// Does the window say which version it is? Checked by the picture run in
+    /// both states, because the rewrite already lost it once and nobody
+    /// noticed until the installer was in use.
+    /// </summary>
+    internal bool ShowsVersion =>
+        VersionText.Visibility == Visibility.Visible
+        && VersionText.Text.Contains(AppInfo.Version, StringComparison.Ordinal);
 
     /// <summary>
     /// Puts the outcome screen up with made-up content, so the picture run

@@ -68,6 +68,10 @@
                 <TextBlock x:Name="Heading" Text="" FontSize="18" FontWeight="SemiBold"
                            TextWrapping="Wrap"/>
                 <TextBlock x:Name="Subtitle" Text="" Style="{StaticResource CardHint}"/>
+                <!-- In the top strip so it stays on the result screen too: "what
+                     did I just get?" is asked after installing as well. 1.5 had
+                     it in both of its windows and the rewrite lost it. -->
+                <TextBlock x:Name="VersionText" Text="" Style="{StaticResource CardHint}"/>
             </StackPanel>
 
             <!-- The same kind of control the settings window uses, filled from
