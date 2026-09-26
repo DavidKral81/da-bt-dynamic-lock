@@ -1,22 +1,22 @@
 ================================================================
   DA BT DYNAMIC LOCK
-  Zamkne notebook, když se od něj vzdálíš s telefonem.
+  Zamkne počítač, když se od něj vzdálíš s telefonem.
 ================================================================
 
 Náhrada za vestavěný "Dynamický zámek" ve Windows, který není
 spolehlivý a nenabízí žádné možnosti nastavení.
 
 Skládá se ze dvou částí:
-  1. aplikace v notebooku  - poslouchá a zamyká
+  1. aplikace v počítači   - poslouchá a zamyká
   2. aplikace v telefonu   - vysílá bluetooth signál
 
 U telefonu jsou potřeba obě. Telefon sám od sebe skoro nevysílá,
-takže by notebook neměl co poslouchat.
+takže by počítač neměl co poslouchat.
 
 Místo telefonu jde hlídat i jiné zařízení, a to bez instalace
 čehokoli - ale jen takové, které samo trvale vysílá přes
 Bluetooth LE (maják, fitness náramek, hodinky). Nic se nepáruje:
-notebook jen poslouchá, co je ve vzduchu. Klasická bluetooth
+počítač jen poslouchá, co je ve vzduchu. Klasická bluetooth
 příslušenství proto není slyšet vůbec a většina příslušenství
 ztichne, jakmile se k něčemu připojí.
 
@@ -92,7 +92,7 @@ V TELEFONU (Android)
 
   Hotovo, když je v aplikaci zeleně "Vysílá".
 
-V NOTEBOOKU (Windows)
+V POČÍTAČI (Windows)
 
   4. Spusť Da BT Dynamic Lock. Aplikace nemá okno, běží jako ikona
      vpravo dole u hodin. Šedá je, dokud nevybereš telefon.
@@ -100,7 +100,7 @@ V NOTEBOOKU (Windows)
      → v kartě "Které zařízení hlídat" vyber svůj telefon.
      (Totéž jde i pravým klikem na ikonu → "Které zařízení hlídat".)
 
-  Hotovo, když je ikona zelená. Odejdi s telefonem a notebook se do
+  Hotovo, když je ikona zelená. Odejdi s telefonem a počítač se do
   45 sekund zamkne.
 
 
@@ -293,7 +293,7 @@ signálu. Funguje to proto, že telefon v kapse má signál tak slabý,
 
 Po nastavené době bez signálu (výchozí 10 minut) vyskočí bublina.
 
-Řeší tichou závadu: když telefon přestane vysílat, notebook se
+Řeší tichou závadu: když telefon přestane vysílat, počítač se
 jednou zamkne a pak už čeká, až se telefon objeví. Do té doby
 NEHLÍDÁ, ale tváří se, že ano.
 
@@ -380,7 +380,7 @@ vidět, kdy zmizel a proč se zamklo.
 
 PROČ JE VÝCHOZÍ ČAS 45 SEKUND A NE 20
 
-Bluetooth rádio v notebooku je jedno a musí obsluhovat myš
+Bluetooth rádio v počítači je jedno a musí obsluhovat myš
 a klávesnici, a k tomu poslouchat telefon. Naměřeno vsedě u stolu:
 
   telefon na stole, myš zapnutá     177 signálů/min, výpadky do 3 s
@@ -394,7 +394,7 @@ příjem pod použitelnou mez.
 Zrychlit to jde třemi způsoby:
   - přesunout myš a klávesnici na jejich USB přijímače
   - vypnout Wi-Fi rádio (sdílí anténu s bluetooth)
-  - nosit telefon v kapse na straně blíž k notebooku
+  - nosit telefon v kapse na straně blíž k počítači
 
 
 
@@ -483,7 +483,8 @@ Nemá oprávnění k internetu, takže nemůže nic nikam odeslat.
 Oprávnění má jen tato: vysílat přes bluetooth, běžet na popředí,
 spustit se po startu, zobrazovat oznámení.
 
-Jazyk se přepíná vlaječkami vpravo nahoře (čeština / angličtina).
+Jazyk se mění vpravo nahoře: klepnutím na název jazyka se otevře
+výběr (Čeština / English).
 
 AKTUALIZACE BEZ KABELU
 Dole je číslo verze a odkaz "Stáhnout nejnovější verzi". Ten otevře
@@ -495,7 +496,7 @@ Aplikace se přitom sama nikam neptá: odkaz jen předá adresu
 prohlížeči, což je jiná aplikace. Proto k tomu není potřeba
 oprávnění k internetu.
 
-V aplikaci jde nastavit, jak často vysílat:
+V aplikaci jde nastavit interval vysílání (čas mezi dvěma signály):
   Rychlý 100 ms   nejlepší reakce (výchozí)
   Střední 250 ms  o něco pomalejší reakce
   Úsporný 1 s     nejpomalejší, hrozí plané uzamykání

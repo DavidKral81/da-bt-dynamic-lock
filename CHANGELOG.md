@@ -4,10 +4,10 @@ What changed between releases, newest first. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project uses
 [Semantic Versioning](https://semver.org/).
 
-The version lives in one constant per generation, and everything else reads it:
-`app-2.0/App/AppInfo.cs` for the application and its installer, and
-`windows/version.py` for the 1.x line and the phone app. Change it there and
-nowhere else.
+The version lives in one place per program, and everything else reads it:
+`app-2.0/App/AppInfo.cs` for the Windows application and its installer,
+`phone/build.ps1` for the phone app (numbered on its own since 2.0), and
+`windows/version.py` for the 1.x line. Change it there and nowhere else.
 
 ## Unreleased — 2.0
 
@@ -70,6 +70,16 @@ being heard. How it is built, and what it looks like, have.
   warning and the pause, the two safeguards under "Do not lock while…", and
   the switches for watching and start at logon. The values are the same ones
   the window offers, from one list, so the two cannot drift apart.
+
+### Phone app 1.6
+
+- **The language is picked by name**, top right: tapping it opens the list
+  (Čeština / English). The flags are gone, for the same reason as on Windows.
+- **Clearer wording.** The app speaks of the computer, not a laptop; *How often
+  to broadcast* is now *Broadcast interval*, and its note no longer claims a
+  battery cost that measurement did not find.
+- **Its version is its own.** It is set in `phone/build.ps1` rather than read
+  from the 1.x Windows app, so the two no longer share a number.
 
 ### Security
 

@@ -55,14 +55,16 @@ public final class Texts {
 
     static {
         // --- main screen ---
-        CZECH.put("subtitle", "vysílač pro notebook");
+        // "Computer", never "notebook": the Windows app runs on a desktop
+        // just as well. Impersonal wording, like every label in the project.
+        CZECH.put("subtitle", "vysílač pro počítač");
         ENGLISH.put("subtitle", "transmitter for the computer");
 
-        CZECH.put("intro", "Vysílá bluetooth signál, podle kterého notebook pozná, "
-                + "že jsi u stolu. Po restartu telefonu i po vypnutí režimu "
-                + "letadla se spustí sám.");
-        ENGLISH.put("intro", "Broadcasts a bluetooth signal that tells your computer "
-                + "you are at the desk. It starts again by itself after the "
+        CZECH.put("intro", "Vysílá signál Bluetooth, podle kterého počítač pozná, "
+                + "že je telefon nablízku. Po restartu telefonu i po vypnutí "
+                + "režimu letadla se spustí sám.");
+        ENGLISH.put("intro", "Broadcasts a Bluetooth signal that tells the computer "
+                + "the phone is nearby. It starts again by itself after the "
                 + "phone restarts or aeroplane mode is turned off.");
 
         CZECH.put("btn_start", "Zapnout vysílání");
@@ -70,12 +72,18 @@ public final class Texts {
         CZECH.put("btn_stop", "Vypnout vysílání");
         ENGLISH.put("btn_stop", "Turn broadcasting off");
 
-        CZECH.put("interval_title", "Jak často vysílat");
-        ENGLISH.put("interval_title", "How often to broadcast");
-        CZECH.put("interval_desc", "Častěji = rychlejší reakce notebooku, ale "
-                + "vyšší spotřeba baterie.");
-        ENGLISH.put("interval_desc", "More often = the computer reacts faster, but "
-                + "the battery drains quicker.");
+        // "Interval", not "frequency": the choices are the time between two
+        // signals (100 ms, 250 ms, 1 s), and a frequency would be given in Hz.
+        // It is also the term Bluetooth itself uses (advertising interval).
+        CZECH.put("interval_title", "Interval vysílání");
+        ENGLISH.put("interval_title", "Broadcast interval");
+        // The battery: measured in everyday use, the difference between the
+        // three is negligible - the manual says so, and this line used to
+        // claim the opposite.
+        CZECH.put("interval_desc", "Kratší interval znamená rychlejší reakci "
+                + "počítače. Rozdíl ve spotřebě baterie je zanedbatelný.");
+        ENGLISH.put("interval_desc", "A shorter interval lets the computer react "
+                + "faster. The difference in battery use is negligible.");
 
         CZECH.put("i_fast", "Rychlý — 100 ms");
         ENGLISH.put("i_fast", "Fast — 100 ms");
@@ -96,11 +104,10 @@ public final class Texts {
         ENGLISH.put("language_title", "Language");
 
         CZECH.put("note_name", "Vysílá se jméno telefonu z nastavení Bluetooth. "
-                + "V notebooku se sledovaný telefon vybírá v nastavení "
-                + "aplikace.");
+                + "Hlídaný telefon se vybírá v aplikaci v počítači.");
         ENGLISH.put("note_name", "The phone's Bluetooth name is what gets "
-                + "broadcast. On the computer you pick the watched phone in "
-                + "the app settings.");
+                + "broadcast. The watched phone is chosen in the app on the "
+                + "computer.");
 
         CZECH.put("note_internet", "Aplikace nemá přístup k internetu — nemůže nic "
                 + "nikam odeslat.");
@@ -110,8 +117,8 @@ public final class Texts {
         // --- states ---
         CZECH.put("st_starting", "Vysílání se spouští…");
         ENGLISH.put("st_starting", "Broadcasting is starting…");
-        CZECH.put("st_bt_off", "Bluetooth vypnutý — čekám");
-        ENGLISH.put("st_bt_off", "Bluetooth is off — waiting");
+        CZECH.put("st_bt_off", "Bluetooth je vypnutý — čeká se na zapnutí");
+        ENGLISH.put("st_bt_off", "Bluetooth is off — waiting for it");
         CZECH.put("st_no_permission", "Chybí oprávnění „Zařízení v okolí“");
         ENGLISH.put("st_no_permission", "The \"Nearby devices\" permission is missing");
         CZECH.put("st_unsupported", "Telefon neumí BLE vysílání");

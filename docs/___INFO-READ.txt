@@ -510,8 +510,8 @@ It has no internet permission, so it cannot send anything
 anywhere. Its only permissions are: broadcast over bluetooth,
 run in the foreground, start at boot, show notifications.
 
-The language is switched with the small flags in the top right corner
-(Czech / English).
+The language is changed in the top right corner: tapping the name of
+the language opens a list (Čeština / English).
 
 UPDATING WITHOUT A CABLE
 At the bottom there is the version number and a "Download the
@@ -524,7 +524,8 @@ The app itself asks nothing: the link only hands the address to
 the browser, which is a different app. That is why no internet
 permission is needed for it.
 
-The broadcasting interval can be set in the app:
+The broadcast interval (the time between two signals) can be set in
+the app:
   Fast 100 ms      best response (default)
   Medium 250 ms    slightly slower response
   Saving 1 s       slowest, risk of false locking

@@ -59,15 +59,12 @@ $signer   = "$bt\apksigner.bat"
 if (Test-Path $out) { Remove-Item $out -Recurse -Force }
 New-Item -ItemType Directory -Path "$out\res","$out\gen","$out\classes" -Force | Out-Null
 
-# The version comes from windows\version.py, the same constant the Windows
-# app and its installer use. Written out a second time here it would sooner
-# or later disagree with them.
-$versionFile = Join-Path (Split-Path $base -Parent) "windows\version.py"
-$versionPy = Get-Content $versionFile -Raw
-if ($versionPy -notmatch '(?m)^VERSION\s*=\s*"([^"]+)"') {
-    throw "Could not read VERSION out of windows\version.py"
-}
-$version = $Matches[1]
+# The phone app's version - ONE place, here. Change it here and nowhere else;
+# the app reads it back out of its own package. It used to come from
+# windows\version.py, shared with the 1.x Windows app, but the phone app has
+# its own numbering since the Windows app moved to 2.0, and that folder is
+# going away.
+$version = "1.6"
 
 # Android compares releases by versionCode, not by the name it shows. Left at
 # 1 it would call 1.1 the same build as 1.0 and refuse to see it as an update,

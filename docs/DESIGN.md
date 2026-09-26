@@ -124,7 +124,7 @@ screen would lock again as soon as the password was typed.
 
 **A saved Wi-Fi network can pause the watching — and it is matched by name AND
 by access point.** Wherever locking is not wanted (an office, a workshop), the
-laptop being connected to a chosen network suspends the guard. A network is
+computer being connected to a chosen network suspends the guard. A network is
 recognised by its name together with the MAC address of the access point,
 because a name on its own is forged by naming a hotspot after it — and this
 setting *switches the protection off*, so being fooled costs security rather

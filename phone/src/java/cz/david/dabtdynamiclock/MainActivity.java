@@ -1,13 +1,22 @@
 package cz.david.dabtdynamiclock;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -48,7 +57,6 @@ public class MainActivity extends Activity {
     private TextView statusText;
     private TextView mainButton;
     private final TextView[] options = new TextView[3];
-    private final FlagView[] flags = new FlagView[2];
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable refresh = new Runnable() {
@@ -72,37 +80,41 @@ public class MainActivity extends Activity {
         l.setPadding(dp(20), dp(28), dp(20), dp(28));
         l.setBackgroundColor(BACKGROUND);
 
-        // --- language flags (top right) ---------------------------------
-        // At the top because down at the end of the page they would need
-        // scrolling to and would be easily missed.
+        // --- language (top right) ----------------------------------------
+        // At the top because down at the end of the page it would need
+        // scrolling to and would be easily missed. The current language by
+        // NAME, written in itself, with a drop-down chevron - the common
+        // pattern, and the same one the Windows app uses. Flags are gone: a
+        // flag names a country, not a language, and English has no flag that
+        // is not also a claim about whose English it is.
         LinearLayout languageRow = new LinearLayout(this);
         languageRow.setOrientation(LinearLayout.HORIZONTAL);
         languageRow.setGravity(Gravity.END);
-        final String[] codes = {Texts.CS, Texts.EN};
-        for (int i = 0; i < 2; i++) {
-            final String code = codes[i];
-            FlagView v = new FlagView(this, i == 0);
-            LinearLayout.LayoutParams lp =
-                    new LinearLayout.LayoutParams(dp(24), dp(16));
-            lp.leftMargin = dp(8);
-            v.setLayoutParams(lp);
-            v.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View w) {
-                    if (code.equals(Texts.language())) {
-                        return;
-                    }
-                    Prefs.setLanguage(MainActivity.this, code);
-                    AdvertiserService.refreshNotification();
-                    // the screen is built again, already in the new language -
-                    // redrawing the individual labels would mean forgetting
-                    // one of them
-                    recreate();
-                }
-            });
-            flags[i] = v;
-            languageRow.addView(v);
-        }
+        TextView language = new TextView(this);
+        language.setText(languageName(Texts.language()));
+        language.setTextSize(14);
+        language.setTextColor(TEXT);
+        language.setGravity(Gravity.CENTER_VERTICAL);
+        language.setPadding(dp(14), dp(8), dp(12), dp(8));
+        language.setMinHeight(dp(40));      // a comfortable touch target
+        GradientDrawable chip = new GradientDrawable();
+        chip.setColor(CARD);
+        chip.setStroke(dp(1), BORDER);
+        chip.setCornerRadius(dp(20));
+        language.setBackground(chip);
+        ChevronDrawable chevron = new ChevronDrawable(TEXT_GREY, dp(2));
+        chevron.setBounds(0, 0, dp(10), dp(6));
+        language.setCompoundDrawablesRelative(null, null, chevron, null);
+        language.setCompoundDrawablePadding(dp(8));
+        language.setContentDescription(Texts.t("language_title"));
+        language.setClickable(true);
+        language.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View w) {
+                chooseLanguage();
+            }
+        });
+        languageRow.addView(language);
         l.addView(languageRow);
 
         // --- header with the logo ---------------------------------------
@@ -268,9 +280,8 @@ public class MainActivity extends Activity {
     /**
      * The version of this APK, read from the package itself.
      *
-     * Never a constant in the code: the number comes from build.ps1, which
-     * takes it from windows/version.py, so a copy here could disagree with
-     * what the phone's app info shows.
+     * Never a constant in the code: the number is set in build.ps1, so a copy
+     * here could disagree with what the phone's app info shows.
      */
     private String appVersion() {
         try {
@@ -344,10 +355,80 @@ public class MainActivity extends Activity {
         for (int i = 0; i < options.length; i++) {
             colorise(options[i], i == a);
         }
-        boolean en = Texts.EN.equals(Texts.language());
-        if (flags[0] != null) {
-            flags[0].setActive(!en);
-            flags[1].setActive(en);
+    }
+
+    // ---------------------------------------------------------- language
+
+    /** Each language named IN ITSELF - never translated, so somebody who
+     *  opened the app in a language they cannot read still finds their own. */
+    private static String languageName(String code) {
+        return Texts.EN.equals(code) ? "English" : "Čeština";
+    }
+
+    /** The system's own single-choice dialog: what Android settings use for
+     *  picking one value out of a few. */
+    private void chooseLanguage() {
+        final String[] codes = {Texts.CS, Texts.EN};
+        String[] names = {languageName(Texts.CS), languageName(Texts.EN)};
+        int current = Texts.EN.equals(Texts.language()) ? 1 : 0;
+        new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                .setTitle(Texts.t("language_title"))
+                .setSingleChoiceItems(names, current,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                                if (codes[which].equals(Texts.language())) {
+                                    return;
+                                }
+                                Prefs.setLanguage(MainActivity.this, codes[which]);
+                                AdvertiserService.refreshNotification();
+                                // the screen is built again, already in the new
+                                // language - redrawing the individual labels
+                                // would mean forgetting one of them
+                                recreate();
+                            }
+                        })
+                .show();
+    }
+
+    /** A small drop-down chevron, drawn rather than taken from a font: a
+     *  glyph like "▾" looks different - or is missing - from phone to phone. */
+    private static final class ChevronDrawable extends Drawable {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        ChevronDrawable(int color, float width) {
+            paint.setColor(color);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(width);
+            paint.setStrokeCap(Paint.Cap.ROUND);
+            paint.setStrokeJoin(Paint.Join.ROUND);
+        }
+
+        @Override
+        public void draw(Canvas canvas) {
+            Rect b = getBounds();
+            float inset = paint.getStrokeWidth() / 2f;
+            Path p = new Path();
+            p.moveTo(b.left + inset, b.top + inset);
+            p.lineTo(b.exactCenterX(), b.bottom - inset);
+            p.lineTo(b.right - inset, b.top + inset);
+            canvas.drawPath(p, paint);
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            paint.setAlpha(alpha);
+        }
+
+        @Override
+        public void setColorFilter(ColorFilter filter) {
+            paint.setColorFilter(filter);
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
         }
     }
 
