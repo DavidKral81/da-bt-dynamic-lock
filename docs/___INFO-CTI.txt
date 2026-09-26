@@ -545,7 +545,8 @@ SESTAVENÍ INSTALAČKY
         "...\Da BT Dynamic Lock\app-2.0\build-setup.ps1"
 
 Vyrobí jediný DaBtDynamicLock.exe, který je zároveň instalátorem,
-a ověří ho self-checkem. Nic dalšího se k němu nepřibaluje.
+a ověří ho self-checkem. Nic dalšího se k němu nepřibaluje. Hotový
+soubor je ve složce projektu v  _output\setup .
 
 SESTAVENÍ APLIKACE PRO TELEFON
 

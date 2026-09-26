@@ -153,7 +153,7 @@ public sealed record Settings
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(temporary, JsonSerializer.Serialize(this, Format));
-            File.Move(temporary, path, overwrite: true);
+            MoveOver(temporary, path);
             return null;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
@@ -164,6 +164,32 @@ public sealed record Settings
             catch (Exception cleanup) when (cleanup is IOException
                                                 or UnauthorizedAccessException) { }
             return $"the settings could not be saved ({e.Message})";
+        }
+    }
+
+    /// <summary>
+    /// Moves the new file over the old one, waiting out a brief hold.
+    ///
+    /// Replacing a file needs it free of other handles that do not share
+    /// deletion, and an antivirus scan or a sync client opens a freshly written
+    /// file for a moment - measured 26.09.2026 in a folder mirrored to the
+    /// cloud: "access denied", one switch not saved. Up to about two seconds
+    /// of retries; the last failure is what gets reported.
+    /// </summary>
+    private static void MoveOver(string from, string to)
+    {
+        for (int attempt = 1; ; attempt++)
+        {
+            try
+            {
+                File.Move(from, to, overwrite: true);
+                return;
+            }
+            catch (Exception e) when (attempt < 20
+                                      && e is IOException or UnauthorizedAccessException)
+            {
+                Thread.Sleep(100);
+            }
         }
     }
 }

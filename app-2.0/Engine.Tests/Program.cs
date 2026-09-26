@@ -101,6 +101,23 @@ internal static class EngineChecks
         // half a file; the stand-in must not be left lying there.
         Check("...and nothing is left beside it", false, File.Exists(path + ".new"));
 
+        // Something else holding the file for a moment - an antivirus scan, a
+        // sync client - makes moving over it fail with "access denied". Seen
+        // 26.09.2026 when the self-check's settings sat in a folder mirrored
+        // to the cloud: one switch was not saved. The save has to outlast a
+        // brief hold, not give up on the first refusal.
+        var held = new FileStream(path, FileMode.Open, FileAccess.Read,
+            FileShare.ReadWrite);
+        var release = Task.Run(async () =>
+        {
+            await Task.Delay(150);
+            held.Dispose();
+        });
+        loaded.SilenceSeconds = 90;
+        Check("saving outlasts a file held open for a moment", null, loaded.Save(path));
+        release.Wait();
+        Check("...and the value landed", 90.0, Settings.Load(path).Value.SilenceSeconds);
+
         File.WriteAllText(path, "{ this is not json");
         var (broken, complaint) = Settings.Load(path);
         Check("a damaged file does not stop the app", 45.0, broken.SilenceSeconds);

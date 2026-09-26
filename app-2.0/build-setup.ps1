@@ -15,22 +15,30 @@
 # installer, self-contained, comes to 72 MB - more than the whole WinUI
 # application takes at 69 MB. A second program would have carried .NET twice.
 #
-# Run it whenever a build is wanted. It writes nothing outside the build
-# folder and installs nothing.
+# Run it whenever a build is wanted. It installs nothing; it writes into the
+# build folder in LOCALAPPDATA and puts the finished setup in the project's
+# _output\setup (see -Do).
 #
 # No diacritics in this file on purpose: PowerShell 5.1 reads .ps1 as ANSI.
 
 [CmdletBinding()]
 param(
-    # Where the finished setup goes. Outside the project by default: the
-    # project lives in a mirrored folder, and a 69 MB file rewritten on every
-    # build would be re-uploaded every time.
-    [string] $Do = (Join-Path $env:LOCALAPPDATA "da-bt-dynamic-lock-build\setup")
+    # Where the finished setup goes. Empty = _output\setup in the project,
+    # where it is at hand (decided 26.09.2026). The project sits in a folder
+    # mirrored to the cloud, so every build uploads the file again - the price
+    # of having it there. Only this one file comes here: the publish tree and
+    # the compiler output stay outside the project.
+    [string] $Do = ""
 )
 
 $ErrorActionPreference = "Stop"
 
 $base = $PSScriptRoot
+# Derived from where this script sits - the real path contains diacritics,
+# which this file must not (see above).
+if ([string]::IsNullOrWhiteSpace($Do)) {
+    $Do = Join-Path (Split-Path $base -Parent) "_output\setup"
+}
 $project = Join-Path $base "App\App.csproj"
 $staging = Join-Path $env:LOCALAPPDATA "da-bt-dynamic-lock-build\setup-staging"
 
@@ -60,6 +68,21 @@ if ($running.Count -gt 0) {
     exit 1
 }
 
+# The setup file itself may be open too - somebody started it to install, and
+# its window is still up. That copy runs elevated, so its path cannot even be
+# read to spot it above; the file is asked instead. Checked BEFORE the
+# minute-long publish, not found out at the very end.
+$target = Join-Path $Do $setupName
+if (Test-Path $target) {
+    try {
+        [IO.File]::Open($target, 'Open', 'ReadWrite', 'None').Close()
+    } catch {
+        Write-Host "$target is in use - probably its setup window is still open." -ForegroundColor Yellow
+        Write-Host "Close it first, or the build cannot replace the file." -ForegroundColor Yellow
+        exit 1
+    }
+}
+
 if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
 
 # One publish profile, not a row of switches typed by hand: two builds must not
@@ -79,6 +102,28 @@ if (-not (Test-Path $built)) {
     exit 1
 }
 
+# Publishing is not running. The finished file is started with the self-check
+# switch, which drives the settings window's controls and reports whether each
+# one reaches the settings file.
+#
+# Checked HERE, in the build folder, before it is copied anywhere: the check
+# writes its data beside the file, and beside the file in the project it sat
+# in a folder mirrored to the cloud, whose sync client held the settings file
+# and failed a save (26.09.2026). A file that fails also never replaces the
+# last good setup.
+#
+# Start-Process -Wait, because PowerShell does NOT wait for a windowed program:
+# it returns at once, $LASTEXITCODE stays empty, and it looks as though the run
+# did nothing. An empty exit code is not zero, it is a sign nobody waited.
+Write-Host ""
+Write-Host "Checking the finished file..." -ForegroundColor Cyan
+$check = Start-Process -FilePath $built -ArgumentList "--self-check" -Wait -PassThru
+if ($check.ExitCode -ne 0) {
+    Write-Host "The self-check failed with $($check.ExitCode)." -ForegroundColor Red
+    Write-Host "See $staging\dry-run-data\dyn_lock.log (kept for that reason)." -ForegroundColor Red
+    exit 1
+}
+
 if (-not (Test-Path $Do)) { New-Item -ItemType Directory -Path $Do -Force | Out-Null }
 $setup = Join-Path $Do $setupName
 Copy-Item $built $setup -Force
@@ -87,26 +132,15 @@ if (-not (Test-Path $setup)) {
     Write-Host "The setup file was not created at $setup." -ForegroundColor Red
     exit 1
 }
+# The file that passed the check must be the file that is handed out.
+if ((Get-FileHash $built -Algorithm SHA256).Hash -ne (Get-FileHash $setup -Algorithm SHA256).Hash) {
+    Write-Host "The copy at $setup differs from the file that was checked." -ForegroundColor Red
+    exit 1
+}
 
 # The staging copy is the same 69 MB again and nothing uses it once copied.
 # Left until the next build, it only sat there taking space.
 Remove-Item $staging -Recurse -Force
-
-# Publishing is not running. The finished file is started with the self-check
-# switch, which drives the settings window's controls and reports whether each
-# one reaches the settings file.
-#
-# Start-Process -Wait, because PowerShell does NOT wait for a windowed program:
-# it returns at once, $LASTEXITCODE stays empty, and it looks as though the run
-# did nothing. An empty exit code is not zero, it is a sign nobody waited.
-Write-Host ""
-Write-Host "Checking the finished file..." -ForegroundColor Cyan
-$check = Start-Process -FilePath $setup -ArgumentList "--self-check" -Wait -PassThru
-if ($check.ExitCode -ne 0) {
-    Write-Host "The self-check failed with $($check.ExitCode)." -ForegroundColor Red
-    Write-Host "See dry-run-data\dyn_lock.log beside the setup file." -ForegroundColor Red
-    exit 1
-}
 
 $item = Get-Item $setup
 $hash = (Get-FileHash -Algorithm SHA256 $setup).Hash

@@ -55,6 +55,10 @@
          blank. The same file 1.x built into its executable, same picture as
          IconArt draws. -->
     <ApplicationIcon>Assets\dyn_lock_tray.ico</ApplicationIcon>
+    <!-- Only embedded, never shipped beside it. Inside the project folder the
+         SDK picks the file up as content too, and the single-file setup then
+         carried a second, unused copy (measured: +31.8 KB). The removal is in
+         the ItemGroup below. -->
     <Product>Da BT Dynamic Lock</Product>
     <AssemblyTitle>Da BT Dynamic Lock</AssemblyTitle>
     <Company>David Kral</Company>
@@ -63,6 +67,11 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="Assets\dyn_lock_tray.ico" />
+    <None Remove="Assets\dyn_lock_tray.ico" />
   </ItemGroup>
 
   <ItemGroup>

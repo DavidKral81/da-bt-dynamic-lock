@@ -575,7 +575,8 @@ BUILDING THE INSTALLER
 
 It produces a single DaBtDynamicLock.exe that is also the
 installer, and checks it with the self-check. Nothing else is
-bundled with it.
+bundled with it. The finished file is in the project folder, in
+_output\setup .
 
 BUILDING THE PHONE APP
 
