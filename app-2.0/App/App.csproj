@@ -45,8 +45,11 @@
   <PropertyGroup>
     <AppVersion>$([System.Text.RegularExpressions.Regex]::Replace($([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)AppInfo.cs')), '(?s)^.*?\n\s*public const string Version = "([^"]+)";.*$', '$1'))</AppVersion>
     <Version>$(AppVersion)</Version>
-    <FileVersion>$(AppVersion).0.0</FileVersion>
-    <AssemblyVersion>$(AppVersion).0.0</AssemblyVersion>
+    <!-- Windows wants exactly four parts: "2.0" and "2.0.1" both padded to
+         four, never more (appending a fixed ".0.0" turned 2.0.1 into five). -->
+    <AppVersion4>$([System.Text.RegularExpressions.Regex]::Match('$(AppVersion).0.0.0', '^\d+\.\d+\.\d+\.\d+').Value)</AppVersion4>
+    <FileVersion>$(AppVersion4)</FileVersion>
+    <AssemblyVersion>$(AppVersion4)</AssemblyVersion>
     <InformationalVersion>$(AppVersion)</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <!-- The icon INSIDE the .exe, which is what Installed apps, Explorer and

@@ -17,7 +17,7 @@ public static class AppInfo
     /// below exactly in its present form - both find it by that text, at the
     /// start of a line.
     /// </summary>
-    public const string Version = "2.0";
+    public const string Version = "2.0.1";
 
     public const string ProjectUrl = "https://github.com/DavidKral81/da-bt-dynamic-lock";
 

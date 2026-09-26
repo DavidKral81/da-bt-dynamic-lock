@@ -154,7 +154,8 @@ $version = (Get-Item $setup).VersionInfo.FileVersion
 # written: properties that exist but say something else are the same fault.
 $appInfo = Get-Content (Join-Path $base "App\AppInfo.cs") -Raw
 $shown = [regex]::Match($appInfo, '(?m)^\s*public const string Version = "([^"]+)";').Groups[1].Value
-if ([string]::IsNullOrWhiteSpace($shown) -or $version -ne "$shown.0.0" -or
+$expected = (("$shown.0.0.0" -split '\.')[0..3]) -join '.'   # four parts, as App.csproj pads it
+if ([string]::IsNullOrWhiteSpace($shown) -or $version -ne $expected -or
     $item.VersionInfo.ProductName -ne "Da BT Dynamic Lock") {
     Write-Host "The file properties do not match the app: file version '$version', product '$($item.VersionInfo.ProductName)', AppInfo.Version '$shown'." -ForegroundColor Red
     exit 1
