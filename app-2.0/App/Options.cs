@@ -8,7 +8,7 @@ public enum SetupRole
 }
 
 /// <summary>
-/// Command line switches. The same three the Python version has, for the same
+/// Command line switches. The same three the Python version had, for the same
 /// reason: the app has to be runnable next to the installed one without
 /// touching it or locking anybody's screen.
 /// </summary>

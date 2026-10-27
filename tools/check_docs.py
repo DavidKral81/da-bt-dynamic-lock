@@ -54,7 +54,7 @@ DOCS = [
 ]
 
 # Files that must be English. The two manuals are bilingual on purpose and
-# texts.py / Texts.java hold the translations themselves, so they are exempt.
+# Texts.cs / Texts.java hold the translations themselves, so they are exempt.
 ENGLISH_ONLY = ["README.md", "docs/DESIGN.md", "requirements.txt",
                 ".gitignore", "phone/signing-key-README.txt"]
 
@@ -78,16 +78,14 @@ ALLOWED_MISSING = {
     "config.json": "created at runtime, never shipped",
     "dyn_lock.log": "created at runtime",
     "history.json": "created at runtime",
-    "DaBTDynamicLock.exe": "built by the installer, not stored in the repo",
-    # 2.0 spells it differently (Setup.ProgramName) and is one file: the
-    # application, its installer and its uninstaller in the same executable.
+    # One file (Setup.ProgramName): the application, its installer and its
+    # uninstaller in the same executable. The 1.x names are not listed any
+    # more - nothing names them, and an excuse nobody needs would only let
+    # one of them back into a manual unnoticed.
     "DaBtDynamicLock.exe": "build output, excluded by .gitignore",
     "quit-by-user.txt": "written when the user quits the app, never shipped",
     "dry-run-data": "created beside the program by a test run",
-    "DaBTDynamicLock-setup.exe": "build output, excluded by .gitignore",
-    "setup.exe": "shorthand for that build output in a comment",
     "DaBTDynamicLock.apk": "build output, excluded by .gitignore",
-    "uninstall.exe": "copied next to the program at install time (UNINSTALLER_NAME)",
     "signing-key-DO-NOT-DELETE.jks": "the key itself is never committed",
     "signing-key-password.txt": "never committed, by design",
     "_output": "created by the tools when they run",
@@ -289,6 +287,9 @@ def load_source():
 MUST_REPORT = [
     "  1. Run  instalace\\DaBTDynamicLock-setup.exe  and follow it.",
     "  2. Copy  telefon\\DaBTDynamicLock.apk  to the phone.",
+    # The 1.x setup name on its own, with no folder to give it away: nothing
+    # by that name is built any more, so nothing may excuse it.
+    "  Double-click  DaBTDynamicLock-setup.exe  to install.",
     '  The log then says "Zamykam obrazovku pomoci telefonu" and locks.',
     # 1.5's label, which 1.5's texts in the haystack used to excuse.
     '  and a "Quit application" button.',

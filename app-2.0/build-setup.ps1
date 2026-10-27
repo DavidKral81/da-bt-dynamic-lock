@@ -77,7 +77,12 @@ if (Test-Path $target) {
     try {
         [IO.File]::Open($target, 'Open', 'ReadWrite', 'None').Close()
     } catch {
-        Write-Host "$target is in use - probably its setup window is still open." -ForegroundColor Yellow
+        # The reason is printed, not only guessed: a sync client or an
+        # antivirus can hold the file just as well as an open setup window.
+        $reason = $_.Exception
+        if ($reason.InnerException) { $reason = $reason.InnerException }
+        Write-Host "$target is in use: $($reason.Message)" -ForegroundColor Yellow
+        Write-Host "Probably its setup window is still open, or the file is being synced or scanned." -ForegroundColor Yellow
         Write-Host "Close it first, or the build cannot replace the file." -ForegroundColor Yellow
         exit 1
     }
@@ -124,6 +129,38 @@ if ($check.ExitCode -ne 0) {
     exit 1
 }
 
+# The file properties, checked, not only printed. 1.x once built both
+# executables with empty file properties - the build reported success,
+# nothing complained, and it nearly went out that way.
+#
+# And compared with the number the app shows, read from the one place it is
+# written: properties that exist but say something else are the same fault.
+#
+# Checked on the staging file, BEFORE the copy: checked after it, a file that
+# fails had already replaced the last good setup by the time it was refused.
+$builtInfo = (Get-Item $built).VersionInfo
+$version = $builtInfo.FileVersion
+$appInfo = Get-Content (Join-Path $base "App\AppInfo.cs") -Raw
+$shown = [regex]::Match($appInfo, '(?m)^\s*public const string Version = "([^"]+)";').Groups[1].Value
+$expected = (("$shown.0.0.0" -split '\.')[0..3]) -join '.'   # four parts, as App.csproj pads it
+if ([string]::IsNullOrWhiteSpace($shown) -or $version -ne $expected -or
+    $builtInfo.ProductName -ne "Da BT Dynamic Lock") {
+    Write-Host "The file properties do not match the app: file version '$version', product '$($builtInfo.ProductName)', AppInfo.Version '$shown'." -ForegroundColor Red
+    Write-Host "Nothing was copied to $Do." -ForegroundColor Red
+    exit 1
+}
+
+# The icon inside the file is what Installed apps, Explorer and shortcuts
+# show. Without it the build still succeeds and the entry is blank - the
+# reason the icon was put in, so its absence is a failure, not a warning.
+Add-Type -Namespace Ddl -Name Shell -MemberDefinition '[DllImport("shell32.dll", CharSet = CharSet.Unicode)] public static extern uint ExtractIconEx(string file, int index, IntPtr[] large, IntPtr[] small, uint count);'
+$icons = [Ddl.Shell]::ExtractIconEx($built, -1, $null, $null, 0)
+if ($icons -lt 1) {
+    Write-Host "The built file carries no icon (ApplicationIcon in App.csproj)." -ForegroundColor Red
+    Write-Host "Nothing was copied to $Do." -ForegroundColor Red
+    exit 1
+}
+
 if (-not (Test-Path $Do)) { New-Item -ItemType Directory -Path $Do -Force | Out-Null }
 $setup = Join-Path $Do $setupName
 Copy-Item $built $setup -Force
@@ -144,22 +181,6 @@ Remove-Item $staging -Recurse -Force
 
 $item = Get-Item $setup
 $hash = (Get-FileHash -Algorithm SHA256 $setup).Hash
-$version = (Get-Item $setup).VersionInfo.FileVersion
-
-# Checked, not only printed. 1.x once built both executables with empty file
-# properties - the build reported success, nothing complained, and it nearly
-# went out that way.
-#
-# And compared with the number the app shows, read from the one place it is
-# written: properties that exist but say something else are the same fault.
-$appInfo = Get-Content (Join-Path $base "App\AppInfo.cs") -Raw
-$shown = [regex]::Match($appInfo, '(?m)^\s*public const string Version = "([^"]+)";').Groups[1].Value
-$expected = (("$shown.0.0.0" -split '\.')[0..3]) -join '.'   # four parts, as App.csproj pads it
-if ([string]::IsNullOrWhiteSpace($shown) -or $version -ne $expected -or
-    $item.VersionInfo.ProductName -ne "Da BT Dynamic Lock") {
-    Write-Host "The file properties do not match the app: file version '$version', product '$($item.VersionInfo.ProductName)', AppInfo.Version '$shown'." -ForegroundColor Red
-    exit 1
-}
 
 Write-Host ""
 Write-Host "Done." -ForegroundColor Green

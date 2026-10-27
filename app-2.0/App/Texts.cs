@@ -16,7 +16,7 @@ public static class Texts
     /// <summary>
     /// Which language is in use. Set from the settings at startup and when the
     /// user switches; everything is translated at the moment of display, never
-    /// stored translated. The Python phone app was caught twice by the other
+    /// stored translated. The phone app was caught twice by the other
     /// habit - a remembered status stayed in the old language until the state
     /// happened to change.
     /// </summary>

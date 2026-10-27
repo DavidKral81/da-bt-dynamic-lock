@@ -9,7 +9,7 @@ The version lives in one place per program, and everything else reads it:
 `phone/build.ps1` for the phone app (numbered on its own since 2.0). Change it
 there and nowhere else.
 
-## Unreleased
+## 2.0.1 — 27 Oct 2026
 
 - **The 1.x code is gone from the tree** — the Python application, its
   installer and its tests. It stays in the history and in the 1.x releases.
@@ -21,7 +21,9 @@ there and nowhere else.
   up to two seconds instead of losing the change.
 - **The setup file no longer carries its icon twice** (31.8 KB less).
 - `app-2.0/build-setup.ps1` puts the finished setup in `_output/setup` and
-  checks it before copying it there.
+  checks it before copying it there - the self-check, the file version and
+  the icon - so a file that fails never replaces the last good setup. When
+  the setup file is in use, it says why.
 
 ## 2.0 — 26 Sep 2026
 

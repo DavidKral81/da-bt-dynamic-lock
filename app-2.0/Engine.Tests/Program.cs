@@ -108,15 +108,41 @@ internal static class EngineChecks
         // brief hold, not give up on the first refusal.
         var held = new FileStream(path, FileMode.Open, FileAccess.Read,
             FileShare.ReadWrite);
+        // The hold has to block a move over the file for real - one that
+        // blocked nothing would let the save pass without a single retry.
+        File.WriteAllText(path + ".probe", "{}");
+        bool holdBlocks;
+        try { File.Move(path + ".probe", path, overwrite: true); holdBlocks = false; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { holdBlocks = true; }
+        File.Delete(path + ".probe");
+        Check("a file held open refuses to be moved over", true, holdBlocks);
         var release = Task.Run(async () =>
         {
-            await Task.Delay(150);
+            await Task.Delay(300);
             held.Dispose();
         });
         loaded.SilenceSeconds = 90;
-        Check("saving outlasts a file held open for a moment", null, loaded.Save(path));
+        // Read at the call, not assumed: on a slow machine the hold could be
+        // over before the save starts, and the check below would prove nothing.
+        bool heldWhenSaving = !release.IsCompleted;
+        string? saved = loaded.Save(path);
         release.Wait();
+        Check("...the hold is still on when saving starts", true, heldWhenSaving);
+        Check("saving outlasts a file held open for a moment", null, saved);
         Check("...and the value landed", 90.0, Settings.Load(path).Value.SilenceSeconds);
+
+        // A hold that outlasts the retries: the save has to say so, leave the
+        // file as it was, and not leave its stand-in beside it.
+        string before = File.ReadAllText(path);
+        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        {
+            loaded.SilenceSeconds = 120;
+            string? refused = loaded.Save(path);
+            Check("a hold that outlasts the retries is reported", true,
+                refused is not null && refused.Contains("could not be saved"));
+        }
+        Check("...the file is left as it was", before, File.ReadAllText(path));
+        Check("...and no stand-in is left either", false, File.Exists(path + ".new"));
 
         File.WriteAllText(path, "{ this is not json");
         var (broken, complaint) = Settings.Load(path);

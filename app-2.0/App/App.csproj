@@ -2,8 +2,8 @@
 
   <!-- The application itself: tray icon, settings window, countdown.
 
-       Unpackaged (WindowsPackageType None) - a plain .exe, the way the Python
-       build is delivered today, so the installer stays the same shape and no
+       Unpackaged (WindowsPackageType None) - a plain .exe, the way the 1.x
+       Python build was delivered, so the installer kept the same shape and no
        MSIX signing is involved. Measured with the throwaway prototype: this
        builds without Visual Studio, from a hand-written project file. -->
 
