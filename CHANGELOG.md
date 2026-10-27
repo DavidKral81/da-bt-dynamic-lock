@@ -9,6 +9,8 @@ The version lives in one place per program, and everything else reads it:
 `phone/build.ps1` for the phone app (numbered on its own since 2.0). Change it
 there and nowhere else.
 
+## Unreleased
+
 ## 2.0.1 — 27 Oct 2026
 
 - **The 1.x code is gone from the tree** — the Python application, its
