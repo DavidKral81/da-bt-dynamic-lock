@@ -683,12 +683,19 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             // The menu is NOT checked here: it waits for a click, so a run with
             // nobody at the keyboard would hang on it.
             string warning = Texts.Get("msg_no_signal", 10);
-            var carried = _tray?.NotificationData(AppInfo.Name, warning);
+            var carried = _tray?.NotificationData(NoticeTitle, warning);
             lines.Add(carried is { } data
                     && (data.uFlags & Native.NIF_INFO) != 0
                     && data.szInfo.Length > 0
                 ? "  OK    the notification really carries text to display"
                 : "  FAIL  the notification would be sent with nothing to display");
+            // The notices below are real ones on a real screen - the run's own
+            // "the settings could not be saved" looked exactly like a fault in
+            // the installed app (28.10.2026). So the title says it is a test.
+            string testTitle = $"{AppInfo.Name} - test";
+            lines.Add(carried?.szInfoTitle == testTitle
+                ? $"  OK    a check run's notifications are titled \"{testTitle}\""
+                : $"  FAIL  a check run's notification is titled \"{carried?.szInfoTitle}\", not \"{testTitle}\"");
 
             // Skipped with the screen locked, for the same measured reason the
             // tray icon check skips: Windows lets nothing into the tray then,
@@ -697,7 +704,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             // screen being locked, or the shell restarting. Both are the
             // machine's doing, not the app's, and a check that blames the app
             // for them sends the next person hunting a fault that is not there.
-            string? shown = _tray?.Notify(AppInfo.Name, warning);
+            string? shown = Notify(warning);
             lines.Add(shown is null
                 ? "  OK    Windows accepted the warning notification"
                 : shown.Contains("not in the tray")
@@ -1004,12 +1011,26 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         // Shown where the user will actually see it, not only in a log nobody
         // reads. The whole point of this warning is that watching has silently
         // stopped working - a warning that is itself silent would be useless.
-        string? problem = _tray?.Notify(AppInfo.Name, text);
+        string? problem = Notify(text);
         if (problem is not null)
             _log.Write(problem);
 
         _tip = "";      // force the tooltip to be rewritten on the next status
     }
+
+    /// <summary>
+    /// A notification from the tray icon - every one goes through here, so a
+    /// check run cannot show one under the app's plain name.
+    /// </summary>
+    private string? Notify(string text) => _tray is null
+        ? "there is no tray icon to show it from"
+        : _tray.Notify(NoticeTitle, text);
+
+    /// <summary>
+    /// A check run's notices are real ones on a real screen, so their title
+    /// says they are a test; otherwise they look like a fault in the app.
+    /// </summary>
+    private string NoticeTitle => _options.SelfCheck ? $"{AppInfo.Name} - test" : AppInfo.Name;
 
     public void RefreshMenu()
     {
@@ -1076,9 +1097,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         // the fault 1.4 shipped.
         _ui?.TryEnqueue(() =>
         {
-            string? trouble = _tray is null
-                ? "there is no tray icon to show it from"
-                : _tray.Notify(AppInfo.Name, Texts.Get("msg_not_saved"));
+            string? trouble = Notify(Texts.Get("msg_not_saved"));
             _saveNotice = trouble ?? "shown";
             if (trouble is not null)
                 _log.Write($"The \"not saved\" notice could not be shown: {trouble}");
