@@ -46,7 +46,12 @@ public interface IAppHost
     /// </summary>
     bool TakingPictures { get; }
 
+    /// <summary>Asks for the settings to be saved. Written off the UI thread, so it returns at once.</summary>
     void SaveSettings();
+
+    /// <summary>Returns once every save asked for is in the file - for a check that reads it.</summary>
+    void WaitUntilSaved();
+
     void PauseFor(TimeSpan how);
     void ResumePausing();
     void OpenSettingsWindow();

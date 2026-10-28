@@ -394,6 +394,12 @@ the phone was seen, when it disappeared and why it locked.
       The app keeps trying and writes "The tray icon can be updated
       again." once it works. Watching is not affected.
 
+  A notification "The settings could not be saved"
+      Another program holds the settings file (an antivirus, a
+      sync client) or the disk is full. The change applies while
+      the app is running. The next save that goes through writes it
+      as well; the log then says "The settings can be saved again.".
+
   The app will not start twice
       That is correct - the second attempt only says it is
       already running.

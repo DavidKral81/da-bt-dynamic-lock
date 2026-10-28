@@ -146,14 +146,20 @@ public sealed record Settings
     /// minutes, and each one reads this file - would otherwise find half a file,
     /// take the defaults, and could save those over the real settings.
     /// </summary>
-    public string? Save(string path)
+    public string? Save(string path) => Write(path, ToJson());
+
+    /// <summary>The settings as the file holds them - a copy, so later changes stay out.</summary>
+    public string ToJson() => JsonSerializer.Serialize(this, Format);
+
+    /// <summary>Writes settings already turned into text. See <see cref="Save"/>.</summary>
+    public static string? Write(string path, string json)
     {
         string temporary = path + ".new";
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(temporary, JsonSerializer.Serialize(this, Format));
-            MoveOver(temporary, path);
+            WaitingOutAHold(() => File.WriteAllText(temporary, json));
+            WaitingOutAHold(() => File.Move(temporary, path, overwrite: true));
             return null;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
@@ -168,28 +174,121 @@ public sealed record Settings
     }
 
     /// <summary>
-    /// Moves the new file over the old one, waiting out a brief hold.
+    /// One step of a save, waiting out a brief hold.
     ///
     /// Replacing a file needs it free of other handles that do not share
     /// deletion, and an antivirus scan or a sync client opens a freshly written
     /// file for a moment - measured 26.09.2026 in a folder mirrored to the
-    /// cloud: "access denied", one switch not saved. Up to about two seconds
-    /// of retries; the last failure is what gets reported.
+    /// cloud: "access denied", one switch not saved. The stand-in can be held
+    /// the same way. Up to about two seconds of retries; the last failure is
+    /// what gets reported.
     /// </summary>
-    private static void MoveOver(string from, string to)
+    private static void WaitingOutAHold(Action step)
     {
         for (int attempt = 1; ; attempt++)
         {
             try
             {
-                File.Move(from, to, overwrite: true);
+                step();
                 return;
             }
-            catch (Exception e) when (attempt < 20
-                                      && e is IOException or UnauthorizedAccessException)
+            catch (Exception e) when (attempt < 20 && IsHeld(e))
             {
                 Thread.Sleep(100);
             }
+        }
+    }
+
+    private const int SharingViolation = unchecked((int)0x80070020);
+    private const int LockViolation = unchecked((int)0x80070021);
+
+    /// <summary>
+    /// A file somebody else has open - the only fault waiting can fix. A full
+    /// disk or a name Windows refuses stays as it is, so it is reported at once.
+    /// "Access denied" is waited out too: it is what a held file gives when
+    /// moved over, though a read-only file gives it as well.
+    /// </summary>
+    private static bool IsHeld(Exception e) =>
+        e is UnauthorizedAccessException
+        || e is IOException { HResult: SharingViolation or LockViolation };
+}
+
+/// <summary>
+/// Saves the settings off the caller's thread; the newest save wins.
+///
+/// The caller is the window, and waiting out a held file takes up to two
+/// seconds - each switch flipped while the file was held froze it for that
+/// long. Only one write runs at a time, so an older one can never land over a
+/// newer one.
+/// </summary>
+public sealed class SettingsWriter
+{
+    private readonly string _path;
+    private readonly Action<string?> _finished;
+    private readonly object _gate = new();
+    private string? _waiting;
+    private bool _writing;
+    private Task _current = Task.CompletedTask;
+
+    /// <param name="finished">Called after each write, on the writer's thread,
+    /// with null or what went wrong. A failure has to reach somebody who can
+    /// show it: in 1.4 a save that failed passed unnoticed.</param>
+    public SettingsWriter(string path, Action<string?> finished)
+    {
+        _path = path;
+        _finished = finished;
+    }
+
+    /// <summary>Saves the settings as they are NOW; the caller may go on changing them.</summary>
+    public void Save(Settings settings)
+    {
+        string json = settings.ToJson();
+        lock (_gate)
+        {
+            _waiting = json;
+            if (_writing)
+                return;         // the running write picks it up when it is done
+            _writing = true;
+            _current = Task.Run(WriteAll);
+        }
+    }
+
+    /// <summary>Returns once everything asked for is on disk - or has failed and been reported.</summary>
+    public void Flush()
+    {
+        Task current;
+        lock (_gate)
+            current = _current;
+        current.Wait();
+    }
+
+    private void WriteAll()
+    {
+        try
+        {
+            while (true)
+            {
+                string json;
+                lock (_gate)
+                {
+                    if (_waiting is null)
+                    {
+                        _writing = false;
+                        return;
+                    }
+                    json = _waiting;
+                    _waiting = null;
+                }
+                _finished(Settings.Write(_path, json));
+            }
+        }
+        catch
+        {
+            // Not swallowed - Flush raises it. Without this every later save
+            // would wait for a write that is never coming.
+            lock (_gate)
+                _writing = false;
+            throw;
         }
     }
 }

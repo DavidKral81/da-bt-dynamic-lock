@@ -37,7 +37,9 @@ public sealed partial class SettingsWindow
         {
             // Read back from DISK, not from the settings object in memory: the
             // point of the check is that the write happened, and an object the
-            // handler just changed would say yes either way.
+            // handler just changed would say yes either way. The save runs off
+            // this thread, so it is waited for first.
+            _host.WaitUntilSaved();
             var (saved, problem) = Settings.Load(settingsPath);
             object? got = problem is null ? read(saved) : problem;
             bool ok = Equals(wanted, got);

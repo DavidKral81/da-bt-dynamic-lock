@@ -374,6 +374,12 @@ vidět, kdy zmizel a proč se zamklo.
       zkouší dál a napíše "The tray icon can be updated again.",
       jakmile se to povede. Hlídání to nijak neovlivní.
 
+  Oznámení "Nastavení se nepodařilo uložit"
+      Soubor s nastavením drží jiný program (antivir, synchronizace)
+      nebo je disk plný. Změna platí, dokud aplikace běží. Příští
+      uložení, které projde, zapíše i ji; log pak napíše "The
+      settings can be saved again.".
+
   Aplikace nejde spustit dvakrát
       Tak je to správně - druhý pokus jen oznámí, že už běží.
 

@@ -42,6 +42,20 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
     /// </summary>
     private string? _iconTrouble;
 
+    /// <summary>Writes the settings off the UI thread. Null until the log exists.</summary>
+    private SettingsWriter? _writer;
+    private DispatcherQueue? _ui;
+
+    /// <summary>
+    /// The last save failed and the user has been told. Told once, not for
+    /// every switch: the next save that goes through writes everything, the
+    /// earlier changes included. Touched only by the writer, one write at a time.
+    /// </summary>
+    private bool _saveFailing;
+
+    /// <summary>What showing the "not saved" notice last gave - for the self-check.</summary>
+    private string? _saveNotice;
+
     public App() => InitializeComponent();
 
     public Settings Settings => _settings;
@@ -121,6 +135,8 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
             _log.Write(problem);
         if (saveProblem is not null)
             _log.Write(saveProblem);
+        _ui = DispatcherQueue.GetForCurrentThread();
+        _writer = new SettingsWriter(_options.SettingsPath, SettingsWritten);
 
         // Setup, if that is what this copy was started as. Before the
         // single-copy check on purpose: the installer's whole job is to replace
@@ -688,6 +704,24 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
                     ? $"  SKIP  the warning notification: {shown}"
                     : $"  FAIL  {shown}");
 
+            // A save that fails has to reach the user, through the same
+            // callback the real writer has - Engine.Tests proves the writer
+            // reports it, this proves the app shows it. A name Windows refuses
+            // fails at once, and the run's own settings stay untouched.
+            _saveFailing = false;
+            _saveNotice = null;
+            var refusing = new SettingsWriter(
+                Path.Combine(_options.DataFolder, "no?such.json"), SettingsWritten);
+            refusing.Save(_settings);
+            refusing.Flush();
+            await Task.Delay(300);                          // the notice is queued here
+            lines.Add(_saveNotice == "shown"
+                ? "  OK    a save that fails is shown to the user"
+                : _saveNotice is not null && _saveNotice.Contains("not in the tray")
+                    ? $"  SKIP  the \"not saved\" notice: {_saveNotice}"
+                    : $"  FAIL  a save that fails is not shown to the user ({_saveNotice ?? "nothing tried"})");
+            _saveFailing = false;
+
             // A check nobody calls is worse than none - it only buys false
             // calm. The phone app once carried exactly this check with no
             // caller at all. It used to run only with the pictures, which are
@@ -810,6 +844,9 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         // since the previous save would be lost on every ordinary quit, and the
         // chart would show a gap the app was actually running through.
         SaveHistory();
+        // The settings are written off this thread; a switch flipped just
+        // before quitting must still reach the file.
+        _writer?.Flush();
         _saveTimer?.Stop();
         _timer?.Stop();
         _stopping?.Cancel();
@@ -1010,9 +1047,42 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         // of the network switch during a screenshot run would have overwritten
         // somebody's working config - with a made-up network, and with the
         // trusted-network pause switched ON, which turns protection off.
-        string? problem = _settings.Save(_options.SettingsPath);
-        if (problem is not null)
-            _log.Write(problem);
+        _writer!.Save(_settings);
+    }
+
+    public void WaitUntilSaved() => _writer?.Flush();
+
+    /// <summary>
+    /// After each write, on the writer's thread. The log locks; the tray icon
+    /// belongs to the UI thread, so the notice is handed over to it.
+    /// </summary>
+    private void SettingsWritten(string? problem)
+    {
+        if (problem is null)
+        {
+            if (_saveFailing)
+                _log.Write("The settings can be saved again.");
+            _saveFailing = false;
+            return;
+        }
+
+        _log.Write(problem);
+        if (_saveFailing)
+            return;
+        _saveFailing = true;
+
+        // Shown, not only logged: the switch has moved, and without a word the
+        // old value would be back after a restart with nobody knowing why -
+        // the fault 1.4 shipped.
+        _ui?.TryEnqueue(() =>
+        {
+            string? trouble = _tray is null
+                ? "there is no tray icon to show it from"
+                : _tray.Notify(AppInfo.Name, Texts.Get("msg_not_saved"));
+            _saveNotice = trouble ?? "shown";
+            if (trouble is not null)
+                _log.Write($"The \"not saved\" notice could not be shown: {trouble}");
+        });
     }
 
     public void PauseFor(TimeSpan how)
@@ -1361,7 +1431,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         double wasSilence = _settings.SilenceSeconds;
         int pick = Choices.Silence[0] == wasSilence ? 1 : 0;
         ChooseFromSubmenu(MenuSilenceBase + pick);
-        double saved = Settings.Load(_options.SettingsPath).Value.SilenceSeconds;
+        double saved = SavedSettings().SilenceSeconds;
         Check("choosing a silence from the tray menu is saved",
             saved == Choices.Silence[pick],
             $"the tray menu chose {Choices.Silence[pick]} s, the file says {saved} s");
@@ -1369,14 +1439,14 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         // ...and the sensitivity, which is the one with "no limit" in front of
         // the numbers - so its positions are shifted and easy to get wrong.
         ChooseFromSubmenu(MenuRangeBase + 1);
-        double? threshold = Settings.Load(_options.SettingsPath).Value.RssiThreshold;
+        double? threshold = SavedSettings().RssiThreshold;
         Check("...and so is a sensitivity, shifted position and all",
             threshold == Choices.Range[0],
             $"the tray menu chose {Choices.Range[0]} dBm, the file says {threshold?.ToString() ?? "no limit"}");
 
         ChooseFromSubmenu(MenuRangeBase);
         Check("...and \"no limit\" saves no threshold at all",
-            Settings.Load(_options.SettingsPath).Value.RssiThreshold is null,
+            SavedSettings().RssiThreshold is null,
             "choosing no limit from the tray menu left a threshold behind");
 
         // The two safeguards sit under "Do not lock while…", not loose among
@@ -1390,11 +1460,21 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         bool wasFullScreen = _settings.FullScreenGuard;
         ChooseFromMenu(MenuFullScreen);
         Check("...and choosing one from there is saved",
-            Settings.Load(_options.SettingsPath).Value.FullScreenGuard == !wasFullScreen,
+            SavedSettings().FullScreenGuard == !wasFullScreen,
             "choosing the full screen safeguard from the tray menu did not reach the file");
         ChooseFromMenu(MenuFullScreen);     // back as it was
 
         return lines;
+    }
+
+    /// <summary>
+    /// What is in the settings FILE, once every save asked for has landed - a
+    /// check that read it straight away would race the writer.
+    /// </summary>
+    private Settings SavedSettings()
+    {
+        WaitUntilSaved();
+        return Settings.Load(_options.SettingsPath).Value;
     }
 
     /// <summary>What a top-level menu line does. Apart, so a check can call it.</summary>

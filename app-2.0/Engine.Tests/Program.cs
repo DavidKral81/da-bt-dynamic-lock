@@ -144,10 +144,107 @@ internal static class EngineChecks
         Check("...the file is left as it was", before, File.ReadAllText(path));
         Check("...and no stand-in is left either", false, File.Exists(path + ".new"));
 
+        // The stand-in can be the one held - a scanner looking at the last one
+        // written - and that is waited out the same way.
+        File.WriteAllText(path + ".new", "{}");
+        var heldStandIn = new FileStream(path + ".new", FileMode.Open, FileAccess.Read,
+            FileShare.Read);
+        var letGo = Task.Run(async () =>
+        {
+            await Task.Delay(300);
+            heldStandIn.Dispose();
+        });
+        loaded.SilenceSeconds = 150;
+        bool standInHeld = !letGo.IsCompleted;
+        string? throughStandIn = loaded.Save(path);
+        letGo.Wait();
+        Check("...a held stand-in is still held when saving starts", true, standInHeld);
+        Check("saving outlasts a held stand-in too", null, throughStandIn);
+        Check("...and the value landed", 150.0, Settings.Load(path).Value.SilenceSeconds);
+
+        // Only a file somebody else holds is worth waiting for. A full disk or
+        // a name Windows refuses stays what it is, and waiting two seconds for
+        // it froze whatever had asked for the save. A name with "?" in it is a
+        // fault of that kind that a test can produce.
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        string? unfixable = loaded.Save(Path.Combine(scratch, "no?such.json"));
+        clock.Stop();
+        Check("a fault that waiting cannot fix is reported", true,
+            unfixable is not null && unfixable.Contains("could not be saved"));
+        Check("...at once, without waiting it out", true, clock.ElapsedMilliseconds < 500);
+
+        CheckSettingsWriter(scratch);
+
         File.WriteAllText(path, "{ this is not json");
         var (broken, complaint) = Settings.Load(path);
         Check("a damaged file does not stop the app", 45.0, broken.SilenceSeconds);
         Check("...but says so", true, complaint is not null && complaint.Contains("unreadable"));
+    }
+
+    /// <summary>
+    /// Saving off the caller's thread. Waiting out a held file takes up to two
+    /// seconds, and the caller is the window: each switch flipped while the file
+    /// was held froze it for that long.
+    /// </summary>
+    static void CheckSettingsWriter(string scratch)
+    {
+        Console.WriteLine("\nSaving off the window's thread:");
+        string path = Path.Combine(scratch, "writer", "config.json");
+        var reports = new System.Collections.Concurrent.ConcurrentQueue<string?>();
+        var writer = new SettingsWriter(path, reports.Enqueue);
+        var settings = new Settings { SilenceSeconds = 60 };
+
+        writer.Save(settings);
+        writer.Flush();
+        Check("a save lands once it is waited for", 60.0, Settings.Load(path).Value.SilenceSeconds);
+        Check("...and reports that it went through", "null",
+            reports.TryDequeue(out var first) ? first ?? "null" : "nothing reported");
+
+        // Held for longer than the caller may be kept waiting.
+        var held = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        var release = Task.Run(async () =>
+        {
+            await Task.Delay(600);
+            held.Dispose();
+        });
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        settings.SilenceSeconds = 90;
+        writer.Save(settings);
+        // Changed again straight away, the way a person runs through a list:
+        // what is on disk at the end has to be the LAST value, not one between.
+        settings.SilenceSeconds = 120;
+        writer.Save(settings);
+        settings.SilenceSeconds = 150;
+        writer.Save(settings);
+        clock.Stop();
+        bool stillHeld = !release.IsCompleted;
+        // The snapshot is taken at the call: a change made after it must not
+        // slip into a write that was asked for before.
+        settings.SilenceSeconds = 999;
+        writer.Flush();
+        release.Wait();
+        Check("...the file was still held when the saves were asked for", true, stillHeld);
+        Check("saving a held file does not keep the caller waiting", true,
+            clock.ElapsedMilliseconds < 200);
+        Check("...the last value asked for is the one on disk", 150.0,
+            Settings.Load(path).Value.SilenceSeconds);
+        Check("...and every write reported success", true,
+            reports.Count > 0 && reports.All(r => r is null));
+        reports.Clear();
+
+        // One that cannot go through is reported - to whoever can show it.
+        var refusing = new SettingsWriter(Path.Combine(scratch, "no?such.json"), reports.Enqueue);
+        refusing.Save(settings);
+        refusing.Flush();
+        Check("a save that fails is reported to the caller", true,
+            reports.TryDequeue(out var failed) && failed is not null
+                && failed.Contains("could not be saved"));
+
+        // ...and the writer is not left stuck by it: the next save still runs.
+        settings.SilenceSeconds = 45;
+        writer.Save(settings);
+        writer.Flush();
+        Check("a later save still goes through", 45.0, Settings.Load(path).Value.SilenceSeconds);
     }
 
     // ------------------------------------------------------------ log

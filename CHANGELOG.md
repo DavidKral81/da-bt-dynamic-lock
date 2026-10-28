@@ -11,6 +11,15 @@ there and nowhere else.
 
 ## Unreleased
 
+- **A setting that could not be saved is now reported** with a notification,
+  not only in the log. Before, the switch moved, nothing said otherwise, and
+  the old value was back after the next start.
+- **The settings window no longer freezes while the settings file is held**
+  by another program. Saving runs in the background, so waiting out an
+  antivirus scan or a sync client no longer stops the window for up to two
+  seconds per change. Only a held file is waited out; a full disk is reported
+  at once. The stand-in file written beside the settings is waited out too.
+
 ## 2.0.1 — 27 Oct 2026
 
 - **The 1.x code is gone from the tree** — the Python application, its
