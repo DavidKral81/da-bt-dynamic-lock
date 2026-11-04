@@ -242,8 +242,14 @@ public sealed class Watcher
 
         // Not while locked: the warning means "this machine is sitting here
         // unlocked and I have stopped guarding it", which is not the situation
-        // behind a lock screen.
-        if (cfg.Active && !locked)
+        // behind a lock screen. Nor on a saved network or during a manual pause:
+        // nothing is meant to be guarded there, so "watching is not working"
+        // would be untrue. Leaving either measures the silence afresh, so the
+        // warning can still come after the full delay of real watching. The
+        // guards (keyboard, full screen) keep it - watching runs there, only
+        // the lock waits until the user stops.
+        bool meantToWatch = decision.Reason is not ("paused" or "trusted_network");
+        if (cfg.Active && !locked && meantToWatch)
             WarnIfSignalLost(cfg);
         _view.RefreshMenu();
 

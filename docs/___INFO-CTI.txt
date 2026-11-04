@@ -297,6 +297,10 @@ Po nastavené době bez signálu (výchozí 10 minut) vyskočí bublina.
 jednou zamkne a pak už čeká, až se telefon objeví. Do té doby
 NEHLÍDÁ, ale tváří se, že ano.
 
+Na uložené Wi-Fi a během pozastavení bublina nevyskočí - hlídání
+je tehdy vypnuté záměrně. Doba bez signálu se po odchodu ze sítě
+nebo po konci pozastavení počítá znovu od nuly.
+
 Navíc: než aplikace zamkne, podívá se, jestli rádio
 slyší aspoň něco jiného v okolí (myš, televizi, cizí zařízení).
 Když neslyší vůbec nic, ticho nepatří telefonu, ale přijímači - ten

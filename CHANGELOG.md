@@ -19,6 +19,11 @@ there and nowhere else.
   antivirus scan or a sync client no longer stops the window for up to two
   seconds per change. Only a held file is waited out; a full disk is reported
   at once. The stand-in file written beside the settings is waited out too.
+- **No "phone has not been heard" warning on a saved Wi-Fi network or during
+  a pause.** Nothing is being watched there, so the warning that watching does
+  not work was untrue. Off that network or after the pause, the warning comes
+  as before after the set time without a signal. The guards for someone at
+  the keyboard or a full-screen app keep it.
 
 ## 2.0.1 — 27 Oct 2026
 

@@ -611,6 +611,51 @@ internal static class EngineChecks
         r.Tick();
         for (int i = 0; i < 130; i++) r.Tick();
         Check("a phone that goes missing again warns again", 2, r.View.Warnings);
+
+        // The warning says "watching is not working". On a saved network and
+        // during a manual pause nothing is meant to be watched, so it would be
+        // untrue there - and a warning that comes for no reason teaches people
+        // to ignore it. Nothing is lost: leaving that state measures the
+        // silence afresh, so a silent phone still locks the screen after the
+        // usual threshold and countdown.
+        var home = new Rig(scratch, "warn-wifi");
+        home.Cfg.AlertNoSignalMinutes = 1;
+        home.Cfg.TrustedNetworkPause = true;
+        home.Cfg.TrustedNetworks.Add(new TrustedNetwork
+            { Ssid = "Home", Bssid = "AA:BB:CC:DD:EE:FF" });
+        home.System.Network = new WifiConnection("Home", "AA:BB:CC:DD:EE:FF");
+        home.Hear();
+        for (int i = 0; i < 260; i++) home.Tick();  // 130 s of silence
+        Check("no warning on a saved network", 0, home.View.Warnings);
+
+        // Leaving the network starts the silence over, so the warning comes
+        // only after the full delay of real watching - not at once.
+        home.System.Network = null;
+        home.Cfg.SilenceSeconds = 3600;             // do not let it lock during this
+        home.Tick();
+        Check("...nor the moment the network is left", 0, home.View.Warnings);
+        for (int i = 0; i < 130; i++) home.Tick();  // 65 s of real watching
+        Check("...but after the delay off that network it warns", 1, home.View.Warnings);
+
+        var paused = new Rig(scratch, "warn-pause");
+        paused.Cfg.AlertNoSignalMinutes = 1;
+        paused.Hear();
+        paused.Watch.PauseFor(3600);
+        for (int i = 0; i < 260; i++) paused.Tick();
+        Check("no warning during a manual pause", 0, paused.View.Warnings);
+
+        // The guards keep the warning on purpose: watching runs, only the lock
+        // is held back while someone is using the machine, and a phone that is
+        // silent then means the screen will lock as soon as they stop.
+        var typing = new Rig(scratch, "warn-guard");
+        typing.Cfg.AlertNoSignalMinutes = 1;
+        typing.Cfg.IdleGuard = true;
+        typing.Cfg.IdleGuardSeconds = 15;
+        typing.System.Idle = 0;
+        typing.RoomKeepsChattering = true;
+        typing.Hear();
+        for (int i = 0; i < 130; i++) typing.Tick();
+        Check("the guard for someone at the keyboard still warns", 1, typing.View.Warnings);
     }
 
     static void CheckTrustedNetwork(string scratch)
