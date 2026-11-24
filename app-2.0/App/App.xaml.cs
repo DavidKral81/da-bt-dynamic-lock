@@ -127,6 +127,27 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         Texts.Language = _settings.Language;
 
         _log = new Log(_options.LogPath, () => _settings.Log);
+
+        // A crash AFTER start-up used to leave not one line: the try around
+        // Start() covers only the start, and WinUI ends the process with a
+        // stowed-exception code (measured 24.11.2026 on a click on the tray
+        // icon). Written down, never marked handled - the app still goes down,
+        // but the log says why.
+        //
+        // ⚠ Measured 24.11.2026, so nobody counts on more: the background-thread
+        // handler DOES write (exception thrown on a new thread). Neither handler
+        // sees an exception thrown inside a DispatcherQueue callback, nor the
+        // native failure inside Microsoft.UI.Xaml.dll that started all this -
+        // both end the process with 0xC000027B and no line. The XAML handler is
+        // kept for exceptions from XAML event handlers, which it is documented
+        // to receive.
+        UnhandledException += (_, e) =>
+            _log.Write($"Unexpected error - the app is going down: {e.Message} | {e.Exception}");
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            _log.Write($"Unexpected error on a background thread - the app is going down: {e.ExceptionObject}");
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+            _log.Write($"An error in background work that nothing waited for: {e.Exception}");
+
         // Written now rather than swallowed: whether to log at all is one of
         // the settings, so a damaged file cannot report itself while it is
         // being read. The same for a write that failed before the log existed -
@@ -239,6 +260,11 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
 
         _log.Write($"{AppInfo.Name} {AppInfo.Version} starting.");
 
+        // Only the copy that stays: a scheduled start every five minutes that
+        // finds the app running, or switched off by the user, ends above and
+        // must not write a line each time.
+        if (UnpackedFiles.Hold() is string held)
+            _log.Write(held);
         // The picture run draws everything at one frozen instant. See
         // FreezeClockForPictures for why.
         if (_options.ScreenshotFolder is not null)

@@ -11,6 +11,14 @@ there and nowhere else.
 
 ## Unreleased
 
+- **No more crash on a click on the tray icon after days of running.** The
+  program unpacks itself into the temporary folder at start, and temp cleanup
+  could delete those files while it ran; the next settings window then took the
+  app down. The app now holds those files for as long as it runs, so cleanup
+  leaves them alone. `tools/check_extracted_files.ps1` plays the cleanup against
+  a built program.
+- **An error on a background thread is written to the log** before the app
+  goes down. Before, a crash after start-up left no line at all.
 - **A setting that could not be saved is now reported** with a notification,
   not only in the log. Before, the switch moved, nothing said otherwise, and
   the old value was back after the next start.
