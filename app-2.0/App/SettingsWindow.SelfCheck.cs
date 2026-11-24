@@ -248,6 +248,18 @@ public sealed partial class SettingsWindow
         lines.Add(scheduled.Batch
             ? "  OK    a start by the schedule never puts up a dialog"
             : "  FAIL  a start by the schedule would say \"already running\" every five minutes");
+
+        // The switch that crashes the app on purpose, for checking the crash
+        // note. Anywhere but a dry run it would kill somebody's real app.
+        var crashReal = Options.Parse(new[] { "--crash-after", "5" },
+            installed + @"\DaBtDynamicLock.exe", installed);
+        var crashDry = Options.Parse(new[] { "--dry-run", "--crash-after", "5" },
+            installed + @"\DaBtDynamicLock.exe", installed);
+        lines.Add(crashReal.CrashAfterSeconds == 0 && crashDry.CrashAfterSeconds == 5
+                && crashDry.Batch
+            ? "  OK    --crash-after works only in a dry run, and without dialogs"
+            : $"  FAIL  --crash-after: real run {crashReal.CrashAfterSeconds}, "
+                + $"dry run {crashDry.CrashAfterSeconds} (batch {crashDry.Batch})");
         lines.Add(NavSignal.Text == before
             ? "  OK    switching back restores the first language"
             : $"  FAIL  switching back left \"{NavSignal.Text}\"");

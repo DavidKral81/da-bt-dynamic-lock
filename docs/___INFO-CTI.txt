@@ -387,6 +387,11 @@ vidět, kdy zmizel a proč se zamklo.
   Aplikace nejde spustit dvakrát
       Tak je to správně - druhý pokus jen oznámí, že už běží.
 
+  V logu je "Windows recorded a crash of this program"
+      Aplikace minule spadla tak, že to sama nestihla zapsat. Windows
+      si pád poznamenaly a aplikace ten záznam při dalším startu
+      opsala do logu. Do hlášení chyby přilož celý log.
+
 
 PROČ JE VÝCHOZÍ ČAS 45 SEKUND A NE 20
 

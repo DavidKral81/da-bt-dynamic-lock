@@ -19,6 +19,11 @@ there and nowhere else.
   a built program.
 - **An error on a background thread is written to the log** before the app
   goes down. Before, a crash after start-up left no line at all.
+- **A crash the app cannot write down itself reaches the log at the next
+  start.** A crash inside the window toolkit ends the app before it can write
+  anything; Windows records it in its own Application log, and the next start
+  copies that record into the log (time, error code, module, process), once.
+  `tools/check_crash_logged.ps1` crashes a built program and checks it.
 - **A setting that could not be saved is now reported** with a notification,
   not only in the log. Before, the switch moved, nothing said otherwise, and
   the old value was back after the next start.

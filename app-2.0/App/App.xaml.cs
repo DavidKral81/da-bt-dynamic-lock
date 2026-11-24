@@ -265,6 +265,7 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         // must not write a line each time.
         if (UnpackedFiles.Hold() is string held)
             _log.Write(held);
+        WriteEarlierCrashes();
         // The picture run draws everything at one frozen instant. See
         // FreezeClockForPictures for why.
         if (_options.ScreenshotFolder is not null)
@@ -378,6 +379,67 @@ public partial class App : Application, IWatcherView, IWatcherSystem, IAppHost
         }
         else if (_options.QuitAfterSeconds > 0)
             _ = QuitAfterAsync(TimeSpan.FromSeconds(_options.QuitAfterSeconds));
+
+        if (_options.CrashAfterSeconds > 0)
+            CrashOnPurpose(TimeSpan.FromSeconds(_options.CrashAfterSeconds));
+    }
+
+    /// <summary>
+    /// Copies into the log the crashes Windows recorded for this very file and
+    /// the log does not mention yet (see CrashReport). A crash inside WinUI
+    /// leaves no line of its own - the handlers in Start() never see it.
+    ///
+    /// Off the UI thread: the event log answers in milliseconds as a rule, but
+    /// nothing guarantees it, and the tray icon should not wait for it.
+    /// </summary>
+    private void WriteEarlierCrashes()
+    {
+        string? program = Environment.ProcessPath;
+        if (program is null)
+        {
+            _log.Write("The program's own path is unknown - crashes Windows recorded "
+                + "are not copied into the log.");
+            return;
+        }
+
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                CrashReport.WriteEarlierCrashes(_log, _options.LogPath, program,
+                    since => CrashRecords.Since(since, Path.GetFileName(program)),
+                    DateTime.UtcNow);
+            }
+            catch (Exception e)
+            {
+                // Said, not swallowed - and not left to the unobserved-task
+                // handler, which speaks only when the collector gets round to it.
+                _log.Write($"Copying the crashes Windows recorded failed: {e}");
+            }
+        });
+    }
+
+    /// <summary>Held so the collector cannot take the timer before it fires.</summary>
+    private DispatcherQueueTimer? _crashTimer;
+
+    /// <summary>
+    /// --crash-after: crash the way the app crashed on 24.11.2026 - an exception
+    /// inside a DispatcherQueue callback, which no .NET handler sees and which
+    /// ends the process with 0xC000027B. Only in a dry run (Options sees to
+    /// that); tools\check_crash_logged.ps1 uses it to check that the next start
+    /// copies Windows' record of the crash into the log.
+    /// </summary>
+    private void CrashOnPurpose(TimeSpan after)
+    {
+        _crashTimer = DispatcherQueue.GetForCurrentThread().CreateTimer();
+        _crashTimer.Interval = after;
+        _crashTimer.IsRepeating = false;
+        _crashTimer.Tick += (_, _) =>
+        {
+            _log.Write($"Crashing on purpose (--crash-after), process {Environment.ProcessId}.");
+            throw new InvalidOperationException("Crash on purpose (--crash-after)");
+        };
+        _crashTimer.Start();
     }
 
     // ------------------------------------------------------------------ setup

@@ -28,6 +28,7 @@ internal static class PlatformChecks
         CheckSession();
         CheckIdle();
         CheckFullScreen();
+        CheckCrashRecords();
         CheckWifi();
         CheckMonitors();
         CheckAddressFormatting();
@@ -288,6 +289,69 @@ internal static class PlatformChecks
             Console.WriteLine($"        ({reading.Problem})");
         Console.WriteLine($"        (right now it says: "
             + $"{(reading.Value ? "yes, something is full screen" : "no")})");
+    }
+
+    // ------------------------------------------------------------ crashes
+
+    /// <summary>
+    /// Does Windows answer the question about this program's crashes, here and
+    /// now? Engine.Tests plays the answer; only this run can tell that the
+    /// query itself is accepted and the records parse - a query Windows refused
+    /// would leave every crash untold, quietly.
+    ///
+    /// How many crashes there are depends on the machine's past, so the count
+    /// is printed, not checked. What is checked holds for every record.
+    /// </summary>
+    static void CheckCrashRecords()
+    {
+        Console.WriteLine("\nThis program's crashes in Windows' Application log:");
+        const string program = "DaBtDynamicLock.exe";
+        var reading = CrashRecords.Since(DateTime.UtcNow.AddDays(-30), program);
+        Check("Windows answers the query", true, reading.Ok);
+        if (reading.Problem is not null)
+            Console.WriteLine($"        ({reading.Problem})");
+        Console.WriteLine($"        ({reading.Value.Count} crash(es) of {program} in the last 30 days)");
+        if (reading.Value.Count > 0)
+        {
+            Check("...every record is of that program", true, reading.Value.All(r =>
+                string.Equals(Path.GetFileName(r.AppPath), program, StringComparison.OrdinalIgnoreCase)));
+            Check("...and has its time, process and code", true, reading.Value.All(r =>
+                r.TimeUtc > DateTime.UtcNow.AddDays(-31) && r.ProcessId > 0 && r.ExceptionCode != 0));
+        }
+        else
+        {
+            Skip("the fields of a record", "no crash recorded in the last 30 days to read");
+        }
+
+        // The name is put into the query, so anything but a plain file name is
+        // refused instead of being run.
+        Check("a name that is not a plain file name is refused", false,
+            CrashRecords.Since(DateTime.UtcNow, "x' or '1'='1").Ok);
+
+        // A record as Windows wrote it on 24.11.2026 (the user's SID and the
+        // computer's name left out): the fields come from the data, not from
+        // the message, which is in the language of Windows.
+        const string xml = "<Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'>"
+            + "<System><Provider Name='Application Error'/><EventID>1000</EventID>"
+            + "<TimeCreated SystemTime='2026-11-24T21:08:04.0157496Z'/></System><EventData>"
+            + "<Data Name='AppName'>DaBtDynamicLock.exe</Data><Data Name='AppVersion'>2.0.2.0</Data>"
+            + "<Data Name='AppTimeStamp'>6a876be4</Data><Data Name='ModuleName'>Microsoft.UI.Xaml.dll</Data>"
+            + "<Data Name='ModuleVersion'>3.2.3.0</Data><Data Name='ModuleTimeStamp'>013b7243</Data>"
+            + "<Data Name='ExceptionCode'>c000027b</Data><Data Name='FaultingOffset'>00000000003a9c5d</Data>"
+            + "<Data Name='ProcessId'>0x2ee4</Data><Data Name='ProcessCreationTime'>0x1dd79ebe474304b</Data>"
+            + "<Data Name='AppPath'>C:\\Program Files\\Da BT Dynamic Lock\\DaBtDynamicLock.exe</Data>"
+            + "<Data Name='ModulePath'>C:\\Users\\x\\AppData\\Local\\Temp\\.net\\DaBtDynamicLock\\a\\Microsoft.UI.Xaml.dll</Data>"
+            + "<Data Name='IntegratorReportId'>746c3765-df2e-4208-931c-3fb6cdf650b9</Data>"
+            + "<Data Name='PackageFullName'></Data><Data Name='PackageRelativeAppId'></Data></EventData></Event>";
+        var parsed = CrashRecords.Parse(xml);
+        Check("a recorded crash is read field by field",
+            "21:08:04 C000027B 12004 Microsoft.UI.Xaml.dll 3.2.3.0 746c3765-df2e-4208-931c-3fb6cdf650b9",
+            parsed is null ? null
+                : $"{parsed.TimeUtc:HH:mm:ss} {parsed.ExceptionCode:X8} {parsed.ProcessId} "
+                + $"{parsed.ModuleName} {parsed.ModuleVersion} {parsed.ReportId}");
+        Check("...in UTC", DateTimeKind.Utc, parsed?.TimeUtc.Kind);
+        Check("a record without its fields is not made up", null,
+            CrashRecords.Parse(xml.Replace("<Data Name='ExceptionCode'>c000027b</Data>", "")));
     }
 
     // ------------------------------------------------------------ Wi-Fi

@@ -409,6 +409,12 @@ the phone was seen, when it disappeared and why it locked.
       That is correct - the second attempt only says it is
       already running.
 
+  The log says "Windows recorded a crash of this program"
+      The app crashed last time without managing to write it down.
+      Windows noted the crash, and the app copied that note into
+      the log at the next start. Attach the whole log to a bug
+      report.
+
 
 WHY THE DEFAULT IS 45 SECONDS AND NOT 20
 

@@ -33,6 +33,7 @@ internal static class EngineChecks
             CheckHistoryStore(scratch);
             CheckQuitMarker(scratch);
             CheckFullScreenGuard(scratch);
+            CheckCrashReport(scratch);
         }
         finally
         {
@@ -892,6 +893,146 @@ internal static class EngineChecks
         Check("a check that fails still locks", true, broken.System.LocksAttempted > 0);
         Check("...and says so once, not twice a second", 1,
             broken.LogText.Split("SHQueryUserNotificationState").Length - 1);
+    }
+
+    // ------------------------------------------------------------ crashes
+
+    /// <summary>
+    /// The note at start-up about a crash the log could not write down.
+    ///
+    /// A crash inside WinUI ends the process before any .NET handler runs - not
+    /// one line in the log (measured 24.11.2026). Windows writes it down in its
+    /// own Application log, so the next start copies it over. Windows' answer
+    /// is played here; Platform.Tests asks the real machine, and
+    /// tools\check_crash_logged.ps1 crashes a real copy.
+    /// </summary>
+    static void CheckCrashReport(string scratch)
+    {
+        Console.WriteLine("\nA crash Windows recorded, copied into the log at the next start");
+        string folder = Path.Combine(scratch, "crash-report");
+        Directory.CreateDirectory(folder);
+        string logPath = Path.Combine(folder, "dyn_lock.log");
+        var log = new Log(logPath, () => true);
+        const string program = @"C:\Program Files\Da BT Dynamic Lock\DaBtDynamicLock.exe";
+        var now = new DateTime(2026, 11, 24, 21, 11, 8, DateTimeKind.Utc);
+
+        // The crash of 24.11.2026 22:08 as Windows recorded it - the module
+        // path holds the user's name, which has no business in a log that
+        // gets attached to bug reports.
+        var crash = new CrashRecord(new DateTime(2026, 11, 24, 21, 8, 4, DateTimeKind.Utc),
+            program, "2.0.2.0", "Microsoft.UI.Xaml.dll", "3.2.3.0", 0xC000027B, 12004,
+            0x1dd79ebe474304b, "746c3765-df2e-4208-931c-3fb6cdf650b9");
+        DateTime? askedSince = null;
+        Reading<IReadOnlyList<CrashRecord>> Answer(DateTime since, params CrashRecord[] records)
+        {
+            askedSince = since;
+            return new Reading<IReadOnlyList<CrashRecord>>(records);
+        }
+
+        // A file the code under test never wrote reads as empty, so a broken
+        // build fails the cases one by one instead of dying on the first.
+        static string Text(string path) => File.Exists(path) ? File.ReadAllText(path) : "";
+
+        CrashReport.WriteEarlierCrashes(log, logPath, program, s => Answer(s, crash), now);
+        string text = Text(logPath);
+        Check("a crash Windows recorded is written to the log", true,
+            text.Contains("Windows recorded a crash"));
+        Check("...with the exception code", true, text.Contains("0xC000027B"));
+        Check("...what the code means", true, text.Contains("WinUI"));
+        Check("...the module it happened in", true, text.Contains("Microsoft.UI.Xaml.dll 3.2.3.0"));
+        Check("...the process, to match it with its run", true, text.Contains("process 12004"));
+        Check("...when it happened, in local time", true,
+            text.Contains(crash.TimeUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")));
+        Check("...and not the folder, which holds the user's name", false,
+            text.Contains(@"C:\Users"));
+        Check("Windows is asked about the last two weeks", now - TimeSpan.FromDays(14),
+            askedSince);
+
+        CrashReport.WriteEarlierCrashes(log, logPath, program, s => Answer(s, crash), now);
+        Check("the next start does not write it again", 1,
+            Text(logPath).Split(crash.ReportId).Length - 1);
+
+        // The installed app, a dry run and a self-check are different files
+        // with different logs; each owns only its own crashes.
+        var other = crash with
+        {
+            AppPath = @"C:\Users\x\AppData\Local\da-bt-dynamic-lock-build\DaBtDynamicLock.exe",
+            ReportId = "0e0e0e0e-0000-0000-0000-000000000001",
+        };
+        CrashReport.WriteEarlierCrashes(log, logPath, program, s => Answer(s, other), now);
+        Check("a crash of another copy of the program is not ours", false,
+            Text(logPath).Contains(other.ReportId));
+
+        var shouted = crash with
+        {
+            AppPath = program.ToUpperInvariant(),
+            ReportId = "0e0e0e0e-0000-0000-0000-000000000002",
+        };
+        CrashReport.WriteEarlierCrashes(log, logPath, program, s => Answer(s, shouted), now);
+        Check("...but the same path in other letter case is", true,
+            Text(logPath).Contains(shouted.ReportId));
+
+        // The log keeps one rotated file; a crash told there is told.
+        var rotated = crash with { ReportId = "0e0e0e0e-0000-0000-0000-000000000003" };
+        File.WriteAllText(logPath + ".1", $"old line [report {rotated.ReportId}]\n");
+        CrashReport.WriteEarlierCrashes(log, logPath, program, s => Answer(s, rotated), now);
+        Check("a crash already told in the rotated log is not told again", 1,
+            (File.ReadAllText(logPath + ".1") + Text(logPath))
+                .Split(rotated.ReportId).Length - 1);
+
+        // Some records have no report id. The process and its start time
+        // still name the run.
+        var noId = crash with { ProcessId = 777, ReportId = "" };
+        CrashReport.WriteEarlierCrashes(log, logPath, program, s => Answer(s, noId), now);
+        CrashReport.WriteEarlierCrashes(log, logPath, program, s => Answer(s, noId), now);
+        Check("a record without a report id is told once too", 1,
+            Text(logPath).Split("process 777").Length - 1);
+
+        // A crash at every start, five minutes apart, all day: each start
+        // tells only the new one. A first start after weeks of that must not
+        // bury the log, but must not hide how many there were either.
+        string loopLog = Path.Combine(folder, "loop.log");
+        var loop = Enumerable.Range(0, CrashReport.MostLines + 5)
+            .Select(i => crash with
+            {
+                TimeUtc = crash.TimeUtc.AddMinutes(-5 * i),
+                ProcessId = 1000 + i,
+                ReportId = $"loop-{i:D2}",
+            })
+            .ToArray();
+        CrashReport.WriteEarlierCrashes(new Log(loopLog, () => true), loopLog, program,
+            s => Answer(s, loop), now);
+        string[] loopLines = Text(loopLog).Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        if (loopLines.Length == 0)
+            loopLines = new[] { "" };
+        Check("many crashes are cut short", CrashReport.MostLines + 1, loopLines.Length);
+        Check("...saying how many more there were", true,
+            loopLines[^1].Contains("5 more"));
+        Check("...and the newest are the ones told", true,
+            loopLines.Any(l => l.Contains("[report loop-00]")));
+        Check("...oldest of them first", true,
+            loopLines[0].Contains($"[report loop-{CrashReport.MostLines - 1:D2}]"));
+
+        // Not answering is said, never swallowed: a crash may have gone unnoted.
+        string failLog = Path.Combine(folder, "fail.log");
+        CrashReport.WriteEarlierCrashes(new Log(failLog, () => true), failLog, program,
+            _ => Reading<IReadOnlyList<CrashRecord>>.Failed(Array.Empty<CrashRecord>(),
+                "EvtQuery failed (error 5)"),
+            now);
+        string failText = File.Exists(failLog) ? File.ReadAllText(failLog) : "";
+        Check("Windows not answering is written down", true,
+            failText.Contains("could not be read") && failText.Contains("EvtQuery failed (error 5)"));
+
+        // Half an answer: one record unreadable, one fine. Both are told.
+        string halfLog = Path.Combine(folder, "half.log");
+        CrashReport.WriteEarlierCrashes(new Log(halfLog, () => true), halfLog, program,
+            _ => Reading<IReadOnlyList<CrashRecord>>.Failed(new[] { crash },
+                "1 record(s) could not be read: EvtRender failed (error 13)"),
+            now);
+        string halfText = Text(halfLog);
+        Check("a record that could not be read is said", true, halfText.Contains("EvtRender failed"));
+        Check("...and the ones that could are told all the same", true,
+            halfText.Contains(crash.ReportId));
     }
 
     /// <summary>Did this run without throwing?</summary>

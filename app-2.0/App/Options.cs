@@ -31,6 +31,13 @@ public sealed record Options
     public double QuitAfterSeconds { get; init; }
 
     /// <summary>
+    /// Crash on purpose after this many seconds - to check that the next start
+    /// writes the crash into the log. 0 = never. Honoured ONLY together with
+    /// --dry-run: a switch that kills the app has no business in a real run.
+    /// </summary>
+    public double CrashAfterSeconds { get; init; }
+
+    /// <summary>
     /// Open each window, save a picture of it here, and quit. This is how the
     /// look gets checked - by LOOKING at it. Measuring widths and counting
     /// controls is what let a cramped window and faint grey text through before.
@@ -91,6 +98,8 @@ public sealed record Options
         string? shots = ValueAfter(argv, "--screenshot");
         double quitAfter = double.TryParse(ValueAfter(argv, "--quit-after"),
             System.Globalization.CultureInfo.InvariantCulture, out double s) ? s : 0;
+        double crashAfter = dryRun && double.TryParse(ValueAfter(argv, "--crash-after"),
+            System.Globalization.CultureInfo.InvariantCulture, out double c) ? c : 0;
 
         bool? autostart = argv.Contains("--autostart-on") ? true
             : argv.Contains("--autostart-off") ? false
@@ -118,6 +127,7 @@ public sealed record Options
             Scheduled = argv.Contains("--scheduled"),
             DryRun = dryRun || selfCheck || shots is not null,
             QuitAfterSeconds = quitAfter,
+            CrashAfterSeconds = crashAfter,
             ScreenshotFolder = shots,
             AllLanguages = argv.Contains("--all-languages"),
             SelfCheck = selfCheck,
@@ -150,7 +160,7 @@ public sealed record Options
     /// new one every time it found the app already running.
     /// </summary>
     public bool Batch => SelfCheck || ScreenshotFolder is not null
-        || QuitAfterSeconds > 0 || Autostart is not null || Scheduled;
+        || QuitAfterSeconds > 0 || CrashAfterSeconds > 0 || Autostart is not null || Scheduled;
 
     public string SettingsPath => Path.Combine(DataFolder, "config.json");
     public string LogPath => Path.Combine(DataFolder, "dyn_lock.log");
