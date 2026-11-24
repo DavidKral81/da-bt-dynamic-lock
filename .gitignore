@@ -4,6 +4,11 @@
 # measurements, technical decisions and their reasons - goes into README.md.
 CLAUDE.md
 CLAUDE-HISTORIE.md
+AGENTS.md
+# .ai/ keeps its own local history (a separate repository with no remote);
+# never run "git clean" with a double -f here, it would delete that too.
+.ai/
+.claude/
 
 # Android signing key - NEVER commit.
 # Whoever holds it can publish an "update" to your app.
